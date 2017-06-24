@@ -3,12 +3,10 @@ module Web3Spec.Utils.Sha3 (sha3Spec) where
 import Prelude
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (RunnerEffects, run)
 import Web3.Utils.Sha3 (HexString(..), sha3)
 
 sha3Spec :: forall r . Spec r Unit
-sha3Spec = describe "purescript-spec" do
+sha3Spec = describe "sha3-spec" do
     describe "Sha3 tests" do
       it "can hash strings" do
         sha3 "test123" `shouldEqual` HexString "f81b517a242b218999ec8eec0ea6e2ddbef2a367a14e93f4a32a39e260f686ad"
