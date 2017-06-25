@@ -3,7 +3,7 @@ module Web3.Utils.Utils where
 import Prelude
 import Data.Array (unsafeIndex)
 import Data.ByteString (toString, fromString)
-import Data.String (Pattern(..), split)
+import Data.String (Pattern(..), split, length)
 import Node.Encoding(Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 import Web3.Utils.Sha3 (HexString(..))
@@ -32,6 +32,26 @@ toWei eu = case eu of
   MEther -> "1000000000000000000000"
   GEther -> "1000000000000000000000000"
   TEther -> "1000000000000000000000000000"
+
+-- | Pad a 'HexString' with '0's on the left until it has the
+-- desired length.
+padLeft :: HexString -> Int -> HexString
+padLeft a@(HexString hx) desiredLength =
+    let padLength = desiredLength - length hx
+    in if padLength <= 0 then a else HexString $ go hx padLength
+  where
+    go s 0 = s
+    go s n = go ("0" <> s) (n - 1)
+
+-- | Pad a 'HexString' with '0's on the right until it has the
+-- desired length.
+padRight :: HexString -> Int -> HexString
+padRight a@(HexString hx) desiredLength =
+    let padLength = desiredLength - length hx
+    in if padLength <= 0 then a else HexString $ go hx padLength
+  where
+    go s 0 = s
+    go s n = go (s <> "0") (n - 1)
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.
 -- This breaks at the first null octet, following the web3 function 'toUft8'.
