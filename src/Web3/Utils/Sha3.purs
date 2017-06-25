@@ -1,16 +1,11 @@
-module Web3.Utils.Sha3 where
+module Web3.Utils.Sha3
+  ( class SHA3
+  , sha3
+  ) where
 
-import Prelude
+import Web3.Utils.Types (HexString)
 
 --------------------------------------------------------------------------------
-
-newtype HexString = HexString String
-
-instance showHexString :: Show HexString where
-  show (HexString hx) = "0x" <> hx
-
-derive newtype instance hexStringEq :: Eq HexString
-
 
 class SHA3 a where
   sha3 :: a -> HexString

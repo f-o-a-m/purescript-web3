@@ -1,4 +1,12 @@
-module Web3.Utils.Utils where
+module Web3.Utils.Utils
+  ( EtherUnit(..)
+  , padLeft
+  , padRight
+  , toUtf8
+  , fromUtf8
+  , toAscii
+  , fromAscii
+  ) where
 
 import Prelude
 import Data.Array (unsafeIndex)
@@ -6,7 +14,7 @@ import Data.ByteString (toString, fromString)
 import Data.String (Pattern(..), split, length)
 import Node.Encoding(Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-import Web3.Utils.Sha3 (HexString(..))
+import Web3.Utils.Types (HexString(..))
 
 data EtherUnit =
     Wei
