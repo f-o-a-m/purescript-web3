@@ -8,10 +8,13 @@ module Web3.Utils.Utils
   , fromAscii
   ) where
 
-import Prelude
+import Prelude (flip, map, ($), (-), (<<<), (<=), (<>))
 import Data.Array (unsafeIndex)
 import Data.ByteString (toString, fromString)
-import Data.String (Pattern(..), split, length)
+import Data.List (List)
+import Data.Maybe(Maybe(..))
+import Control.Fold (mconcat, foldl)
+import Data.String (Pattern(..), split, length, indexOf)
 import Node.Encoding(Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 import Web3.Utils.Types (HexString(..))
@@ -73,10 +76,20 @@ toUtf8 (HexString hx) =
 toAscii :: HexString -> String
 toAscii (HexString hx) = flip toString ASCII $ fromString hx Hex
 
+-- | Get the 'HexString' corresponding to the UTF8 encoding.
 fromUtf8 :: String -> HexString
 fromUtf8 s =
   let s' = unsafePartial $ split (Pattern "\0000") s `unsafeIndex` 0
   in HexString <<< flip toString Hex <<< flip fromString UTF8 $ s'
 
+-- | Get the 'HexString' corresponding to the ASCII encoding.
 fromAscii :: String -> HexString
 fromAscii = HexString <<< flip toString Hex <<< flip fromString ASCII
+
+
+transformToFullName :: forall r s . { name :: String , inputs :: List { type_ :: String | r } | s } -> String
+transformToFullName a = case indexOf (Pattern "(") a.name of
+  Nothing -> a.name
+  Just _ -> let is = a.inputs
+                typeName = foldl mconcat $ map (\i -> i.type_) is
+            in "(" <> typeName <> ")"
