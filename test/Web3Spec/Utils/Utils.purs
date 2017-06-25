@@ -4,7 +4,7 @@ import Prelude
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii)
-import Web3.Utils.Sha3 (HexString(..))
+import Web3.Utils.Types (HexString(..))
 
 utilsSpec :: forall r . Spec r Unit
 utilsSpec = describe "utils-spec" do
@@ -34,4 +34,3 @@ utilsSpec = describe "utils-spec" do
       it "can convert asci to hex" do
         fromAscii "myString" `shouldEqual` HexString "6d79537472696e67"
         fromAscii "myString\00" `shouldEqual` HexString "6d79537472696e6700"
-
