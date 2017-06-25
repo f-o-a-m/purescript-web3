@@ -61,6 +61,14 @@ toUtf8 (HexString hx) =
   let hx' = unsafePartial $ split (Pattern "00") hx `unsafeIndex` 0
   in flip toString UTF8 $ fromString hx' Hex
 
--- | Takes a hex string and produces the corresponding ASII string.
+-- | Takes a hex string and produces the corresponding ASCII decoded string.
 toAscii :: HexString -> String
 toAscii (HexString hx) = flip toString ASCII $ fromString hx Hex
+
+fromUtf8 :: String -> HexString
+fromUtf8 s =
+  let s' = unsafePartial $ split (Pattern "\0000") s `unsafeIndex` 0
+  in HexString <<< flip toString Hex <<< flip fromString UTF8 $ s'
+
+fromAscii :: String -> HexString
+fromAscii = HexString <<< flip toString Hex <<< flip fromString ASCII
