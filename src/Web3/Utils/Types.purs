@@ -14,6 +14,32 @@ instance showHexString :: Show HexString where
 derive newtype instance hexStringEq :: Eq HexString
 
 --------------------------------------------------------------------------------
+-- * BigNumber
+--------------------------------------------------------------------------------
+
+foreign import data BigNumber :: Type
+
+foreign import numberToBigNumber :: Number -> BigNumber
+
+foreign import _hexStringToBigNumber :: String -> BigNumber
+
+hexStringToBigNumber :: HexString -> BigNumber
+hexStringToBigNumber (HexString hx) = _hexStringToBigNumber hx
+
+--------------------------------------------------------------------------------
+-- * Decimal
+--------------------------------------------------------------------------------
+
+newtype Decimal = Decimal String
+
+derive newtype instance showDecimal :: Show Decimal
+derive newtype instance eqDecimal :: Eq Decimal
+
+class IsDecimal a where
+  toDecimal :: a -> Decimal
+  fromDecimal :: Decimal -> a
+
+--------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
 --------------------------------------------------------------------------------
 
