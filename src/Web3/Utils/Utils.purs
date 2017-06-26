@@ -6,18 +6,28 @@ module Web3.Utils.Utils
   , fromUtf8
   , toAscii
   , fromAscii
+  , transformToFullName
+  , extractDisplayName
+  , extractTypeName
   ) where
 
-import Prelude (flip, map, ($), (-), (<<<), (<=), (<>))
-import Data.Array (unsafeIndex)
+import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>))
+import Data.Array (unsafeIndex, many, fromFoldable)
 import Data.ByteString (toString, fromString)
+import Data.Either (Either)
 import Data.List (List)
 import Data.Maybe(Maybe(..))
+import Control.Applicative ((*>), pure)
+import Control.Monad (bind)
 import Control.Fold (mconcat, foldl)
-import Data.String (Pattern(..), split, length, indexOf)
+import Data.String (Pattern(..), split, length, indexOf, take, joinWith, fromCharArray)
 import Node.Encoding(Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 import Web3.Utils.Types (HexString(..))
+import Text.Parsing.Parser (Parser, ParseError, runParser)
+import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
+import Text.Parsing.Parser.String (char, skipSpaces)
+import Text.Parsing.Parser.Token (alphaNum)
 
 data EtherUnit =
     Wei
@@ -86,10 +96,31 @@ fromUtf8 s =
 fromAscii :: String -> HexString
 fromAscii = HexString <<< flip toString Hex <<< flip fromString ASCII
 
-
+--  | Should be used to create full function/event name from json abi
 transformToFullName :: forall r s . { name :: String , inputs :: List { type_ :: String | r } | s } -> String
 transformToFullName a = case indexOf (Pattern "(") a.name of
   Nothing -> a.name
   Just _ -> let is = a.inputs
                 typeName = foldl mconcat $ map (\i -> i.type_) is
             in "(" <> typeName <> ")"
+
+-- | Should be called to get display name of contract function.
+extractDisplayName :: String -> String
+extractDisplayName a = case indexOf (Pattern "(") a of
+  Nothing -> a
+  Just n -> take n a
+
+-- | Returns overloaded part of function/event name
+extractTypeName :: String -> Either ParseError String
+extractTypeName a = runParser a extractTypeNameParser
+
+extractTypeNameParser :: Parser String String
+extractTypeNameParser = do
+    _ <- skipMany alphaNum
+    types <- between (char '(') (char ')') typesParser
+    pure <<< joinWith "," <<< fromFoldable $ types
+  where
+    typesParser :: Parser String (List String)
+    typesParser = sepBy typeParser $ char ','
+    typeParser :: Parser String String
+    typeParser = skipSpaces *> (fromCharArray <$> many alphaNum)

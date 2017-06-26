@@ -1,9 +1,10 @@
 module Web3Spec.Utils.Utils (utilsSpec) where
 
 import Prelude
+import Data.Either (Either(Right))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii)
+import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii, extractDisplayName, extractTypeName)
 import Web3.Utils.Types (HexString(..))
 
 utilsSpec :: forall r . Spec r Unit
@@ -34,3 +35,16 @@ utilsSpec = describe "utils-spec" do
       it "can convert asci to hex" do
         fromAscii "myString" `shouldEqual` HexString "6d79537472696e67"
         fromAscii "myString\00" `shouldEqual` HexString "6d79537472696e6700"
+
+    describe "extract function names and types test" do
+
+      it "can extract display name" do
+        extractDisplayName "helloworld()" `shouldEqual` "helloworld"
+        extractDisplayName "helloworld1(int)" `shouldEqual` "helloworld1"
+        extractDisplayName "helloworld2(int,string)" `shouldEqual` "helloworld2"
+
+      it "can extract type name" do
+        extractTypeName "helloworld()" `shouldEqual` Right ""
+        extractTypeName "helloworld1(int)" `shouldEqual` Right "int"
+        extractTypeName "helloworld2(int,string)" `shouldEqual` Right "int,string"
+        extractTypeName "helloworld3(int, string)" `shouldEqual` Right "int,string"

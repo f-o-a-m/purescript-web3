@@ -17,6 +17,7 @@
     "purescript-spec": "^1.0.0",
     "purescript-bytestrings": "^5.0.1",
     "purescript-partial": "^1.2.1",
-    "purescript-folds": "^3.1.0"
+    "purescript-folds": "^3.1.0",
+    "purescript-parsing": "^4.2.2"
   }
 }
