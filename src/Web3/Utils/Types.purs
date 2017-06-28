@@ -1,8 +1,6 @@
 module Web3.Utils.Types where
 
-import Data.Ring
 import Prelude
-
 import Data.List (List)
 
 --------------------------------------------------------------------------------

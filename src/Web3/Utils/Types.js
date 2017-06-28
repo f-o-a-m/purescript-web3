@@ -9,7 +9,7 @@ exports._showBigNumber = function (n) {
 };
 
 exports._eqBigNumber = function(n) {
-  return function(m) { return n.toString == m.toString; };
+  return function(m) { return n.equals(m); };
 };
 
 exports._addBigNumber = function(n) {
