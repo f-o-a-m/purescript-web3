@@ -7,6 +7,7 @@ module Web3.Utils.BigNumber
   , (>+), ladd
   , (-<), rsub
   , (>-), lsub
+  , toBigNumber
   ) where
 
 import Prelude
@@ -50,6 +51,9 @@ instance ringBigNumber :: Ring BigNumber where
 class (Ring r, Ring a) <= Algebra r a where
   embed :: r -> a
 
+instance embedInt' :: Algebra Int BigNumber where
+  embed = embedInt
+
 radd :: forall r a . Algebra r a => a -> r -> a
 radd a r = a `add` embed r
 
@@ -76,3 +80,5 @@ lmul r a = embed r `mul` a
 
 infixr 5 rmul as *<
 infixl 5 lmul as >*
+
+foreign import toBigNumber :: String -> BigNumber

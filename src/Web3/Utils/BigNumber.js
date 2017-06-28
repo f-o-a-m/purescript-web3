@@ -5,7 +5,7 @@ exports._intToBigNumber = function(value) {
 };
 
 exports._showBigNumber = function (n) {
-    return "0x".concat(BigNumber.toString(n, 16));
+    return n.toString(10);
 };
 
 exports._eqBigNumber = function(n) {
@@ -24,7 +24,9 @@ exports._subBigNumber = function(n) {
     return function (m) { n.plus(m); };
 };
 
-exports._zero = new BigNumber(0);
-
-exports._one = new BigNumber(1, 16);
-
+exports.toBigNumber = function(number) {
+  if (number.indexOf('0x') === 0 || number.indexOf('-0x') === 0) {
+      return new BigNumber(number.replace('0x',''), 16);
+  }
+  return new BigNumber(number.toString(10), 10);
+}
