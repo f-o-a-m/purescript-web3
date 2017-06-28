@@ -9,7 +9,7 @@ exports._showBigNumber = function (n) {
 };
 
 exports._eqBigNumber = function(n) {
-  return function(m) { return n.equals(m); };
+    return function(m) { return m.equals(n); };
 };
 
 exports._addBigNumber = function(n) {
@@ -17,11 +17,11 @@ exports._addBigNumber = function(n) {
 };
 
 exports._mulBigNumber = function(n) {
-    return function (m) { n.times(m); };
+    return function (m) { return n.times(m); };
 };
 
 exports._subBigNumber = function(n) {
-    return function (m) { n.plus(m); };
+    return function (m) { return n.minus(m); };
 };
 
 exports.toBigNumber = function(number) {
