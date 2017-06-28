@@ -6,6 +6,7 @@
     "lib": "./src"
   },
   "dependencies": {
+    "bignumber": "^1.1.0",
     "bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
     "crypto-js": "^3.1.8",
     "utf8": "^2.1.2",

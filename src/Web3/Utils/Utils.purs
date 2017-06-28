@@ -11,23 +11,24 @@ module Web3.Utils.Utils
   , extractTypeName
   ) where
 
-import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>))
+import Control.Applicative ((*>), pure)
+import Control.Fold (mconcat, foldl)
+import Control.Monad (bind)
 import Data.Array (unsafeIndex, many, fromFoldable)
 import Data.ByteString (toString, fromString)
 import Data.Either (Either)
 import Data.List (List)
-import Data.Maybe(Maybe(..))
-import Control.Applicative ((*>), pure)
-import Control.Monad (bind)
-import Control.Fold (mconcat, foldl)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split, length, indexOf, take, joinWith, fromCharArray)
-import Node.Encoding(Encoding(Hex, UTF8, ASCII))
+import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-import Web3.Utils.Types (HexString(..))
+import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>))
 import Text.Parsing.Parser (Parser, ParseError, runParser)
 import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
+
+import Web3.Utils.Types (HexString(..))
 
 data EtherUnit =
     Wei
