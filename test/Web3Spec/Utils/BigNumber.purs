@@ -1,10 +1,9 @@
 module Web3Spec.Utils.BigNumber (bigNumberSpec) where
 
 import Prelude
-import Data.Maybe (Maybe(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Web3.Utils.BigNumber (toBigNumber, embed, BigNumber)
+import Web3.Utils.BigNumber
 
 bigNumberSpec :: forall r . Spec r Unit
 bigNumberSpec = describe "BigNumber-spec" do
@@ -37,3 +36,12 @@ bigNumberSpec = describe "BigNumber-spec" do
         show (zero :: BigNumber) `shouldEqual` show (toBigNumber "0")
         show (embed 0 :: BigNumber) `shouldEqual` show (toBigNumber "0")
         show (embed 15 :: BigNumber) `shouldEqual` show (toBigNumber "15")
+
+    describe "BigNumber arithmetic" do
+      it "can add, subtract, and multiply BigNumbers as an 'Int'-Alegbra" do
+        ((toBigNumber "1") `add` (toBigNumber "1")) `shouldEqual` (toBigNumber "2")
+        ((toBigNumber "0xf") `sub` (toBigNumber "1")) `shouldEqual` (toBigNumber "14")
+        (15 >+ (toBigNumber "0xf")) `shouldEqual` toBigNumber "30"
+        (zero `add` (toBigNumber "21")) `shouldEqual` toBigNumber "0x15"
+        (one `mul` one) `shouldEqual` toBigNumber "1"
+        (one *< (-7)) `shouldEqual` toBigNumber "-0x7"
