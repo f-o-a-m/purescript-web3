@@ -12,9 +12,6 @@
  * @class [bloom] bloom
  */
 
-var utils = require("./utils.js");
-var sha3 = require("./sha3.js");
-
 function codePointToInt(codePoint) {
     if (codePoint >= 48 && codePoint <= 57) { /*['0'..'9'] -> [0..9]*/
         return codePoint-48;
@@ -27,8 +24,8 @@ function codePointToInt(codePoint) {
     throw "invalid bloom";
 }
 
-function testBytes(bloom, bytes) {
-    var hash = sha3(bytes, {encoding: "hex"});
+exports.testBytes = function (bloom) {
+  return function (bytes) {
 
     for (var i=0; i < 12; i+=4) {
         // calculate bit position in bloom fiter that must be active
@@ -44,41 +41,6 @@ function testBytes(bloom, bytes) {
     }
 
     return true;
-}
-
-/**
-* Returns true if address is part of the given bloom.
-* note: false positives are possible.
-*
-* @method testAddress
-* @param {String} hex encoded bloom
-* @param {String} address in hex notation
-* @returns {Boolean} topic is (probably) part of the block
-*/
-var testAddress = function(bloom, address) {
-    if (!utils.isBloom(bloom)) throw "invalid bloom";
-    if (!utils.isAddress(address)) throw "invalid address";
-
-    return testBytes(bloom, address);
+  };
 };
 
-/**
-* Returns true if the topic is part of the given bloom.
-* note: false positives are possible.
-*
-* @method hasTopic
-* @param {String} hex encoded bloom
-* @param {String} address in hex notation
-* @returns {Boolean} topic is (probably) part of the block
-*/
-var testTopic = function(bloom, topic) {
-    if (!utils.isBloom(bloom)) throw "invalid bloom";
-    if (!utils.isTopic(topic)) throw "invalid topic";
-
-    return testBytes(bloom, topic);
-};
-
-module.exports = {
-    testAddress: testAddress,
-    testTopic:   testTopic
-};
