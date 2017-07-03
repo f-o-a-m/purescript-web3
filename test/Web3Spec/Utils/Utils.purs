@@ -2,10 +2,14 @@ module Web3Spec.Utils.Utils (utilsSpec) where
 
 import Prelude
 import Data.Either (Either(Right))
+import Data.Maybe  (Maybe(Just))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii, extractDisplayName, extractTypeName)
+import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii, extractDisplayName, extractTypeName,
+                         EtherUnit(..), toWei, fromWei)
 import Web3.Utils.Types (HexString(..))
+import Web3.Utils.BigNumber (decimal, embed)
+import Web3.Utils.BigNumber (fromString) as BN
 
 utilsSpec :: forall r . Spec r Unit
 utilsSpec = describe "utils-spec" do
@@ -48,3 +52,10 @@ utilsSpec = describe "utils-spec" do
         extractTypeName "helloworld1(int)" `shouldEqual` Right "int"
         extractTypeName "helloworld2(int,string)" `shouldEqual` Right "int,string"
         extractTypeName "helloworld3(int, string)" `shouldEqual` Right "int,string"
+
+    describe "ether conversion tests" do
+
+      it "can convert units of ether" do
+        Just (toWei one Ether) `shouldEqual` BN.fromString decimal "100000000000000000"
+        Just (toWei (embed 10) TEther) `shouldEqual` BN.fromString decimal "10000000000000000000000000000"
+        (fromWei (embed 1000) KWei) `shouldEqual` (embed 1)
