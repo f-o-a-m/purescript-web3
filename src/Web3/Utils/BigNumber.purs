@@ -7,10 +7,16 @@ module Web3.Utils.BigNumber
   , (>+), ladd
   , (-<), rsub
   , (>-), lsub
-  , toBigNumber
+  , fromString
+  , baseChange
+  , toSignedHexString
+  , module Int
   ) where
 
 import Prelude
+import Data.Int (Radix, decimal, hexadecimal) as Int
+import Data.Maybe (Maybe(..))
+import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -18,15 +24,25 @@ import Prelude
 
 foreign import data BigNumber :: Type
 
-foreign import _showBigNumber :: BigNumber -> String
+foreign import toString :: Int.Radix -> BigNumber -> String
+
+instance showBigNumber :: Show BigNumber where
+  show = toString Int.decimal
 
 foreign import _eqBigNumber :: BigNumber -> BigNumber -> Boolean
 
-instance showBigNumber :: Show BigNumber where
-  show = _showBigNumber
-
 instance eqBigNumber :: Eq BigNumber where
   eq = _eqBigNumber
+
+foreign import compareTo :: BigNumber -> BigNumber -> Int
+
+instance ordBigNumber :: Ord BigNumber where
+  compare bn1 bn2 =
+    let n = compareTo bn1 bn2
+    in case n of
+         0 -> EQ
+         1 -> GT
+         _ -> LT
 
 foreign import _addBigNumber :: BigNumber -> BigNumber -> BigNumber
 
@@ -81,4 +97,20 @@ lmul r a = embed r `mul` a
 infixr 5 rmul as *<
 infixl 5 lmul as >*
 
-foreign import toBigNumber :: String -> BigNumber
+foreign import fromStringAsImpl
+  :: (forall a . a -> Maybe a)
+  -> (forall a . Maybe a)
+  -> Int.Radix
+  -> String
+  -> Maybe BigNumber
+
+fromString :: Int.Radix -> String -> Maybe BigNumber
+fromString = fromStringAsImpl Just Nothing
+
+foreign import baseChange :: Int.Radix -> BigNumber -> BigNumber
+
+toSignedHexString :: BigNumber -> Signed HexString
+toSignedHexString bn =
+  let str = HexString <<< toString Int.hexadecimal $ bn
+      sgn = if bn < zero then Neg else Pos
+  in Signed sgn str

@@ -4,10 +4,6 @@ exports._intToBigNumber = function(value) {
   return new BigNumber(value.toString(10), 10);
 };
 
-exports._showBigNumber = function (n) {
-    return n.toString(10);
-};
-
 exports._eqBigNumber = function(n) {
     return function(m) { return m.equals(n); };
 };
@@ -24,9 +20,40 @@ exports._subBigNumber = function(n) {
     return function (m) { return n.minus(m); };
 };
 
-exports.toBigNumber = function(number) {
-  if (number.indexOf('0x') === 0 || number.indexOf('-0x') === 0) {
-      return new BigNumber(number.replace('0x',''), 16);
-  }
-  return new BigNumber(number.toString(10), 10);
-}
+exports.compareTo = function (a) {
+  return function (b) {
+    return a.compareTo(b);
+  };
+};
+
+exports.fromStringAsImpl = function (just) {
+  return function (nothing) {
+    return function (radix) {
+      return function (s) {
+        var result;
+        try {
+            if (radix === 16) {
+              if (s.indexOf('0x') === 0 || s.indexOf('-0x') === 0) {
+                result = new BigNumber(s.replace('0x',''), 16);
+              } else {
+                result = new BigNumber(s, radix);
+              }
+            } else {
+              result = new BigNumber(s, radix);
+            }
+        } catch (e) {
+          return nothing;
+        }
+        return just(result);
+      };
+    };
+  };
+};
+
+exports.toString = function (radix) {
+  return function (bn) { return bn.toString(radix); };
+};
+
+exports.baseChange = function (newBase) {
+  return function (bn) { return new BigNumber(bn, newBase); };
+};
