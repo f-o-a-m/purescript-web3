@@ -8,7 +8,6 @@ module Web3.Utils.BigNumber
   , (-<), rsub
   , (>-), lsub
   , fromString
-  , baseChange
   , toSignedHexString
   , module Int
   ) where
@@ -76,8 +75,8 @@ radd a r = a `add` embed r
 ladd :: forall r a . Algebra r a => r -> a -> a
 ladd r a = embed r `add` a
 
-infixr 5 radd as +<
-infixl 5 ladd as >+
+infixr 6 radd as +<
+infixl 6 ladd as >+
 
 rsub :: forall r a . Algebra r a => a -> r -> a
 rsub a r = a `sub` embed r
@@ -85,8 +84,8 @@ rsub a r = a `sub` embed r
 lsub :: forall r a . Algebra r a => r -> a -> a
 lsub r a = embed r `sub` a
 
-infixr 5 rsub as -<
-infixl 5 lsub as >-
+infixr 6 rsub as -<
+infixl 6 lsub as >-
 
 rmul :: forall r a . Algebra r a => a -> r -> a
 rmul a r = a `mul` embed r
@@ -94,8 +93,13 @@ rmul a r = a `mul` embed r
 lmul :: forall r a . Algebra r a => r -> a -> a
 lmul r a = embed r `mul` a
 
-infixr 5 rmul as *<
-infixl 5 lmul as >*
+infixr 7 rmul as *<
+infixl 7 lmul as >*
+
+foreign import reciprical :: BigNumber -> BigNumber
+
+instance recipBigNumber :: DivisionRing BigNumber where
+  recip = reciprical
 
 foreign import fromStringAsImpl
   :: (forall a . a -> Maybe a)
@@ -106,8 +110,6 @@ foreign import fromStringAsImpl
 
 fromString :: Int.Radix -> String -> Maybe BigNumber
 fromString = fromStringAsImpl Just Nothing
-
-foreign import baseChange :: Int.Radix -> BigNumber -> BigNumber
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =

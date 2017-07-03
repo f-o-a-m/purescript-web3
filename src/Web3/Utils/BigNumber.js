@@ -54,6 +54,7 @@ exports.toString = function (radix) {
   return function (bn) { return bn.toString(radix); };
 };
 
-exports.baseChange = function (newBase) {
-  return function (bn) { return new BigNumber(bn, newBase); };
-};
+exports.reciprical = function (bn) {
+  var one = new BigNumber(1, 10);
+  return one.dividedBy(bn);
+}
