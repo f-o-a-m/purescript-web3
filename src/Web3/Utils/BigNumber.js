@@ -1,3 +1,5 @@
+"use strict";
+
 var BigNumber = require('bignumber.js');
 
 exports._intToBigNumber = function(value) {
@@ -57,4 +59,12 @@ exports.toString = function (radix) {
 exports.reciprical = function (bn) {
   var one = new BigNumber(1, 10);
   return one.dividedBy(bn);
-}
+};
+
+exports.toTwosComplement = function (bn) {
+  if (bn.lessThan(0)) {
+      return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bn).plus(1);
+  } else {
+    return bn;
+  }
+};

@@ -2,9 +2,12 @@ module Web3.Utils.Types where
 
 import Prelude
 import Data.Array (all ,elem)
+import Data.ByteString (ByteString, Encoding(Hex))
+import Data.ByteString as BS
 import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Data.String (toCharArray)
+import Data.String (length) as S
 
 
 --------------------------------------------------------------------------------
@@ -45,6 +48,12 @@ fromString s =
   where
     go :: Char -> Boolean
     go c = c `elem` ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
+
+pack :: HexString -> ByteString
+pack (HexString hx) = BS.fromString hx Hex
+
+length :: HexString -> Int
+length (HexString hx) = S.length hx
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description

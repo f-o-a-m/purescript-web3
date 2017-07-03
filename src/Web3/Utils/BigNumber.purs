@@ -9,6 +9,7 @@ module Web3.Utils.BigNumber
   , (>-), lsub
   , fromString
   , toSignedHexString
+  , toTwosComplement
   , module Int
   ) where
 
@@ -116,3 +117,5 @@ toSignedHexString bn =
   let str = HexString <<< toString Int.hexadecimal $ bn
       sgn = if bn < zero then Neg else Pos
   in Signed sgn str
+
+foreign import toTwosComplement :: BigNumber -> BigNumber
