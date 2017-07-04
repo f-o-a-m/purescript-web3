@@ -10,7 +10,6 @@ import Data.Maybe (Maybe(..))
 import Data.String (toCharArray)
 import Data.String (length) as S
 
-
 --------------------------------------------------------------------------------
 -- * Signed Values
 --------------------------------------------------------------------------------
@@ -30,6 +29,15 @@ instance showSigned :: Show a => Show (Signed a) where
 
 instance eqSigned :: Eq a => Eq (Signed a) where
   eq (Signed s a) (Signed s' a') = (s `eq` s') && (a `eq` a')
+
+instance mapSigned :: Functor Signed where
+  map f (Signed s a) = Signed s (f a)
+
+dropSign :: forall a . Signed a -> a
+dropSign (Signed _ a) = a
+
+asSigned :: forall a . a -> Signed a
+asSigned a = Signed Pos a
 
 --------------------------------------------------------------------------------
 -- * HexString

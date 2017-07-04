@@ -19,6 +19,7 @@ import Control.Monad (bind)
 import Data.Array (unsafeIndex, many, fromFoldable, replicate)
 import Data.ByteString (toString, fromString) as BS
 import Data.Either (Either)
+import Data.Eq (eq)
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.String (Pattern(..), split, indexOf, take, joinWith, fromCharArray)
@@ -30,7 +31,7 @@ import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
-import Web3.Utils.Types (HexString(..), length)
+import Web3.Utils.Types (HexString(..), Sign(..), Signed(..), length)
 import Web3.Utils.BigNumber (BigNumber, decimal)
 import Web3.Utils.BigNumber (fromString) as BN
 
@@ -76,22 +77,24 @@ fromWei val eu =
 
 -- | Pad a 'HexString' with '0's on the left until it has the
 -- desired length.
-padLeft :: HexString -> Int -> HexString
-padLeft hx desiredLength =
+padLeft :: Signed HexString -> Int -> HexString
+padLeft (Signed s hx) desiredLength =
     let padLength = desiredLength - length hx
+        sgn = if s `eq` Pos then '0' else 'f'
     in if padLength <= 0
          then hx
-         else let padding = HexString <<< fromCharArray $ replicate padLength '0'
+         else let padding = HexString <<< fromCharArray $ replicate padLength sgn
               in padding <> hx
 
 -- | Pad a 'HexString' with '0's on the right until it has the
 -- desired length.
-padRight :: HexString -> Int -> HexString
-padRight hx desiredLength =
+padRight :: Signed HexString -> Int -> HexString
+padRight (Signed s hx) desiredLength =
     let padLength = desiredLength - length hx
+        sgn = if s `eq` Pos then '0' else 'f'
     in if padLength <= 0
          then hx
-         else let padding = HexString <<< fromCharArray $ replicate padLength '0'
+         else let padding = HexString <<< fromCharArray $ replicate padLength sgn
               in hx <> padding
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.

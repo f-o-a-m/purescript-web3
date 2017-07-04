@@ -1,6 +1,7 @@
 "use strict";
 
 var BigNumber = require('bignumber.js');
+BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN});
 
 exports._intToBigNumber = function(value) {
   return new BigNumber(value.toString(10), 10);
