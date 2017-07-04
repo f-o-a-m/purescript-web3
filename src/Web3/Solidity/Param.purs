@@ -11,7 +11,6 @@ module Web3.Solidity.Param
   , encodeList
   ) where
 
-
 import Prelude
 import Control.Monad.State (StateT, get, put, evalStateT)
 import Data.Identity (Identity(..))
@@ -21,7 +20,7 @@ import Data.List (List)
 import Data.List (length) as L
 import Data.Maybe (Maybe, fromMaybe, isJust, maybe)
 import Data.Monoid (mempty)
-import Web3.Utils.Types (HexString, Signed(..), length)
+import Web3.Utils.Types (HexString, length)
 import Web3.Utils.Utils (padLeft)
 import Web3.Utils.BigNumber (embed, toTwosComplement, toSignedHexString)
 
@@ -70,8 +69,7 @@ offsetAsBytes :: SolidityParam -> Maybe HexString
 offsetAsBytes (SolidityParam p) = do
   os <- p.offset
   let bn = toTwosComplement $ embed os
-      Signed _ hx = toSignedHexString bn
-  pure $ padLeft hx 64
+  pure <<< flip padLeft 64 $ toSignedHexString bn
 
 -- | This method should be called to get static part of param
 staticPart :: SolidityParam -> HexString
