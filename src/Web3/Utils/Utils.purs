@@ -16,12 +16,12 @@ module Web3.Utils.Utils
 import Control.Applicative ((*>), pure)
 import Control.Fold (mconcat, foldl)
 import Control.Monad (bind)
-import Data.Array (unsafeIndex, many, fromFoldable)
+import Data.Array (unsafeIndex, many, fromFoldable, replicate)
 import Data.ByteString (toString, fromString) as BS
 import Data.Either (Either)
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromJust)
-import Data.String (Pattern(..), split, length, indexOf, take, joinWith, fromCharArray)
+import Data.String (Pattern(..), split, indexOf, take, joinWith, fromCharArray)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>), (*), recip)
@@ -30,7 +30,7 @@ import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
-import Web3.Utils.Types (HexString(..))
+import Web3.Utils.Types (HexString(..), length)
 import Web3.Utils.BigNumber (BigNumber, decimal)
 import Web3.Utils.BigNumber (fromString) as BN
 
@@ -77,22 +77,22 @@ fromWei val eu =
 -- | Pad a 'HexString' with '0's on the left until it has the
 -- desired length.
 padLeft :: HexString -> Int -> HexString
-padLeft a@(HexString hx) desiredLength =
+padLeft hx desiredLength =
     let padLength = desiredLength - length hx
-    in if padLength <= 0 then a else HexString $ go hx padLength
-  where
-    go s 0 = s
-    go s n = go ("0" <> s) (n - 1)
+    in if padLength <= 0
+         then hx
+         else let padding = HexString <<< fromCharArray $ replicate padLength '0'
+              in padding <> hx
 
 -- | Pad a 'HexString' with '0's on the right until it has the
 -- desired length.
 padRight :: HexString -> Int -> HexString
-padRight a@(HexString hx) desiredLength =
+padRight hx desiredLength =
     let padLength = desiredLength - length hx
-    in if padLength <= 0 then a else HexString $ go hx padLength
-  where
-    go s 0 = s
-    go s n = go (s <> "0") (n - 1)
+    in if padLength <= 0
+         then hx
+         else let padding = HexString <<< fromCharArray $ replicate padLength '0'
+              in hx <> padding
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.
 -- This breaks at the first null octet, following the web3 function 'toUft8'.

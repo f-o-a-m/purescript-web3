@@ -68,3 +68,7 @@ exports.toTwosComplement = function (bn) {
     return bn;
   }
 };
+
+exports.fromHexString = function(str) {
+    return new BigNumber(str, 16);
+};

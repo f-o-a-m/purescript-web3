@@ -1,6 +1,7 @@
 module Web3.Utils.Types where
 
 import Prelude
+import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
 import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
@@ -41,6 +42,10 @@ instance showHexString :: Show HexString where
 
 derive newtype instance hexStringEq :: Eq HexString
 
+derive newtype instance semigpStringEq :: Semigroup HexString
+
+derive newtype instance monoidStringEq :: Monoid HexString
+
 fromString :: String -> Maybe HexString
 fromString s =
     let res = all go <<< toCharArray $ s
@@ -48,6 +53,9 @@ fromString s =
   where
     go :: Char -> Boolean
     go c = c `elem` ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
+
+unHex :: HexString -> String
+unHex (HexString hx) = hx
 
 pack :: HexString -> ByteString
 pack (HexString hx) = BS.fromString hx Hex

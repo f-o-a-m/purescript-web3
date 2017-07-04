@@ -1,16 +1,4 @@
 "use strict";
-/**
- * @file bloom.js
- * @author Bas van Kervel <bas@ethereum.org>
- * @date 2017
- */
-
-/**
- * Ethereum bloom filter support.
- *
- * @module bloom
- * @class [bloom] bloom
- */
 
 function codePointToInt(codePoint) {
     if (codePoint >= 48 && codePoint <= 57) { /*['0'..'9'] -> [0..9]*/
