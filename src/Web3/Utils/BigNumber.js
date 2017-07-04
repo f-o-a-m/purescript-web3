@@ -1,6 +1,7 @@
 "use strict";
 
 var BigNumber = require('bignumber.js');
+
 BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN});
 
 exports._intToBigNumber = function(value) {
@@ -67,10 +68,11 @@ exports.reciprical = function (bn) {
 };
 
 exports.toTwosComplement = function (bn) {
-  if (bn.lessThan(0)) {
-      return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bn).plus(1);
+    var bigNumber = bn.round();
+  if (bigNumber.lessThan(0)) {
+      return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bigNumber).plus(1);
   } else {
-    return bn;
+    return bigNumber;
   }
 };
 
