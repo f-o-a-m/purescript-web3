@@ -7,6 +7,10 @@ exports._intToBigNumber = function(value) {
   return new BigNumber(value.toString(10), 10);
 };
 
+exports._numberToBigNumber = function(value) {
+    return new BigNumber(value);
+};
+
 exports._eqBigNumber = function(n) {
     return function(m) { return m.equals(n); };
 };
@@ -23,9 +27,9 @@ exports._subBigNumber = function(n) {
     return function (m) { return n.minus(m); };
 };
 
-exports.compareTo = function (a) {
+exports.comparedTo = function (a) {
   return function (b) {
-    return a.compareTo(b);
+    return a.comparedTo(b);
   };
 };
 

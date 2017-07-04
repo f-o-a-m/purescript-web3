@@ -35,11 +35,11 @@ foreign import _eqBigNumber :: BigNumber -> BigNumber -> Boolean
 instance eqBigNumber :: Eq BigNumber where
   eq = _eqBigNumber
 
-foreign import compareTo :: BigNumber -> BigNumber -> Int
+foreign import comparedTo :: BigNumber -> BigNumber -> Int
 
 instance ordBigNumber :: Ord BigNumber where
   compare bn1 bn2 =
-    let n = compareTo bn1 bn2
+    let n = comparedTo bn1 bn2
     in case n of
          0 -> EQ
          1 -> GT
@@ -53,6 +53,8 @@ foreign import _intToBigNumber :: Int -> BigNumber
 
 embedInt :: Int -> BigNumber
 embedInt = _intToBigNumber
+
+foreign import _numberToBigNumber :: Number -> BigNumber
 
 instance semiringBigNumber :: Semiring BigNumber where
   add = _addBigNumber
@@ -70,6 +72,9 @@ class (Ring r, Ring a) <= Algebra r a where
 
 instance embedInt' :: Algebra Int BigNumber where
   embed = embedInt
+
+instance embedNumber :: Algebra Number BigNumber where
+  embed = _numberToBigNumber
 
 radd :: forall r a . Algebra r a => a -> r -> a
 radd a r = a `add` embed r
