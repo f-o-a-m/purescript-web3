@@ -51,8 +51,8 @@ isDynamic (SolidityParam p) = isJust $ p.offset
 
 -- | This method should be called to get dynamic part of param
 dynamicPart :: SolidityParam -> HexString
-dynamicPart param@(SolidityParam p) =
-  if isDynamic param then p.value else mempty
+dynamicPart param =
+  if isDynamic param then paramValue param else mempty
 
 -- | This method should be used to get length of params's dynamic part
 dynamicPartLength :: SolidityParam -> Int
@@ -77,8 +77,8 @@ offsetAsBytes (SolidityParam p) = do
 
 -- | This method should be called to get static part of param
 staticPart :: SolidityParam -> HexString
-staticPart param@(SolidityParam p) =
-  fromMaybe p.value $ offsetAsBytes param
+staticPart param =
+  fromMaybe (paramValue param) $ offsetAsBytes param
 
 -- | This method should be called to encode param.
 encode :: SolidityParam -> HexString
