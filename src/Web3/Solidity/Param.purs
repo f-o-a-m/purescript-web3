@@ -1,5 +1,6 @@
 module Web3.Solidity.Param
   ( SolidityParam(..)
+  , paramValue
   , isDynamic
   , dynamicPart
   , dynamicPartLength
@@ -39,6 +40,9 @@ instance showSolidityParam :: Show SolidityParam where
     , maybe "null" show p.offset
     , " }"
     ]
+
+paramValue :: SolidityParam -> HexString
+paramValue (SolidityParam p) = p.value
 
 -- | This method should be called to check if param has dynamic size.
 -- If it has, it returns true, otherwise false
