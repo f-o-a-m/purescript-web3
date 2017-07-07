@@ -7,15 +7,16 @@ module Web3.Utils.BigNumber
   , (>+), ladd
   , (-<), rsub
   , (>-), lsub
+  , pow
+  , toString
   , fromString
   , toSignedHexString
-  , fromSignedHexString
   , toTwosComplement
   , module Int
   ) where
 
 import Prelude
-import Data.Int (Radix, decimal, hexadecimal) as Int
+import Data.Int (Radix, binary, decimal, hexadecimal) as Int
 import Data.Maybe (Maybe(..))
 import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
 
@@ -126,9 +127,6 @@ toSignedHexString bn =
 
 foreign import fromHexString :: HexString -> BigNumber
 
-fromSignedHexString :: Signed HexString -> BigNumber
-fromSignedHexString (Signed sgn hx) =
-  let factor = embed $ if sgn == Pos then 1 else -1
-  in factor `mul` fromHexString hx
-
 foreign import toTwosComplement :: BigNumber -> BigNumber
+
+foreign import pow :: BigNumber -> Int -> BigNumber
