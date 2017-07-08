@@ -56,7 +56,7 @@ dynamicPart param =
 
 -- | This method should be used to get length of params's dynamic part
 dynamicPartLength :: SolidityParam -> Int
-dynamicPartLength = length <<< dynamicPart
+dynamicPartLength p = (length <<< dynamicPart $ p) / 2
 
 -- | This method should be used to create copy of solidity param with different offset
 withOffset :: Int -> SolidityParam -> SolidityParam

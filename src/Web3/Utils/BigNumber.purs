@@ -10,13 +10,15 @@ module Web3.Utils.BigNumber
   , pow
   , toString
   , fromString
+  , fromHexString
   , toSignedHexString
   , toTwosComplement
+  , toInt
   , module Int
   ) where
 
 import Prelude
-import Data.Int (Radix, binary, decimal, hexadecimal) as Int
+import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
 import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
 
@@ -130,3 +132,8 @@ foreign import fromHexString :: HexString -> BigNumber
 foreign import toTwosComplement :: BigNumber -> BigNumber
 
 foreign import pow :: BigNumber -> Int -> BigNumber
+
+foreign import toNumber :: BigNumber -> Number
+
+toInt :: BigNumber -> Int
+toInt = Int.floor <<< toNumber
