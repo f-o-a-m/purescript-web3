@@ -83,3 +83,8 @@ exports.fromHexString = function(str) {
 exports.pow = function(n) {
     return function (m) { return n.pow(m); };
 };
+
+exports.toNumber = function (n) {
+    var newN = BigNumber(n);
+    return newN.toNumber();
+};

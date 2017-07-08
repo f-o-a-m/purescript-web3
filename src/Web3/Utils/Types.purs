@@ -72,6 +72,16 @@ length :: HexString -> Int
 length (HexString hx) = S.length hx
 
 --------------------------------------------------------------------------------
+-- * Addresses
+--------------------------------------------------------------------------------
+
+newtype Address = Address HexString
+
+derive newtype instance addressShow :: Show Address
+
+derive newtype instance addressEq :: Eq Address
+
+--------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
 --------------------------------------------------------------------------------
 

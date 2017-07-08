@@ -1,13 +1,14 @@
 module Web3.Solidity.Formatters where
 
 import Prelude
+import Data.DivisionRing (rightDiv)
 import Data.Maybe (Maybe(Nothing), fromMaybe)
-import Data.String (null, take)
+import Data.String (null, take, splitAt)
 
-import Web3.Solidity.Param (SolidityParam(..), paramValue)
-import Web3.Utils.BigNumber (BigNumber, embed, pow, hexadecimal, binary, toString, fromString, toSignedHexString, toTwosComplement)
-import Web3.Utils.Types (HexString(..), asSigned, length)
-import Web3.Utils.Utils (padLeft, padRight, fromUtf8)
+import Web3.Solidity.Param (SolidityParam(..), paramValue, staticPart, dynamicPart)
+import Web3.Utils.BigNumber (BigNumber, embed, pow, hexadecimal, binary, toString, fromString, fromHexString, toSignedHexString, toTwosComplement, toInt)
+import Web3.Utils.Types (HexString(..), unHex, asSigned, length)
+import Web3.Utils.Utils (padLeft, padRight, fromUtf8, toUtf8)
 
 formatInputInt :: BigNumber -> SolidityParam
 formatInputInt v =
@@ -46,21 +47,36 @@ signedIsNegative (HexString hx) =
     then false
     else fromMaybe false $ do
            leadingChar <- fromString hexadecimal $ take 1 hx
-           pure $ "1" `eq` (take 1 $ toString binary $ leadingChar)
+           pure $ "1" `eq` (take 1 <<< toString binary $ leadingChar)
 
---formatOutputInt :: SolidityParam -> BigNumber
---formatOutputInt (SolidityParam p) =
---  let sgn = if signedIsNegative p.value then Neg else Pos
---     fromSignedHexString (Signed sgn p.value)
+formatOutputInt :: SolidityParam -> BigNumber
+formatOutputInt param =
+  let pVal = paramValue param
+  in if signedIsNegative pVal
+       then fromHexString pVal - (embed <<< negate $ 1) - embed 1
+       else fromHexString pVal
 
---var formatOutputInt = function (param) {
---    var value = param.staticPart() || "0";
---
---    // check if it's negative number
---    // it it is, return two's complement
---    if (signedIsNegative(value)) {
---        return new BigNumber(value, 16).minus(new BigNumber('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)).minus(1);
---    }
---    return new BigNumber(value, 16);
---};
+formatOutputUInt :: SolidityParam -> BigNumber
+formatOutputUInt = fromHexString <<< paramValue
 
+formatOutputUReal :: SolidityParam -> BigNumber
+formatOutputUReal param = formatOutputUInt param `rightDiv` (embed 2 `pow` 128)
+
+formatOutputBool :: SolidityParam -> Boolean
+formatOutputBool param =
+  (unHex <<< staticPart $ param) `eq` "0000000000000000000000000000000000000000000000000000000000000001"
+
+formatOutputDynamicBytes :: SolidityParam -> Maybe HexString
+formatOutputDynamicBytes param = do
+  let (HexString dynPart) = dynamicPart param
+  sizeAndContent <- 64 `splitAt` dynPart
+  let len = 2 * (toInt <<< fromHexString <<< HexString $ sizeAndContent.before)
+  pure <<< HexString <<< take len $ sizeAndContent.after
+
+formatOutputString :: SolidityParam -> Maybe String
+formatOutputString = map toUtf8 <<< formatOutputDynamicBytes
+
+--formatOutputAddress :: SolidityParam -> Address
+--formatOutputAddress param =
+--  let stPart param.staticPart();
+--    return "0x" + value.slice(value.length - 40, value.length);
