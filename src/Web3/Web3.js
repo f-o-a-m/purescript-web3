@@ -18,3 +18,7 @@ exports.web3ShowImpl = function (web3) {
     var host = web3.currentProvider.host;
     return "Connected to rpc node at: " + host;
 };
+
+exports._getBlock = function (web3) {
+    return web3.eth.getBlock;
+}

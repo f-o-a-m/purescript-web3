@@ -9,6 +9,7 @@ import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Data.String (toCharArray)
 import Data.String (length) as S
+import Data.Foreign.Class (class Decode)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -53,6 +54,8 @@ derive newtype instance hexStringEq :: Eq HexString
 derive newtype instance semigpStringEq :: Semigroup HexString
 
 derive newtype instance monoidStringEq :: Monoid HexString
+
+derive newtype instance decodeHexString :: Decode HexString
 
 fromString :: String -> Maybe HexString
 fromString s =
@@ -113,15 +116,3 @@ type EventInputs = { name :: String
                    , indexed :: Boolean
                    }
 
---------------------------------------------------------------------------------
--- * BlockNumber
---------------------------------------------------------------------------------
-
-data BlockNumber =
-    BlockNumber Int
-  | Latest
-
-instance showBlockNumber :: Show BlockNumber where
-  show bn = case bn of
-    BlockNumber n -> show n
-    Latest -> "latest"

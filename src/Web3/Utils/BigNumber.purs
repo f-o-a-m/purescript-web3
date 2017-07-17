@@ -21,6 +21,8 @@ import Prelude
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
 import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
+import Data.Foreign (Foreign)
+import Data.Foreign.Class (class Decode)
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -54,16 +56,13 @@ foreign import _mulBigNumber :: BigNumber -> BigNumber -> BigNumber
 
 foreign import _intToBigNumber :: Int -> BigNumber
 
-embedInt :: Int -> BigNumber
-embedInt = _intToBigNumber
-
 foreign import _numberToBigNumber :: Number -> BigNumber
 
 instance semiringBigNumber :: Semiring BigNumber where
   add = _addBigNumber
   mul = _mulBigNumber
-  zero = embedInt 0
-  one = embedInt 1
+  zero = _intToBigNumber 0
+  one = _intToBigNumber 1
 
 foreign import _subBigNumber :: BigNumber -> BigNumber -> BigNumber
 
@@ -73,8 +72,8 @@ instance ringBigNumber :: Ring BigNumber where
 class (Ring r, Ring a) <= Algebra r a where
   embed :: r -> a
 
-instance embedInt' :: Algebra Int BigNumber where
-  embed = embedInt
+instance embedInt :: Algebra Int BigNumber where
+  embed = _intToBigNumber
 
 instance embedNumber :: Algebra Number BigNumber where
   embed = _numberToBigNumber
@@ -137,3 +136,8 @@ foreign import toNumber :: BigNumber -> Number
 
 toInt :: BigNumber -> Int
 toInt = Int.floor <<< toNumber
+
+foreign import toBigNumber :: Foreign -> BigNumber
+
+instance decodeBigNumber :: Decode BigNumber where
+  decode = pure <<< toBigNumber
