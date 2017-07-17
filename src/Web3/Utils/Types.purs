@@ -112,3 +112,16 @@ type EventInputs = { name :: String
                    , type_ :: String
                    , indexed :: Boolean
                    }
+
+--------------------------------------------------------------------------------
+-- * BlockNumber
+--------------------------------------------------------------------------------
+
+data BlockNumber =
+    BlockNumber Int
+  | Latest
+
+instance showBlockNumber :: Show BlockNumber where
+  show bn = case bn of
+    BlockNumber n -> show n
+    Latest -> "latest"

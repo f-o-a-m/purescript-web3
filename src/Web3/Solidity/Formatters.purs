@@ -3,11 +3,12 @@ module Web3.Solidity.Formatters where
 import Prelude
 import Data.DivisionRing (rightDiv)
 import Data.Maybe (Maybe(Nothing), fromMaybe)
-import Data.String (null, take, splitAt)
+import Data.String (null, take, splitAt, drop)
 
 import Web3.Solidity.Param (SolidityParam(..), paramValue, staticPart, dynamicPart)
+import Web3.Solidity.Types (StaticSizedBytes, bytesLength)
 import Web3.Utils.BigNumber (BigNumber, embed, pow, hexadecimal, binary, toString, fromString, fromHexString, toSignedHexString, toTwosComplement, toInt)
-import Web3.Utils.Types (HexString(..), unHex, asSigned, length)
+import Web3.Utils.Types (HexString(..), unHex, asSigned, length, Address(..))
 import Web3.Utils.Utils (padLeft, padRight, fromUtf8, toUtf8)
 
 formatInputInt :: BigNumber -> SolidityParam
@@ -66,6 +67,11 @@ formatOutputBool :: SolidityParam -> Boolean
 formatOutputBool param =
   (unHex <<< staticPart $ param) `eq` "0000000000000000000000000000000000000000000000000000000000000001"
 
+formatOutputBytes :: SolidityParam -> StaticSizedBytes -> HexString
+formatOutputBytes param ssb =
+  let len = 2 * bytesLength ssb
+  in HexString <<< take len <<< unHex <<< staticPart $ param
+
 formatOutputDynamicBytes :: SolidityParam -> Maybe HexString
 formatOutputDynamicBytes param = do
   let (HexString dynPart) = dynamicPart param
@@ -76,7 +82,5 @@ formatOutputDynamicBytes param = do
 formatOutputString :: SolidityParam -> Maybe String
 formatOutputString = map toUtf8 <<< formatOutputDynamicBytes
 
---formatOutputAddress :: SolidityParam -> Address
---formatOutputAddress param =
---  let stPart param.staticPart();
---    return "0x" + value.slice(value.length - 40, value.length);
+formatOutputAddress :: SolidityParam -> Address
+formatOutputAddress = Address <<< HexString <<< drop 40 <<< unHex <<< staticPart
