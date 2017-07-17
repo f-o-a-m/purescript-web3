@@ -1,5 +1,6 @@
 module Web3.Utils.Utils
-  ( EtherUnit(..)
+  ( BlockId(..)
+  , EtherUnit(..)
   , padLeft
   , padRight
   , toUtf8
@@ -25,15 +26,38 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.String (Pattern(..), split, indexOf, take, joinWith, fromCharArray)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>), (*), recip)
+import Prelude (class Show, flip, map, ($), (-), (<<<), (<=), (<>), (<$>), (*), recip, show)
 import Text.Parsing.Parser (Parser, ParseError, runParser)
 import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
-import Web3.Utils.Types (HexString(..), Sign(..), Signed(..), length)
+import Web3.Utils.Types (HexString(..), unHex, Sign(..), Signed(..), length)
 import Web3.Utils.BigNumber (BigNumber, decimal)
 import Web3.Utils.BigNumber (fromString) as BN
+
+--------------------------------------------------------------------------------
+-- * BlockId
+--------------------------------------------------------------------------------
+
+data BlockId =
+    BlockNumber BigNumber
+  | BlockHash HexString
+  | Latest
+  | Earliest
+  | Pending
+
+instance showBlockNumber :: Show BlockId where
+  show bn = case bn of
+    BlockNumber n -> show n
+    BlockHash hx -> unHex hx
+    Latest -> "latest"
+    Earliest -> "earliest"
+    Pending -> "pending"
+
+--------------------------------------------------------------------------------
+-- * Ether Convesions
+--------------------------------------------------------------------------------
 
 data EtherUnit =
     Wei
@@ -74,6 +98,8 @@ fromWei :: BigNumber -> EtherUnit -> BigNumber
 fromWei val eu =
   let rate = recip $ toWeiRate eu
   in val * rate
+
+--------------------------------------------------------------------------------
 
 -- | Pad a 'HexString' with '0's on the left until it has the
 -- desired length.

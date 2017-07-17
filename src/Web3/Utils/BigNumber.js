@@ -88,3 +88,21 @@ exports.toNumber = function (n) {
     var newN = BigNumber(n);
     return newN.toNumber();
 };
+
+var isBigNumber = function (object) {
+    return object instanceof BigNumber ||
+        (object && object.constructor && object.constructor.name === 'BigNumber');
+};
+
+exports.toBigNumber = function(number) {
+    /*jshint maxcomplexity:5 */
+    number = number || 0;
+    if (isBigNumber(number))
+        return number;
+
+    if (isString(number) && (number.indexOf('0x') === 0 || number.indexOf('-0x') === 0)) {
+        return new BigNumber(number.replace('0x',''), 16);
+    }
+
+    return new BigNumber(number.toString(10), 10);
+};

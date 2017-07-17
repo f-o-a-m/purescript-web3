@@ -21,6 +21,8 @@
     "purescript-parsing": "^4.2.2",
     "bignumber.js": "^4.0.2",
     "purescript-transformers": "^3.4.0",
-    "purescript-identity": "^3.1.0"
+    "purescript-identity": "^3.1.0",
+    "purescript-generics": "^4.0.0",
+    "purescript-foreign-generic": "^4.2.0"
   }
 }
