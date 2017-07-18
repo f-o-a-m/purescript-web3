@@ -94,6 +94,12 @@ var isBigNumber = function (object) {
         (object && object.constructor && object.constructor.name === 'BigNumber');
 };
 
+var isString = function (object) {
+    return typeof object === 'string' ||
+        (object && object.constructor && object.constructor.name === 'String');
+};
+
+
 exports.toBigNumber = function(number) {
     /*jshint maxcomplexity:5 */
     number = number || 0;

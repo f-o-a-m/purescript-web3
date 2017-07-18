@@ -21,4 +21,8 @@ exports.web3ShowImpl = function (web3) {
 
 exports._getBlock = function (web3) {
     return web3.eth.getBlock;
-}
+};
+
+exports._getTransaction = function (web3) {
+    return web3.eth.getTransaction;
+};

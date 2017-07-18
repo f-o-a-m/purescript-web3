@@ -78,23 +78,35 @@ instance web3Reader :: Monad m => MonadAsk Web3 (Web3T m) where
 --------------------------------------------------------------------------------
 
 data Block
-  = Block { gasLimit :: Number
-          , gasUsed :: Number
-          , size :: Number
-          , number :: Number
-          , difficulty :: BigNumber
+  = Block { difficulty :: BigNumber
+          , extraData :: HexString
+          , gasLimit :: BigNumber
+          , gasUsed :: BigNumber
+          , hash :: HexString
+          , logsBloom :: HexString
+          , miner :: HexString
+          , mixHash :: HexString
+          , nonce :: HexString
+          , number :: Int
+          , parentHash :: HexString
+          , receiptsRoot :: HexString
+          , sha3Uncles :: HexString
+          , size :: Int
+          , stateRoot :: HexString
+          , timestamp :: BigNumber
           , totalDifficulty :: BigNumber
           , transactions :: Array HexString
+          , transactionsRoot :: HexString
+          , uncles :: Array HexString
           }
 
-derive instance blockGeneric :: Generic Block _
+derive instance genericBlock :: Generic Block _
 
 instance showBlock :: Show Block where
   show = genericShow
 
-instance blockDecode :: Decode Block where
+instance decodeBlock :: Decode Block where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
-
 
 getBalance :: forall eff m . MonadEff (eth :: ETH | eff) m => Address -> BlockId -> Web3T m BigNumber
 getBalance addr bid = do
@@ -119,3 +131,27 @@ isConnected = do
   liftEff $ runEffFn1 _isConnected web3
 
 foreign import _isConnected :: forall eff . EffFn1 (eth :: ETH | eff) Web3 Boolean
+
+data Transaction =
+  Transaction { hash :: HexString
+              , nonce :: BigNumber
+              , blockHash :: HexString
+              , blockNumber :: Int
+              , transactionIndex :: Int
+              , from :: Address
+              , to :: Address
+              , value :: BigNumber
+              , gas :: BigNumber
+              , gasPrice :: BigNumber
+              , input :: HexString
+              }
+
+derive instance genericTransaction :: Generic Transaction _
+
+instance showTransaction :: Show Transaction where
+  show = genericShow
+
+instance decodeTransaction :: Decode Transaction where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+foreign import _getTransaction :: forall eff . Web3 -> EffFn1 (eth :: ETH | eff) HexString Transaction
