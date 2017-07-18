@@ -9,6 +9,7 @@ import Control.Monad.Eff.Class (class MonadEff, liftEff)
 import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, runEffFn1, runEffFn2)
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, decode)
+import Data.Foreign.NullOrUndefined (NullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode)
@@ -77,6 +78,14 @@ instance web3Reader :: Monad m => MonadAsk Web3 (Web3T m) where
 -- * Eth
 --------------------------------------------------------------------------------
 
+-- | Get the balance of an address with respect to a 'BlockId'
+getBalance :: forall eff m . MonadEff (eth :: ETH | eff) m => Address -> BlockId -> Web3T m BigNumber
+getBalance addr bid = do
+  web3 <- ask
+  liftEff $ runEffFn2 (_getBalance web3) addr (show bid)
+
+foreign import _getBalance :: forall eff . Web3 -> EffFn2 (eth :: ETH | eff) Address String BigNumber
+
 data Block
   = Block { difficulty :: BigNumber
           , extraData :: HexString
@@ -108,14 +117,10 @@ instance showBlock :: Show Block where
 instance decodeBlock :: Decode Block where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
-getBalance :: forall eff m . MonadEff (eth :: ETH | eff) m => Address -> BlockId -> Web3T m BigNumber
-getBalance addr bid = do
-  web3 <- ask
-  liftEff $ runEffFn2 (_getBalance web3) addr (show bid)
-
-foreign import _getBalance :: forall eff . Web3 -> EffFn2 (eth :: ETH | eff) Address String BigNumber
-
-getBlock :: forall eff m . MonadEff (eth :: ETH, exception :: EXCEPTION | eff) m => BlockId -> Web3T m Block
+-- | Get a 'Block' object with respect to a 'BlockId'
+getBlock :: forall eff m . MonadEff (eth :: ETH, exception :: EXCEPTION | eff) m 
+         => BlockId
+         -> Web3T m Block
 getBlock bid = do
   web3 <- ask
   block <- liftEff $ runEffFn1 (_getBlock web3) (show bid)
@@ -125,13 +130,6 @@ getBlock bid = do
 
 foreign import _getBlock :: forall eff . Web3 -> EffFn1 (eth :: ETH | eff) String Foreign
 
-isConnected :: forall eff m. MonadEff (eth :: ETH | eff) m => Web3T m Boolean
-isConnected = do
-  web3 <- ask
-  liftEff $ runEffFn1 _isConnected web3
-
-foreign import _isConnected :: forall eff . EffFn1 (eth :: ETH | eff) Web3 Boolean
-
 data Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
@@ -139,7 +137,7 @@ data Transaction =
               , blockNumber :: Int
               , transactionIndex :: Int
               , from :: Address
-              , to :: Address
+              , to :: NullOrUndefined Address
               , value :: BigNumber
               , gas :: BigNumber
               , gasPrice :: BigNumber
@@ -154,4 +152,23 @@ instance showTransaction :: Show Transaction where
 instance decodeTransaction :: Decode Transaction where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
-foreign import _getTransaction :: forall eff . Web3 -> EffFn1 (eth :: ETH | eff) HexString Transaction
+-- | Retrieve a 'Transaction' by its hash.
+getTransaction :: forall eff m . MonadEff (eth :: ETH, exception :: EXCEPTION | eff) m
+               => HexString
+               -> Web3T m Transaction
+getTransaction txHash = do
+  web3 <- ask
+  res <- liftEff $ runEffFn1 (_getTransaction web3) txHash
+  case runExcept <<< decode $ res of
+    Left e -> liftEff <<< throw <<< show $ e
+    Right tx -> pure tx
+
+foreign import _getTransaction :: forall eff . Web3 -> EffFn1 (eth :: ETH | eff) HexString Foreign
+
+-- | Check the connection status of the 'Web3' object
+isConnected :: forall eff m. MonadEff (eth :: ETH | eff) m => Web3T m Boolean
+isConnected = do
+  web3 <- ask
+  liftEff $ runEffFn1 _isConnected web3
+
+foreign import _isConnected :: forall eff . EffFn1 (eth :: ETH | eff) Web3 Boolean
