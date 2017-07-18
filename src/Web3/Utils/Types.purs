@@ -7,9 +7,9 @@ import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.List (List)
 import Data.Maybe (Maybe(..))
-import Data.String (toCharArray)
+import Data.String (toCharArray, stripPrefix, Pattern(..))
 import Data.String (length) as S
-import Data.Foreign.Class (class Decode)
+import Data.Foreign.Class (class Decode, decode)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -55,7 +55,12 @@ derive newtype instance semigpStringEq :: Semigroup HexString
 
 derive newtype instance monoidStringEq :: Monoid HexString
 
-derive newtype instance decodeHexString :: Decode HexString
+instance decodeHexString :: Decode HexString where
+  decode s = do
+    str <- decode s
+    case stripPrefix (Pattern "0x") str of
+      Nothing -> pure <<< HexString $ str
+      Just res -> pure <<< HexString $ res
 
 fromString :: String -> Maybe HexString
 fromString s =
@@ -80,9 +85,11 @@ length (HexString hx) = S.length hx
 
 newtype Address = Address HexString
 
-derive newtype instance addressShow :: Show Address
+derive newtype instance showAddress :: Show Address
 
-derive newtype instance addressEq :: Eq Address
+derive newtype instance eqAddress :: Eq Address
+
+derive newtype instance decodeAddress :: Decode Address
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
