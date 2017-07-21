@@ -14,7 +14,9 @@
     "purescript-foreign": "^4.0.1",
     "purescript-generics-rep": "^5.1.0",
     "purescript-foldable-traversable": "^3.4.0",
-    "purescript-bytestrings": "^5.0.1"
+    "purescript-bytestrings": "^5.0.1",
+    "purescript-foreign-generic": "^4.2.0",
+    "purescript-parsing": "^4.2.2"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
