@@ -14,6 +14,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode)
 import Data.Either (Either(..))
+import Data.Maybe (Maybe)
 import Control.Monad.Except (runExcept)
 
 import Web3.Utils.Types (Address, HexString)
@@ -172,3 +173,22 @@ isConnected = do
   liftEff $ runEffFn1 _isConnected web3
 
 foreign import _isConnected :: forall eff . EffFn1 (eth :: ETH | eff) Web3 Boolean
+
+data SendTransaction =
+  SendTransaction { from :: Address
+                  , to :: Address
+                  , value :: NullOrUndefined BigNumber
+                  , payload :: NullOrUndefined HexString
+                  , gas :: NullOrUndefined BigNumber
+                  , gasPrice :: NullOrUndefined BigNumber
+                  , data :: NullOrUndefined HexString
+                  , nonce :: Int
+                  }
+
+derive instance genericSendTransaction :: Generic SendTransaction _
+
+instance showSendTransaction :: Show SendTransaction where
+  show = genericShow
+
+instance decodeSendTransaction :: Decode SendTransaction where
+  decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
