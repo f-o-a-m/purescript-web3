@@ -17,7 +17,8 @@
     "purescript-bytestrings": "^5.0.1",
     "purescript-foreign-generic": "^4.2.0",
     "purescript-parsing": "^4.2.2",
-    "purescript-folds": "^3.1.0"
+    "purescript-folds": "^3.1.0",
+    "purescript-argonaut-core": "^3.1.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",

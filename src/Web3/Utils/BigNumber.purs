@@ -21,8 +21,8 @@ import Prelude
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
 import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (class Decode)
+import Data.Foreign (Foreign, toForeign)
+import Data.Foreign.Class (class Decode, class Encode)
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -141,3 +141,6 @@ foreign import toBigNumber :: Foreign -> BigNumber
 
 instance decodeBigNumber :: Decode BigNumber where
   decode = pure <<< toBigNumber
+
+instance encodeBigNumber :: Encode BigNumber where
+  encode = toForeign
