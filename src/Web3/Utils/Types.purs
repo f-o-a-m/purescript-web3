@@ -9,7 +9,7 @@ import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Data.String (toCharArray, stripPrefix, Pattern(..))
 import Data.String (length) as S
-import Data.Foreign.Class (class Decode, decode)
+import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -62,6 +62,9 @@ instance decodeHexString :: Decode HexString where
       Nothing -> pure <<< HexString $ str
       Just res -> pure <<< HexString $ res
 
+instance encodeHexString :: Encode HexString where
+  encode = encode <<< unHex
+
 fromString :: String -> Maybe HexString
 fromString s =
     let res = all go <<< toCharArray $ s
@@ -90,6 +93,8 @@ derive newtype instance showAddress :: Show Address
 derive newtype instance eqAddress :: Eq Address
 
 derive newtype instance decodeAddress :: Decode Address
+
+derive newtype instance encodeAddress :: Encode Address
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
@@ -122,4 +127,3 @@ type EventInputs = { name :: String
                    , type_ :: String
                    , indexed :: Boolean
                    }
-
