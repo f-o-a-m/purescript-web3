@@ -11,7 +11,17 @@ exports.newWeb3Backend = function (provider) {
 };
 
 exports.getWeb3Backend = function () {
-    return web3;
+    if (typeof web3 !== 'undefined') {
+        // Use Mist/MetaMask's provider
+        global.web3 = new Web3(web3.currentProvider);
+    } else {
+        console.log(global);
+        console.log('No web3? You should consider trying MetaMask!');
+        // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
+        global.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    }
+    return global.web3;
+
 };
 
 exports._isConnected = function (web3) {
@@ -45,6 +55,13 @@ exports._getContractInstance = function (contract) {
 
 exports._callMethod = function (contract) {
     return function (methodName) {
-        return contract[methodName].call;
+        return function (args) {
+            return contract[methodName].apply(this, args);
+        };
     };
+};
+
+exports._showContract = function (contract) {
+    console.log(contract);
+    return String(contract);
 };
