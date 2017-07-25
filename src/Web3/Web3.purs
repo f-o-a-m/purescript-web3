@@ -6,17 +6,18 @@ import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Eff.Class (class MonadEff, liftEff)
 import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, runEffFn1, runEffFn2)
-import Data.Argonaut.Core (Json, jsonNull)
 import Data.Array (cons)
 import Data.Monoid (mempty)
+import Data.Maybe (Maybe(..))
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
-import Data.Foreign.NullOrUndefined (NullOrUndefined)
+import Data.Foreign.NullOrUndefined (NullOrUndefined(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Either (Either(..))
-import Control.Monad.Except (runExcept)
+import Control.Monad.Except (runExcept, fromRight)
+import Partial.Unsafe (unsafePartial)
 
 import Web3.Utils.Types (Address(..), HexString(..))
 import Web3.Utils.Utils (BlockId)
@@ -177,7 +178,7 @@ foreign import _isConnected :: forall eff . EffFn1 (eth :: ETH | eff) Web3Backen
 
 data TransactionOptions =
   TransactionOptions { from :: NullOrUndefined Address
-                     , to :: Address
+                     , to :: NullOrUndefined Address
                      , value :: NullOrUndefined BigNumber
                      , gas :: NullOrUndefined BigNumber
                      , gasPrice :: NullOrUndefined BigNumber
@@ -185,13 +186,28 @@ data TransactionOptions =
                      , nonce :: NullOrUndefined Int
                      }
 
-derive instance genericSendTransaction :: Generic TransactionOptions _
+derive instance genericTransactionOptions :: Generic TransactionOptions _
 
-instance showSendTransaction :: Show TransactionOptions where
+instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
 
-instance encodeSendTransaction :: Encode TransactionOptions where
+instance encodeTransactionOptions :: Encode TransactionOptions where
   encode = genericEncode (defaultOptions { unwrapSingleConstructors = true })
+
+defaultTransactionOptions :: TransactionOptions
+defaultTransactionOptions =
+  TransactionOptions { from : NullOrUndefined Nothing
+                     , to : NullOrUndefined Nothing
+                     , value : NullOrUndefined Nothing
+                     , gas : NullOrUndefined Nothing
+                     , gasPrice : NullOrUndefined Nothing
+                     , data : NullOrUndefined Nothing
+                     , nonce : NullOrUndefined Nothing
+                     }
+
+setFrom :: TransactionOptions -> Address -> TransactionOptions
+setFrom (TransactionOptions txOptions) f =
+  TransactionOptions txOptions {from = NullOrUndefined (Just f)}
 
 type ABI = Json
 
@@ -220,35 +236,12 @@ callMethod con meth = _remote $ runEffFn1 (_callMethod con meth)
 class Remote a where
   _remote :: (Array Foreign -> Eff (eth :: ETH, exception :: EXCEPTION) Foreign) -> a
 
-instance remodeMonadContractBase :: Decode a => Remote (Web3 b a) where
+instance remoteBase :: Decode a => Remote (Web3 b a) where
   _remote f = do
     res <- Web3 $ f mempty
     case runExcept <<< decode $ res of
       Left e -> Web3 <<< throw <<< show $ e
       Right r -> pure r
 
-instance remoteMonadContractInductive :: (Encode a, Remote b) => Remote (a -> b) where
+instance remoteInductive :: (Encode a, Remote b) => Remote (a -> b) where
   _remote f x = _remote $ \args -> f (cons (encode x) args)
-
---------------------------------------------------------------------------------
--- * Example -- SimpleStorage
---------------------------------------------------------------------------------
-
-data TestNet
-
-instance providerTestNet :: Backend TestNet where
-  web3Object = Web3 $ runEffFn1 newWeb3Backend "http://localhost:8545"
-
-data SimpleStorage
-
-simpleStorage' :: forall b . Backend b => Web3 b (ContractInstance SimpleStorage)
-simpleStorage' = do
-  web3 <- web3Object
-  let c = _contract web3 jsonNull
-  pure $ _getContractInstance c (Address <<< HexString $ "deadbeef")
-
-simpleStorage :: ContractInstance SimpleStorage
-simpleStorage = unsafePerformEff <<< unWeb3 $ (simpleStorage' :: Web3 TestNet (ContractInstance SimpleStorage))
-
-getCount :: TransactionOptions -> Web3 TestNet BigNumber
-getCount = callMethod simpleStorage (MethodName "getCount")

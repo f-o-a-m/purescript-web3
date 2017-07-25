@@ -59,7 +59,9 @@ exports.fromStringAsImpl = function (just) {
 };
 
 exports.toString = function (radix) {
-  return function (bn) { return bn.toString(radix); };
+    return function (bn) {
+        return bn.toString(radix);
+    };
 };
 
 exports.reciprical = function (bn) {
@@ -101,8 +103,6 @@ var isString = function (object) {
 
 
 exports.toBigNumber = function(number) {
-    /*jshint maxcomplexity:5 */
-    number = number || 0;
     if (isBigNumber(number))
         return number;
 
