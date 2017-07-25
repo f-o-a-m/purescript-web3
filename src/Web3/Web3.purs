@@ -2,10 +2,10 @@ module Web3.Web3 where
 
 import Prelude
 import Control.Monad.Eff (kind Effect, Eff)
-import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Eff.Class (class MonadEff, liftEff)
 import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, runEffFn1, runEffFn2)
+import Data.Argonaut.Core (Json)
 import Data.Array (cons)
 import Data.Monoid (mempty)
 import Data.Maybe (Maybe(..))
@@ -16,12 +16,12 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Either (Either(..))
-import Control.Monad.Except (runExcept, fromRight)
-import Partial.Unsafe (unsafePartial)
+import Control.Monad.Except (runExcept)
 
-import Web3.Utils.Types (Address(..), HexString(..))
+import Web3.Utils.Types (Address, HexString)
 import Web3.Utils.Utils (BlockId)
 import Web3.Utils.BigNumber (BigNumber)
+
 
 --------------------------------------------------------------------------------
 -- * Web3 Object

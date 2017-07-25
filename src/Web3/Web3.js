@@ -60,8 +60,3 @@ exports._callMethod = function (contract) {
         };
     };
 };
-
-exports._showContract = function (contract) {
-    console.log(contract);
-    return String(contract);
-};
