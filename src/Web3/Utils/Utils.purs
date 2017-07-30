@@ -13,19 +13,16 @@ module Web3.Utils.Utils
   , fromWei
   ) where
 
-import Control.Applicative ((*>), pure)
 import Control.Fold (mconcat, foldl)
-import Control.Monad (bind)
 import Data.Array (unsafeIndex, many, fromFoldable, replicate)
 import Data.ByteString (toString, fromString) as BS
 import Data.Either (Either)
-import Data.Eq (eq)
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.String (Pattern(..), split, indexOf, take, joinWith, fromCharArray)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-import Prelude (flip, map, ($), (-), (<<<), (<=), (<>), (<$>), (*), recip)
+import Prelude
 import Text.Parsing.Parser (Parser, ParseError, runParser)
 import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
@@ -75,27 +72,28 @@ fromWei val eu =
   let rate = recip $ toWeiRate eu
   in val * rate
 
--- | Pad a 'HexString' with '0's on the left until it has the
--- desired length.
-padLeft :: Signed HexString -> Int -> HexString
-padLeft (Signed s hx) desiredLength =
-    let padLength = desiredLength - length hx
-        sgn = if s `eq` Pos then '0' else 'f'
-    in if padLength <= 0
-         then hx
-         else let padding = HexString <<< fromCharArray $ replicate padLength sgn
-              in padding <> hx
+getPadLength :: HexString -> Int
+getPadLength hx =
+  let n = length hx `mod` 64
+  in if n == 0 then 0 else 64 - n
 
--- | Pad a 'HexString' with '0's on the right until it has the
--- desired length.
-padRight :: Signed HexString -> Int -> HexString
-padRight (Signed s hx) desiredLength =
-    let padLength = desiredLength - length hx
+-- | Pad a 'HexString' with '0's on the left until it has
+-- length == 0 mod 64.
+padLeft :: Signed HexString -> HexString
+padLeft (Signed s hx) =
+    let padLength = getPadLength hx
         sgn = if s `eq` Pos then '0' else 'f'
-    in if padLength <= 0
-         then hx
-         else let padding = HexString <<< fromCharArray $ replicate padLength sgn
-              in hx <> padding
+        padding = HexString <<< fromCharArray $ replicate padLength sgn
+    in padding <> hx
+
+-- | Pad a 'HexString' with '0's on the right until it has
+-- length 0 mod 64.
+padRight :: Signed HexString -> HexString
+padRight (Signed s hx) =
+    let padLength = getPadLength hx
+        sgn = if s `eq` Pos then '0' else 'f'
+        padding = HexString <<< fromCharArray $ replicate padLength sgn
+    in hx <> padding
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.
 -- This breaks at the first null octet, following the web3 function 'toUft8'.
@@ -103,7 +101,7 @@ padRight (Signed s hx) desiredLength =
 toUtf8 :: HexString -> String
 toUtf8 (HexString hx) =
   let hx' = unsafePartial $ split (Pattern "00") hx `unsafeIndex` 0
-  in flip BS.toString UTF8 $ BS.fromString hx' Hex
+  in flip BS.toString UTF8 $ BS.fromString hx Hex
 
 -- | Takes a hex string and produces the corresponding ASCII decoded string.
 toAscii :: HexString -> String

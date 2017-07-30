@@ -85,6 +85,6 @@ exports.pow = function(n) {
 };
 
 exports.toNumber = function (n) {
-    var newN = BigNumber(n);
+    var newN = new BigNumber(n);
     return newN.toNumber();
 };

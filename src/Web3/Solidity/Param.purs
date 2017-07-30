@@ -1,105 +1,88 @@
 module Web3.Solidity.Param
-  ( SolidityParam(..)
-  , paramValue
-  , isDynamic
-  , dynamicPart
-  , dynamicPartLength
-  , withOffset
-  , combine
-  , offsetAsBytes
-  , staticPart
-  , encode
-  , encodeList
+  ( class EncodingType, typeName, isDynamic
+  , int256HexBuilder
+  , int256HexParser
+  , textBuilder
+  , textParser
   ) where
 
 import Prelude
-import Control.Monad.State (StateT, get, put, evalStateT)
-import Data.Identity (Identity(..))
-import Data.Foldable (fold, foldl)
-import Data.Traversable (traverse)
-import Data.List (List)
-import Data.List (length) as L
-import Data.Maybe (Maybe, fromMaybe, isJust, maybe)
-import Data.Monoid (mempty)
-import Web3.Utils.Types (HexString, length)
-import Web3.Utils.Utils (padLeft)
-import Web3.Utils.BigNumber (embed, toTwosComplement, toSignedHexString)
+import Data.String (fromCharArray)
+import Data.Unfoldable (replicateA)
+import Data.Word (Word32)
+import Text.Parsing.Parser (ParserT)
+import Text.Parsing.Parser.Token (hexDigit)
 
-data SolidityParam =
-  SolidityParam { value :: HexString
-                , offset :: Maybe Int
-                }
+import Web3.Utils.BigNumber (class Algebra, embed, BigNumber, toTwosComplement
+                            , toSignedHexString, fromHexString, toInt)
+import Web3.Utils.Types (HexString(..), Address, length, asSigned)
+import Web3.Utils.Utils (padLeft, fromUtf8, toUtf8)
 
-derive instance eqSolidityParam :: Eq SolidityParam
+--------------------------------------------------------------------------------
+-- | Encoding Types
+--------------------------------------------------------------------------------
 
-instance showSolidityParam :: Show SolidityParam where
-  show (SolidityParam p) = fold $
-    [ "{ value: "
-    , show p.value
-    , ", offset: "
-    , maybe "null" show p.offset
-    , " }"
-    ]
+class EncodingType a where
+  typeName :: a -> String
+  isDynamic :: a -> Boolean
 
-paramValue :: SolidityParam -> HexString
-paramValue (SolidityParam p) = p.value
+instance encodingTypeBoolean :: EncodingType Boolean where
+    typeName  = const "bool"
+    isDynamic = const false
 
--- | This method should be called to check if param has dynamic size.
--- If it has, it returns true, otherwise false
-isDynamic :: SolidityParam -> Boolean
-isDynamic (SolidityParam p) = isJust $ p.offset
+instance encodingTypeInt :: EncodingType Int where
+    typeName  = const "int"
+    isDynamic = const false
 
--- | This method should be called to get dynamic part of param
-dynamicPart :: SolidityParam -> HexString
-dynamicPart param =
-  if isDynamic param then paramValue param else mempty
+instance encodingTypeBigNumber:: EncodingType BigNumber where
+    typeName  = const "int"
+    isDynamic = const false
 
--- | This method should be used to get length of params's dynamic part
-dynamicPartLength :: SolidityParam -> Int
-dynamicPartLength p = (length <<< dynamicPart $ p) / 2
+instance encodingTypeWord :: EncodingType Word32 where
+    typeName  = const "uint"
+    isDynamic = const false
 
--- | This method should be used to create copy of solidity param with different offset
-withOffset :: Int -> SolidityParam -> SolidityParam
-withOffset i (SolidityParam p) = SolidityParam p { offset = const i <$> p.offset }
+instance encodingTypeString :: EncodingType String where
+    typeName  = const "string"
+    isDynamic = const true
 
--- | This method should be used to combine solidity params together
--- eg. when appending an array
-combine :: SolidityParam -> SolidityParam -> HexString
-combine (SolidityParam p1) (SolidityParam p2) =
-  p1.value <> p2.value
+instance encodingTypeAddress :: EncodingType Address where
+    typeName  = const "address"
+    isDynamic = const false
 
--- | This method should be called to transform offset to bytes
-offsetAsBytes :: SolidityParam -> Maybe HexString
-offsetAsBytes (SolidityParam p) = do
-  os <- p.offset
-  let bn = toTwosComplement $ embed os
-  pure <<< flip padLeft 64 $ toSignedHexString bn
+instance encodingTypeArray :: EncodingType a => EncodingType (Array a) where
+    typeName  = const "[]"
+    isDynamic = const true
 
--- | This method should be called to get static part of param
-staticPart :: SolidityParam -> HexString
-staticPart param =
-  fromMaybe (paramValue param) $ offsetAsBytes param
+--------------------------------------------------------------------------------
+-- | Builders and Parsers
+--------------------------------------------------------------------------------
 
--- | This method should be called to encode param.
-encode :: SolidityParam -> HexString
-encode p = staticPart p <> dynamicPart p
+-- | Encode anything any type of number that fits in a big numbed
+int256HexBuilder :: forall a . Algebra a BigNumber => a -> HexString
+int256HexBuilder x =
+  let x' = embed x
+  in if x' < zero
+       then int256HexBuilder <<< toTwosComplement $ x'
+       else padLeft <<< toSignedHexString $ x'
 
--- | This method should be called to encode array of params
-encodeList :: List SolidityParam -> HexString
-encodeList params =
-  let totalOffset = 32 * L.length params
-      Identity offsetParams = flip evalStateT totalOffset $
-        traverse incrementParam params
-  in reduceParams offsetParams
+-- | Parse a big number
+int256HexParser :: forall m . Monad m => ParserT String m BigNumber
+int256HexParser = fromHexString <$> take 64
 
-incrementParam :: SolidityParam -> StateT Int Identity SolidityParam
-incrementParam p =
-  if not <<< isDynamic $ p then pure p else do
-    offset <- get
-    put $ offset + dynamicPartLength p
-    pure $ withOffset offset p
+-- | Encode dynamically sized string
+textBuilder :: String -> HexString
+textBuilder s = int256HexBuilder (length hx `div` 2) <> padLeft (asSigned hx)
+  where hx = fromUtf8 s
 
-reduceParams :: List SolidityParam -> HexString
-reduceParams ps =
-  let statics = fold <<< map staticPart $ ps
-  in foldl (\hx p -> hx <> dynamicPart p) statics ps
+-- | Parse dynamically sized string.
+textParser :: forall m . Monad m => ParserT String m String
+textParser = do
+    len <- toInt <$> int256HexParser
+    let zeroBytes = 32 - (len `mod` 32)
+    void $ take (zeroBytes * 2)
+    toUtf8 <$> take (len * 2)
+
+-- | Read any number of HexDigits
+take :: forall m . Monad m => Int -> ParserT String m HexString
+take n = HexString <<< fromCharArray <$> replicateA n hexDigit
