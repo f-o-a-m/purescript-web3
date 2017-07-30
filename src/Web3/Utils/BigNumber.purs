@@ -79,6 +79,9 @@ instance embedInt' :: Algebra Int BigNumber where
 instance embedNumber :: Algebra Number BigNumber where
   embed = _numberToBigNumber
 
+instance embedBigNumber :: Algebra BigNumber BigNumber where
+  embed = id
+
 radd :: forall r a . Algebra r a => a -> r -> a
 radd a r = a `add` embed r
 
