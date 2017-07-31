@@ -10,7 +10,7 @@ import Type.Proxy (Proxy(..))
 import Web3.Utils.BigNumber (toInt)
 import Web3.Utils.Types (HexString(..), unHex)
 import Node.Encoding (Encoding(Hex))
-import Web3.Utils.Utils (padLeft, getPadLength)
+import Web3.Utils.Utils (padRight, getPadLength)
 import Web3.Solidity.Param (class EncodingType, take, int256HexParser, int256HexBuilder)
 import Web3.Solidity.Encoding (class ABIEncoding)
 
@@ -31,7 +31,7 @@ instance showNat :: BytesSize n => Show (BytesN n) where
     show (BytesN bs) = show <<< HexString $ BS.toString bs Hex
 
 bytesBuilder :: ByteString -> HexString
-bytesBuilder = padLeft <<< HexString <<< flip BS.toString Hex
+bytesBuilder = padRight <<< HexString <<< flip BS.toString Hex
 
 bytesDecode :: String -> ByteString
 bytesDecode = flip BS.fromString Hex
