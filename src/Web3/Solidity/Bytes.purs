@@ -3,14 +3,20 @@ module Web3.Solidity.Bytes where
 import Prelude
 import Data.ByteString (ByteString)
 import Data.ByteString as BS
+import Data.Monoid (class Monoid)
 import Type.Proxy (Proxy(..))
 
 
+import Web3.Utils.BigNumber (toInt)
 import Web3.Utils.Types (HexString(..), unHex)
 import Node.Encoding (Encoding(Hex))
 import Web3.Utils.Utils (padLeft, getPadLength)
-import Web3.Solidity.Param (class EncodingType, take)
+import Web3.Solidity.Param (class EncodingType, take, int256HexParser, int256HexBuilder)
 import Web3.Solidity.Encoding (class ABIEncoding)
+
+--------------------------------------------------------------------------------
+-- * Statically sized byte array
+--------------------------------------------------------------------------------
 
 data BytesN n = BytesN ByteString
 
@@ -40,6 +46,36 @@ instance abiEncodingBytesN :: BytesSize n => ABIEncoding (BytesN n) where
     raw <- take $ len * 2
     pure <<< update result <<< bytesDecode <<< unHex $ raw
 
+--------------------------------------------------------------------------------
+-- * Dynamic length byte array
+--------------------------------------------------------------------------------
+
+newtype BytesD = BytesD ByteString
+
+derive newtype instance eqBytesD :: Eq BytesD
+
+derive newtype instance semigroupBytesD :: Semigroup BytesD
+
+derive newtype instance monoidBytesD :: Monoid BytesD
+
+instance showBytesD :: Show BytesD where
+  show (BytesD bs) = BS.toString bs Hex
+
+instance encodingTypeBytesD :: EncodingType BytesD where
+  typeName  = const "bytes[]"
+  isDynamic = const true
+
+instance abiEncodingBytesD :: ABIEncoding BytesD where
+  toDataBuilder (BytesD bytes) =
+    int256HexBuilder (BS.length bytes) <> bytesBuilder bytes
+
+  fromDataParser = do
+    len <- toInt <$> int256HexParser
+    BytesD <<< bytesDecode <<< unHex <$> take (len * 2)
+
+--------------------------------------------------------------------------------
+-- * Type level byte array lengths
+--------------------------------------------------------------------------------
 
 data B0
 data B1
