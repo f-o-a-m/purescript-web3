@@ -4,6 +4,7 @@ module Web3.Solidity.Param
   , int256HexParser
   , textBuilder
   , textParser
+  , take
   ) where
 
 import Prelude
@@ -16,7 +17,7 @@ import Text.Parsing.Parser.Token (hexDigit)
 import Web3.Utils.BigNumber (class Algebra, embed, BigNumber, toTwosComplement
                             , toSignedHexString, fromHexString, toInt)
 import Web3.Utils.Types (HexString(..), Address, length, asSigned)
-import Web3.Utils.Utils (padLeft, fromUtf8, toUtf8)
+import Web3.Utils.Utils (padLeftSigned, getPadLength, fromUtf8, toUtf8)
 
 --------------------------------------------------------------------------------
 -- | Encoding Types
@@ -64,7 +65,7 @@ int256HexBuilder x =
   let x' = embed x
   in if x' < zero
        then int256HexBuilder <<< toTwosComplement $ x'
-       else padLeft <<< toSignedHexString $ x'
+       else padLeftSigned <<< toSignedHexString $ x'
 
 -- | Parse a big number
 int256HexParser :: forall m . Monad m => ParserT String m BigNumber
@@ -72,14 +73,14 @@ int256HexParser = fromHexString <$> take 64
 
 -- | Encode dynamically sized string
 textBuilder :: String -> HexString
-textBuilder s = int256HexBuilder (length hx `div` 2) <> padLeft (asSigned hx)
+textBuilder s = int256HexBuilder (length hx `div` 2) <> padLeftSigned (asSigned hx)
   where hx = fromUtf8 s
 
 -- | Parse dynamically sized string.
 textParser :: forall m . Monad m => ParserT String m String
 textParser = do
     len <- toInt <$> int256HexParser
-    let zeroBytes = 32 - (len `mod` 32)
+    let zeroBytes = getPadLength len
     void $ take (zeroBytes * 2)
     toUtf8 <$> take (len * 2)
 

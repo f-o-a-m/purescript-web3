@@ -1,6 +1,9 @@
 module Web3.Utils.Utils
   ( EtherUnit(..)
+  , getPadLength
+  , padLeftSigned
   , padLeft
+  , padRightSigned
   , padRight
   , toUtf8
   , fromUtf8
@@ -28,7 +31,7 @@ import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
-import Web3.Utils.Types (HexString(..), Sign(..), Signed(..), length)
+import Web3.Utils.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
 import Web3.Utils.BigNumber (BigNumber, decimal)
 import Web3.Utils.BigNumber (fromString) as BN
 
@@ -72,28 +75,40 @@ fromWei val eu =
   let rate = recip $ toWeiRate eu
   in val * rate
 
-getPadLength :: HexString -> Int
-getPadLength hx =
-  let n = length hx `mod` 64
-  in if n == 0 then 0 else 64 - n
+-- | computes the number of bytes of padding for a bytestring of length 'len'
+getPadLength :: Int -> Int
+getPadLength len =
+  let n = len `mod` 32
+  in if n == 0 then 0 else 32 - n
 
--- | Pad a 'HexString' with '0's on the left until it has
+-- | Pad a 'Signed HexString' on the left until it has
 -- length == 0 mod 64.
-padLeft :: Signed HexString -> HexString
-padLeft (Signed s hx) =
-    let padLength = getPadLength hx
+padLeftSigned :: Signed HexString -> HexString
+padLeftSigned (Signed s hx) =
+    let padLength = 2 * getPadLength (length hx `div` 2)
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in padding <> hx
 
--- | Pad a 'HexString' with '0's on the right until it has
+-- | Pad a 'Signed HexString' on the right until it has
 -- length 0 mod 64.
-padRight :: Signed HexString -> HexString
-padRight (Signed s hx) =
-    let padLength = getPadLength hx
+padRightSigned :: Signed HexString -> HexString
+padRightSigned (Signed s hx) =
+    let padLength = 2 * getPadLength (length hx `div` 2)
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in hx <> padding
+
+-- | Pad a 'HexString' on the left with '0's until it has
+-- length == 0 mod 64.
+padLeft :: HexString -> HexString
+padLeft = padLeftSigned <<< asSigned
+
+
+-- | Pad a 'HexString' on the right with '0's until it has
+-- length 0 mod 64.
+padRight :: HexString -> HexString
+padRight = padRightSigned <<< asSigned
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.
 -- This breaks at the first null octet, following the web3 function 'toUft8'.
