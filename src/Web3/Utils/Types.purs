@@ -33,8 +33,8 @@ instance eqSigned :: Eq a => Eq (Signed a) where
 instance mapSigned :: Functor Signed where
   map f (Signed s a) = Signed s (f a)
 
-dropSign :: forall a . Signed a -> a
-dropSign (Signed _ a) = a
+unSigned :: forall a . Signed a -> a
+unSigned (Signed _ a) = a
 
 asSigned :: forall a . a -> Signed a
 asSigned a = Signed Pos a
