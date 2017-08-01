@@ -5,10 +5,17 @@ import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
 import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
+import Data.Foreign.Class (class Decode, class Encode, encode, decode)
+import Data.Foreign.NullOrUndefined (NullOrUndefined(..))
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.List (List)
 import Data.Maybe (Maybe(..))
-import Data.String (toCharArray)
+import Data.String (toCharArray, stripPrefix,  Pattern(..))
 import Data.String (length) as S
+
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -54,6 +61,16 @@ derive newtype instance semigpStringEq :: Semigroup HexString
 
 derive newtype instance monoidStringEq :: Monoid HexString
 
+instance decodeHexString :: Decode HexString where
+  decode s = do
+    str <- decode s
+    case stripPrefix (Pattern "0x") str of
+      Nothing -> pure <<< HexString $ str
+      Just res -> pure <<< HexString $ res
+
+instance encodeHexString :: Encode HexString where
+  encode = encode <<< unHex
+
 parseHexString :: String -> Maybe HexString
 parseHexString s =
     let res = all go <<< toCharArray $ s
@@ -80,6 +97,104 @@ newtype Address = Address HexString
 derive newtype instance addressShow :: Show Address
 
 derive newtype instance addressEq :: Eq Address
+
+derive newtype instance decodeAddress :: Decode Address
+
+derive newtype instance encodeAddress :: Encode Address
+
+--------------------------------------------------------------------------------
+-- * Block
+--------------------------------------------------------------------------------
+
+data Block
+  = Block { difficulty :: BigNumber
+          , extraData :: HexString
+          , gasLimit :: BigNumber
+          , gasUsed :: BigNumber
+          , hash :: HexString
+          , logsBloom :: HexString
+          , miner :: HexString
+          , mixHash :: HexString
+          , nonce :: HexString
+          , number :: Int
+          , parentHash :: HexString
+          , receiptsRoot :: HexString
+          , sha3Uncles :: HexString
+          , size :: Int
+          , stateRoot :: HexString
+          , timestamp :: BigNumber
+          , totalDifficulty :: BigNumber
+          , transactions :: Array HexString
+          , transactionsRoot :: HexString
+          , uncles :: Array HexString
+          }
+
+derive instance genericBlock :: Generic Block _
+
+instance showBlock :: Show Block where
+  show = genericShow
+
+instance decodeBlock :: Decode Block where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+--------------------------------------------------------------------------------
+-- * Transaction
+--------------------------------------------------------------------------------
+
+data Transaction =
+  Transaction { hash :: HexString
+              , nonce :: BigNumber
+              , blockHash :: HexString
+              , blockNumber :: Int
+              , transactionIndex :: Int
+              , from :: Address
+              , to :: NullOrUndefined Address
+              , value :: BigNumber
+              , gas :: BigNumber
+              , gasPrice :: BigNumber
+              , input :: HexString
+              }
+
+derive instance genericTransaction :: Generic Transaction _
+
+instance showTransaction :: Show Transaction where
+  show = genericShow
+
+instance decodeTransaction :: Decode Transaction where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+--------------------------------------------------------------------------------
+-- * TransactionOptions
+--------------------------------------------------------------------------------
+
+data TransactionOptions =
+  TransactionOptions { from :: NullOrUndefined Address
+                     , to :: NullOrUndefined Address
+                     , value :: NullOrUndefined BigNumber
+                     , gas :: NullOrUndefined BigNumber
+                     , gasPrice :: NullOrUndefined BigNumber
+                     , data :: NullOrUndefined HexString
+                     , nonce :: NullOrUndefined Int
+                     }
+
+derive instance genericTransactionOptions :: Generic TransactionOptions _
+
+instance showTransactionOptions :: Show TransactionOptions where
+  show = genericShow
+
+instance encodeTransactionOptions :: Encode TransactionOptions where
+  encode = genericEncode (defaultOptions { unwrapSingleConstructors = true })
+
+defaultTransactionOptions :: TransactionOptions
+defaultTransactionOptions =
+  TransactionOptions { from : NullOrUndefined Nothing
+                     , to : NullOrUndefined Nothing
+                     , value : NullOrUndefined Nothing
+                     , gas : NullOrUndefined Nothing
+                     , gasPrice : NullOrUndefined Nothing
+                     , data : NullOrUndefined Nothing
+                     , nonce : NullOrUndefined Nothing
+                     }
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description

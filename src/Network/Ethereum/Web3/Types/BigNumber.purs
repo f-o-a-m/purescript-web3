@@ -10,8 +10,6 @@ module Network.Ethereum.Web3.Types.BigNumber
   , pow
   , toString
   , parseBigNumber
-  , fromHexString
-  , toSignedHexString
   , toTwosComplement
   , toInt
   , module Int
@@ -20,8 +18,8 @@ module Network.Ethereum.Web3.Types.BigNumber
 import Prelude
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
-
-import Network.Ethereum.Web3.Types.Types (HexString(..), Signed(..), Sign(..))
+import Data.Foreign (Foreign, toForeign)
+import Data.Foreign.Class (class Decode, class Encode)
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -125,14 +123,6 @@ foreign import fromStringAsImpl
 parseBigNumber :: Int.Radix -> String -> Maybe BigNumber
 parseBigNumber = fromStringAsImpl Just Nothing
 
-toSignedHexString :: BigNumber -> Signed HexString
-toSignedHexString bn =
-  let str = HexString <<< toString Int.hexadecimal $ bn
-      sgn = if bn < zero then Neg else Pos
-  in Signed sgn str
-
-foreign import fromHexString :: HexString -> BigNumber
-
 foreign import toTwosComplement :: BigNumber -> BigNumber
 
 foreign import pow :: BigNumber -> Int -> BigNumber
@@ -141,3 +131,11 @@ foreign import toNumber :: BigNumber -> Number
 
 toInt :: BigNumber -> Int
 toInt = Int.floor <<< toNumber
+
+foreign import toBigNumber :: Foreign -> BigNumber
+
+instance decodeBigNumber :: Decode BigNumber where
+  decode = pure <<< toBigNumber
+
+instance encodeBigNumber :: Encode BigNumber where
+  encode = toForeign
