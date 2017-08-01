@@ -1,8 +1,7 @@
-module Web3.Solidity.Encoding where
+module Network.Ethereum.Web3.Encoding where
 
-import Web3.Utils.Types (HexString)
-import Web3.Utils.BigNumber (BigNumber)
-import Web3.Solidity.Param (int256HexBuilder, int256HexParser)
+import Network.Ethereum.Web3.Types (HexString, BigNumber)
+import Network.Ethereum.Web3.Encoding.Internal (int256HexBuilder, int256HexParser)
 import Text.Parsing.Parser (Parser)
 
 class ABIEncoding a where

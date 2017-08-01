@@ -1,9 +1,9 @@
-module Web3.Utils.Sha3
+module Network.Ethereum.Web3.Types.Sha3
   ( class SHA3
   , sha3
   ) where
 
-import Web3.Utils.Types (HexString)
+import Network.Ethereum.Web3.Types.Types (HexString)
 
 --------------------------------------------------------------------------------
 

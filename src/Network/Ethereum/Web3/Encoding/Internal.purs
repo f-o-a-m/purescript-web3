@@ -1,4 +1,4 @@
-module Web3.Solidity.Param
+module Network.Ethereum.Web3.Encoding.Internal
   ( class EncodingType, typeName, isDynamic
   , int256HexBuilder
   , int256HexParser
@@ -14,10 +14,7 @@ import Data.Word (Word32)
 import Text.Parsing.Parser (ParserT)
 import Text.Parsing.Parser.Token (hexDigit)
 
-import Web3.Utils.BigNumber (class Algebra, embed, BigNumber, toTwosComplement
-                            , toSignedHexString, fromHexString, toInt)
-import Web3.Utils.Types (HexString(..), Address, length, asSigned)
-import Web3.Utils.Utils (padLeftSigned, getPadLength, fromUtf8, toUtf8)
+import Network.Ethereum.Web3.Types
 
 --------------------------------------------------------------------------------
 -- | Encoding Types
