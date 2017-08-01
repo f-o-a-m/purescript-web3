@@ -1,4 +1,4 @@
-module Web3.Solidity.Bytes where
+module Network.Ethereum.Web3.Encoding.Bytes where
 
 import Prelude
 import Data.ByteString (ByteString)
@@ -6,13 +6,10 @@ import Data.ByteString as BS
 import Data.Monoid (class Monoid)
 import Type.Proxy (Proxy(..))
 
-
-import Web3.Utils.BigNumber (toInt)
-import Web3.Utils.Types (HexString(..), unHex)
+import Network.Ethereum.Web3.Types
 import Node.Encoding (Encoding(Hex))
-import Web3.Utils.Utils (padRight, getPadLength)
-import Web3.Solidity.Param (class EncodingType, take, int256HexParser, int256HexBuilder)
-import Web3.Solidity.Encoding (class ABIEncoding)
+import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, take, int256HexParser, int256HexBuilder)
+import Network.Ethereum.Web3.Encoding (class ABIEncoding)
 
 --------------------------------------------------------------------------------
 -- * Statically sized byte array

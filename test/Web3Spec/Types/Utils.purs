@@ -1,15 +1,15 @@
-module Web3Spec.Utils.Utils (utilsSpec) where
+module Web3Spec.Types.Utils (utilsSpec) where
 
 import Prelude
 import Data.Either (Either(Right))
 import Data.Maybe  (Maybe(Just))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Web3.Utils.Utils (toUtf8, toAscii, fromUtf8, fromAscii, extractDisplayName, extractTypeName,
-                         EtherUnit(..), toWei, fromWei)
-import Web3.Utils.Types (HexString(..))
-import Web3.Utils.BigNumber (decimal, embed)
-import Web3.Utils.BigNumber (fromString) as BN
+import Network.Ethereum.Web3.Types.Utils (toUtf8, toAscii, fromUtf8, fromAscii
+                                         , extractDisplayName, extractTypeName
+                                         , EtherUnit(..), toWei, fromWei)
+import Network.Ethereum.Web3.Types.Types (HexString(..))
+import Network.Ethereum.Web3.Types.BigNumber (decimal, embed, parseBigNumber)
 
 utilsSpec :: forall r . Spec r Unit
 utilsSpec = describe "utils-spec" do
@@ -56,6 +56,6 @@ utilsSpec = describe "utils-spec" do
     describe "ether conversion tests" do
 
       it "can convert units of ether" do
-        Just (toWei one Ether) `shouldEqual` BN.fromString decimal "100000000000000000"
-        Just (toWei (embed 10) TEther) `shouldEqual` BN.fromString decimal "10000000000000000000000000000"
+        Just (toWei one Ether) `shouldEqual` parseBigNumber decimal "100000000000000000"
+        Just (toWei (embed 10) TEther) `shouldEqual` parseBigNumber decimal "10000000000000000000000000000"
         (fromWei (embed 1000) KWei) `shouldEqual` (embed 1)

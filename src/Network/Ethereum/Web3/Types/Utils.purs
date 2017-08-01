@@ -1,4 +1,4 @@
-module Web3.Utils.Utils
+module Network.Ethereum.Web3.Types.Utils
   ( EtherUnit(..)
   , getPadLength
   , padLeftSigned
@@ -31,9 +31,8 @@ import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
 import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
-import Web3.Utils.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
-import Web3.Utils.BigNumber (BigNumber, decimal)
-import Web3.Utils.BigNumber (fromString) as BN
+import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, parseBigNumber)
 
 data EtherUnit =
     Wei
@@ -61,7 +60,7 @@ toWeiRate eu =
                MEther -> "1000000000000000000000"
                GEther -> "1000000000000000000000000"
                TEther -> "1000000000000000000000000000"
-  in unsafePartial $ fromJust <<< BN.fromString decimal $ rate
+  in unsafePartial $ fromJust <<< parseBigNumber decimal $ rate
 
 -- | Convert 'val' many of 'eu' to its value in Wei
 toWei :: BigNumber -> EtherUnit -> BigNumber

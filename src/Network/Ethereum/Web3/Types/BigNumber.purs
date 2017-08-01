@@ -1,4 +1,4 @@
-module Web3.Utils.BigNumber
+module Network.Ethereum.Web3.Types.BigNumber
   ( BigNumber
   , class Algebra, embed
   , (*<), rmul
@@ -9,7 +9,7 @@ module Web3.Utils.BigNumber
   , (>-), lsub
   , pow
   , toString
-  , fromString
+  , parseBigNumber
   , fromHexString
   , toSignedHexString
   , toTwosComplement
@@ -20,7 +20,8 @@ module Web3.Utils.BigNumber
 import Prelude
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
-import Web3.Utils.Types (HexString(..), Signed(..), Sign(..))
+
+import Network.Ethereum.Web3.Types.Types (HexString(..), Signed(..), Sign(..))
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -121,8 +122,8 @@ foreign import fromStringAsImpl
   -> String
   -> Maybe BigNumber
 
-fromString :: Int.Radix -> String -> Maybe BigNumber
-fromString = fromStringAsImpl Just Nothing
+parseBigNumber :: Int.Radix -> String -> Maybe BigNumber
+parseBigNumber = fromStringAsImpl Just Nothing
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =

@@ -1,10 +1,10 @@
-module Web3Spec.Utils.Sha3 (sha3Spec) where
+module Web3Spec.Types.Sha3 (sha3Spec) where
 
 import Prelude
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Web3.Utils.Sha3 (sha3)
-import Web3.Utils.Types (HexString(..))
+import Network.Ethereum.Web3.Types.Sha3 (sha3)
+import Network.Ethereum.Web3.Types.Types (HexString(..))
 
 sha3Spec :: forall r . Spec r Unit
 sha3Spec = describe "sha3-spec" do

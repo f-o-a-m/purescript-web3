@@ -1,14 +1,13 @@
-module Web3.Utils.Types where
+module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
 import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
-import Data.Array (reverse) as A
 import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.List (List)
 import Data.Maybe (Maybe(..))
-import Data.String (toCharArray, fromCharArray)
+import Data.String (toCharArray)
 import Data.String (length) as S
 
 --------------------------------------------------------------------------------
@@ -55,8 +54,8 @@ derive newtype instance semigpStringEq :: Semigroup HexString
 
 derive newtype instance monoidStringEq :: Monoid HexString
 
-fromString :: String -> Maybe HexString
-fromString s =
+parseHexString :: String -> Maybe HexString
+parseHexString s =
     let res = all go <<< toCharArray $ s
     in if res then Just <<< HexString $ s else Nothing
   where
@@ -71,12 +70,6 @@ pack (HexString hx) = BS.fromString hx Hex
 
 length :: HexString -> Int
 length (HexString hx) = S.length hx
-
-reverse :: HexString -> HexString
-reverse (HexString hx) = HexString $ go hx
-  where
-    go :: String -> String
-    go = fromCharArray <<< A.reverse <<< toCharArray
 
 --------------------------------------------------------------------------------
 -- * Addresses

@@ -1,4 +1,4 @@
-module Web3.Solidity.Tuple where
+module Network.Ethereum.Web3.Encoding.Tuple where
 
 import Prelude
 import Data.Array (reverse, (:))
@@ -8,11 +8,9 @@ import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
 import Text.Parsing.Parser (Parser)
 
-import Web3.Utils.Types (HexString(..))
-import Web3.Utils.Types (length) as Hex
-import Web3.Utils.BigNumber (BigNumber, embed)
-import Web3.Solidity.Param (class EncodingType, isDynamic, take)
-import Web3.Solidity.Encoding (class ABIEncoding, toDataBuilder, fromDataParser)
+import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
+import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
 
 -- | Argument offset calculator
 offset :: Int
@@ -24,7 +22,7 @@ offset :: Int
 offset totalArgs args = headerOffset + dataOffset
   where
     headerOffset = totalArgs * 32
-    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< Hex.length) args
+    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< length) args
                    in rawLength `div` 2
 
 data EncodedValue =
@@ -65,12 +63,12 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
                                     , tailEnc : mempty
                                     }
 -- | Static argument parser
-sParser :: (EncodingType a, ABIEncoding a) => a -> Parser a
-sParser x | isDynamic x = take 64 >> return undefined
-          | otherwise   = fromDataParser
+--sParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser a
+--sParser x | isDynamic x = take 64 >> return undefined
+--          | otherwise   = fromDataParser
 
--- | Dynamic argument parser
-dParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser String a
-dParser x
-  | isDynamic x = fromDataParser
-  | otherwise   = pure x
+---- | Dynamic argument parser
+--dParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser String a
+--dParser x
+--  | isDynamic x = fromDataParser
+--  | otherwise   = pure x
