@@ -3,11 +3,12 @@ module Web3.Utils.Types where
 import Prelude
 import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
+import Data.Array (reverse) as A
 import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.List (List)
 import Data.Maybe (Maybe(..))
-import Data.String (toCharArray)
+import Data.String (toCharArray, fromCharArray)
 import Data.String (length) as S
 
 --------------------------------------------------------------------------------
@@ -70,6 +71,12 @@ pack (HexString hx) = BS.fromString hx Hex
 
 length :: HexString -> Int
 length (HexString hx) = S.length hx
+
+reverse :: HexString -> HexString
+reverse (HexString hx) = HexString $ go hx
+  where
+    go :: String -> String
+    go = fromCharArray <<< A.reverse <<< toCharArray
 
 --------------------------------------------------------------------------------
 -- * Addresses
