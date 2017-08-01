@@ -76,9 +76,6 @@ exports.toTwosComplement = function (bn) {
   }
 };
 
-exports.fromHexString = function(str) {
-    return new BigNumber(str, 16);
-};
 
 exports.pow = function(n) {
     return function (m) { return n.pow(m); };
@@ -87,4 +84,15 @@ exports.pow = function(n) {
 exports.toNumber = function (n) {
     var newN = new BigNumber(n);
     return newN.toNumber();
+};
+
+exports.toBigNumber = function(number) {
+    if (isBigNumber(number))
+        return number;
+
+    if (isString(number) && (number.indexOf('0x') === 0 || number.indexOf('-0x') === 0)) {
+        return new BigNumber(number.replace('0x',''), 16);
+    }
+
+    return new BigNumber(number.toString(10), 10);
 };
