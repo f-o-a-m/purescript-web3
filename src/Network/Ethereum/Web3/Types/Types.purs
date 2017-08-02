@@ -1,6 +1,11 @@
 module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
+import Control.Monad.Eff (kind Effect)
+import Control.Monad.Eff.Class (class MonadEff)
+import Control.Monad.Aff (Aff)
+import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Eff.Exception (Error)
 import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
 import Data.ByteString (ByteString, Encoding(Hex))
@@ -195,6 +200,31 @@ defaultTransactionOptions =
                      , data : NullOrUndefined Nothing
                      , nonce : NullOrUndefined Nothing
                      }
+
+--------------------------------------------------------------------------------
+-- | Web3M
+--------------------------------------------------------------------------------
+
+foreign import data ETH :: Effect
+
+newtype Web3M e a = Web3M (Aff (eth :: ETH | e) a)
+
+derive newtype instance functorWeb3M :: Functor (Web3M e)
+
+derive newtype instance applyWeb3M :: Apply (Web3M e)
+
+derive newtype instance applicativeWeb3M :: Applicative (Web3M e)
+
+derive newtype instance bindWeb3M :: Bind (Web3M e)
+
+derive newtype instance monadWeb3M :: Monad (Web3M e)
+
+derive newtype instance monadEffWeb3M :: MonadEff (eth :: ETH | e) (Web3M e)
+
+derive newtype instance monadThrowWeb3M :: MonadThrow Error (Web3M e)
+
+unWeb3M :: forall eff a . Web3M eff a -> Aff (eth :: ETH | eff) a
+unWeb3M (Web3M action) = action
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
