@@ -1,7 +1,9 @@
 "use strict";
 
-exports._sendAsync = function (provider) {
-    return function ()
+//exports._sendAsync = function (provider) {
+//    return function ()
+//
+//    provider.sendAsync(args)
+//};
 
-    provider.sendAsync(args)
-};
+exports.web3Request = 2;
