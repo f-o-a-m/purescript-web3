@@ -1,11 +1,11 @@
 module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
-import Control.Monad.Eff (kind Effect)
+import Control.Monad.Eff (kind Effect, Eff)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Error.Class (class MonadThrow)
-import Control.Monad.Eff.Exception (Error)
+import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
 import Data.Monoid (class Monoid)
 import Data.Array (all ,elem)
 import Data.ByteString (ByteString, Encoding(Hex))
@@ -207,7 +207,7 @@ defaultTransactionOptions =
 
 foreign import data ETH :: Effect
 
-newtype Web3M e a = Web3M (Aff (eth :: ETH | e) a)
+newtype Web3M e a = Web3M (Eff (eth :: ETH , exception :: EXCEPTION | e) a)
 
 derive newtype instance functorWeb3M :: Functor (Web3M e)
 
@@ -219,11 +219,12 @@ derive newtype instance bindWeb3M :: Bind (Web3M e)
 
 derive newtype instance monadWeb3M :: Monad (Web3M e)
 
-derive newtype instance monadEffWeb3M :: MonadEff (eth :: ETH | e) (Web3M e)
+derive newtype instance monadEffWeb3M :: MonadEff (eth :: ETH, exception :: EXCEPTION | e) (Web3M e)
 
-derive newtype instance monadThrowWeb3M :: MonadThrow Error (Web3M e)
+instance monadThrowWeb3M :: MonadThrow Error (Web3M e) where
+    throwError = Web3M <<< throwException
 
-unWeb3M :: forall eff a . Web3M eff a -> Aff (eth :: ETH | eff) a
+unWeb3M :: forall eff a . Web3M eff a -> Eff (eth :: ETH , exception :: EXCEPTION | eff) a
 unWeb3M (Web3M action) = action
 
 --------------------------------------------------------------------------------
