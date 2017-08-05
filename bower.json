@@ -15,7 +15,8 @@
     "purescript-word": "^0.4.1",
     "purescript-proxy": "^2.1.0",
     "purescript-foreign": "^4.0.1",
-    "purescript-foreign-generic": "^4.3.0"
+    "purescript-foreign-generic": "^4.3.0",
+    "purescript-debug": "^3.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",

@@ -18,4 +18,11 @@ exports._sendAsync = function (callback) {
     };
 };
 
-exports.web3Request = 2;
+exports._send = function (provider) {
+    return function (request) {
+        return function () {
+            var res = provider.send(request);
+            return res.result;
+        };
+    };
+};
