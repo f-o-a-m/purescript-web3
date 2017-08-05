@@ -39,13 +39,13 @@ instance remoteBase :: Decode a => Remote e (Web3M e a) where
 instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
 
-foreign import web3Request :: Provider -> Request ->  Eff (eth :: ETH, exception :: EXCEPTION) Foreign
+foreign import _send :: Provider -> Request ->  Eff (eth :: ETH, exception :: EXCEPTION) Foreign
 
 -- | Remote call of JSON-RPC method.
 -- Arguments of function are stored into @params@ request array.
 -- Try and figure out a way to put other @e@ here instead of ().
 remote :: forall a . Remote () a => MethodName -> a
-remote n = remote_ $ \provider ps -> web3Request provider $ mkRequest n 1 ps
+remote n = remote_ $ \provider ps -> _send provider $ mkRequest n 1 ps
 
 
 --------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ remoteAsync n = remoteAsync_ $ \provider ps -> makeAff (\error succ -> _sendAsyn
 --      Left e -> throwError <<< error <<< show $ e
 --      Right r -> pure r
 
-data Request =
+newtype Request =
   Request { jsonrpc :: String
           , id :: Int
           , method :: MethodName
@@ -94,7 +94,7 @@ instance encodeRequest :: Encode Request where
 
 mkRequest :: MethodName -> Int -> Array Foreign -> Request
 mkRequest name reqId ps = Request { jsonrpc : "2.0"
-                                  , id : 1
+                                  , id : reqId
                                   , method : name
                                   , params : ps
                                   }
