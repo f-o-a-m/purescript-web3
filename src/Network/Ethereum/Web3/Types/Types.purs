@@ -205,6 +205,8 @@ defaultTransactionOptions =
 -- | Web3M
 --------------------------------------------------------------------------------
 
+-- | Synchronous Web3 Actions
+
 foreign import data ETH :: Effect
 
 newtype Web3M e a = Web3M (Eff (eth :: ETH , exception :: EXCEPTION | e) a)
@@ -226,6 +228,27 @@ instance monadThrowWeb3M :: MonadThrow Error (Web3M e) where
 
 unWeb3M :: forall eff a . Web3M eff a -> Eff (eth :: ETH , exception :: EXCEPTION | eff) a
 unWeb3M (Web3M action) = action
+
+-- | Asynchronous Web3 Actions
+
+newtype Web3MA e a = Web3MA (Aff (eth :: ETH | e) a)
+
+derive newtype instance functorWeb3MA :: Functor (Web3MA e)
+
+derive newtype instance applyWeb3MA :: Apply (Web3MA e)
+
+derive newtype instance applicativeWeb3MA :: Applicative (Web3MA e)
+
+derive newtype instance bindWeb3MA :: Bind (Web3MA e)
+
+derive newtype instance monadWeb3MA :: Monad (Web3MA e)
+
+derive newtype instance monadEffWeb3MA :: MonadEff (eth :: ETH | e) (Web3MA e)
+
+derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
+
+unWeb3MA :: forall eff a . Web3MA eff a -> Aff (eth :: ETH | eff) a
+unWeb3MA (Web3MA action) = action
 
 --------------------------------------------------------------------------------
 -- * Contract Interface and Event Description
