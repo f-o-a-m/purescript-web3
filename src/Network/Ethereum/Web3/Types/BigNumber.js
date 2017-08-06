@@ -86,6 +86,16 @@ exports.toNumber = function (n) {
     return newN.toNumber();
 };
 
+var isBigNumber = function (object) {
+    return object instanceof BigNumber ||
+        (object && object.constructor && object.constructor.name === 'BigNumber');
+};
+
+var isString = function (object) {
+    return typeof object === 'string' ||
+        (object && object.constructor && object.constructor.name === 'String');
+};
+
 exports.toBigNumber = function(number) {
     if (isBigNumber(number))
         return number;

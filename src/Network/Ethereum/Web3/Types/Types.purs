@@ -74,7 +74,7 @@ instance decodeHexString :: Decode HexString where
       Just res -> pure <<< HexString $ res
 
 instance encodeHexString :: Encode HexString where
-  encode = encode <<< unHex
+  encode = encode <<< append "0x" <<< unHex
 
 parseHexString :: String -> Maybe HexString
 parseHexString s =
@@ -111,6 +111,19 @@ derive newtype instance encodeAddress :: Encode Address
 -- * Block
 --------------------------------------------------------------------------------
 
+data CallMode =
+    Latest
+  | Pending
+  | Earliest
+  | BlockNumber BigNumber
+
+instance encodeCallMode :: Encode CallMode where
+  encode cm = case cm of
+    Latest -> encode "latest"
+    Pending -> encode "pending"
+    Earliest -> encode "earliest"
+    BlockNumber n -> encode n
+
 data Block
   = Block { difficulty :: BigNumber
           , extraData :: HexString
@@ -121,11 +134,11 @@ data Block
           , miner :: HexString
           , mixHash :: HexString
           , nonce :: HexString
-          , number :: Int
+          , number :: BigNumber
           , parentHash :: HexString
           , receiptsRoot :: HexString
           , sha3Uncles :: HexString
-          , size :: Int
+          , size :: BigNumber
           , stateRoot :: HexString
           , timestamp :: BigNumber
           , totalDifficulty :: BigNumber
