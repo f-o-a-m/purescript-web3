@@ -163,8 +163,8 @@ data Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
               , blockHash :: HexString
-              , blockNumber :: Int
-              , transactionIndex :: Int
+              , blockNumber :: BigNumber
+              , transactionIndex :: BigNumber
               , from :: Address
               , to :: NullOrUndefined Address
               , value :: BigNumber

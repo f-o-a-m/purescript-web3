@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Api where
 
 
-import Network.Ethereum.Web3.Types (Web3M, Address, BigNumber, Block, CallMode)
+import Network.Ethereum.Web3.Types (Web3M, Address, BigNumber, Block, CallMode, HexString, Transaction)
 import Network.Ethereum.Web3.JsonRPC (remote)
 
 
@@ -18,5 +18,11 @@ eth_getBalance = remote "eth_getBalance"
 -- | Returns information about a block by hash.
 -- Use the boolean flag =true if you want the whole transaction objects
 -- in the 'transactions' field, =false to get just the hash
-eth_getBlockByNumber :: CallMode -> Boolean -> Web3 Block
-eth_getBlockByNumber = remote "eth_getBlockByNumber"
+eth_getBlockByNumber :: CallMode -> Web3 Block
+eth_getBlockByNumber cm = remote "eth_getBlockByNumber" cm false
+
+eth_getBlockByHash :: HexString -> Web3 Block
+eth_getBlockByHash = remote "eth_getBlockByHash"
+
+eth_getTransaction :: HexString -> Web3 Transaction
+eth_getTransaction = remote "eth_getTransaction"
