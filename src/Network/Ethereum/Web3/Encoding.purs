@@ -1,11 +1,13 @@
 module Network.Ethereum.Web3.Encoding where
 
 import Prelude
+import Data.Maybe (Maybe)
+import Control.Error.Util (hush)
+import Text.Parsing.Parser (Parser, runParser)
 
 import Network.Ethereum.Web3.Types
 import Network.Ethereum.Web3.Encoding.Internal (int256HexBuilder, int256HexParser
                                                ,textBuilder, textParser, take)
-import Text.Parsing.Parser (Parser)
 
 class ABIEncoding a where
   toDataBuilder :: a -> HexString
@@ -14,6 +16,11 @@ class ABIEncoding a where
 instance abiEncodingAlgebra :: ABIEncoding BigNumber where
   toDataBuilder = int256HexBuilder
   fromDataParser = int256HexParser
+
+-- | Parse encoded value, droping the leading '0x'
+fromData :: forall a . ABIEncoding a => HexString -> Maybe a
+fromData = hush <<< flip runParser fromDataParser <<< unHex
+
 
 fromBool :: Boolean -> BigNumber
 fromBool b = if b then one else zero

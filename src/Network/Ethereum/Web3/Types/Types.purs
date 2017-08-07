@@ -11,11 +11,12 @@ import Data.Array (all ,elem)
 import Data.ByteString (ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
-import Data.Foreign.NullOrUndefined (NullOrUndefined(..))
+import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.List (List)
+import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.String (toCharArray, stripPrefix,  Pattern(..))
 import Data.String (length) as S
@@ -192,7 +193,7 @@ data TransactionOptions =
                      , gas :: NullOrUndefined BigNumber
                      , gasPrice :: NullOrUndefined BigNumber
                      , data :: NullOrUndefined HexString
-                     , nonce :: NullOrUndefined Int
+                     , nonce :: NullOrUndefined BigNumber
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
@@ -214,6 +215,34 @@ defaultTransactionOptions =
                      , nonce : NullOrUndefined Nothing
                      }
 
+-- * Lens Boilerplate
+_from :: Lens' TransactionOptions (Maybe Address)
+_from = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.from)
+          (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {from = NullOrUndefined addr})
+
+_to :: Lens' TransactionOptions (Maybe Address)
+_to = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.to)
+           (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {to = NullOrUndefined addr})
+
+_data :: Lens' TransactionOptions (Maybe HexString)
+_data = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.data)
+           (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = NullOrUndefined dat})
+
+_value :: Lens' TransactionOptions (Maybe BigNumber)
+_value = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.value)
+           (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined val})
+
+_gas :: Lens' TransactionOptions (Maybe BigNumber)
+_gas = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gas)
+           (\(TransactionOptions txOpts) g -> TransactionOptions $ txOpts {gas = NullOrUndefined g})
+
+_gasPrice :: Lens' TransactionOptions (Maybe BigNumber)
+_gasPrice = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gasPrice)
+              (\(TransactionOptions txOpts) gp -> TransactionOptions $ txOpts {gasPrice = NullOrUndefined gp})
+
+_nonce :: Lens' TransactionOptions (Maybe BigNumber)
+_nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
+           (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
 --------------------------------------------------------------------------------
 -- | Web3M
 --------------------------------------------------------------------------------
