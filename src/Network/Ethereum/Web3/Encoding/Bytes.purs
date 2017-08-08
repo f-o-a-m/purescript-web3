@@ -8,8 +8,7 @@ import Type.Proxy (Proxy(..))
 
 import Network.Ethereum.Web3.Types
 import Node.Encoding (Encoding(Hex))
-import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, take, int256HexParser, int256HexBuilder)
-import Network.Ethereum.Web3.Encoding (class ABIEncoding)
+import Network.Ethereum.Web3.Encoding.Internal (class EncodingType)
 
 --------------------------------------------------------------------------------
 -- * Statically sized byte array
@@ -33,21 +32,15 @@ bytesBuilder = padRight <<< HexString <<< flip BS.toString Hex
 bytesDecode :: String -> ByteString
 bytesDecode = flip BS.fromString Hex
 
-instance abiEncodingBytesN :: BytesSize n => ABIEncoding (BytesN n) where
-  toDataBuilder (BytesN bs) = bytesBuilder bs
-  fromDataParser = do
-    let result = (BytesN BS.empty :: BytesN n)
-        len = bytesLength (Proxy :: Proxy n)
-        zeroBytes = getPadLength len
-    void <<< take $ zeroBytes * 2
-    raw <- take $ len * 2
-    pure <<< update result <<< bytesDecode <<< unHex $ raw
 
 --------------------------------------------------------------------------------
 -- * Dynamic length byte array
 --------------------------------------------------------------------------------
 
 newtype BytesD = BytesD ByteString
+
+unBytesD :: BytesD -> ByteString
+unBytesD (BytesD bs) = bs
 
 derive newtype instance eqBytesD :: Eq BytesD
 
@@ -61,14 +54,6 @@ instance showBytesD :: Show BytesD where
 instance encodingTypeBytesD :: EncodingType BytesD where
   typeName  = const "bytes[]"
   isDynamic = const true
-
-instance abiEncodingBytesD :: ABIEncoding BytesD where
-  toDataBuilder (BytesD bytes) =
-    int256HexBuilder (BS.length bytes) <> bytesBuilder bytes
-
-  fromDataParser = do
-    len <- toInt <$> int256HexParser
-    BytesD <<< bytesDecode <<< unHex <$> take (len * 2)
 
 --------------------------------------------------------------------------------
 -- * Type level byte array lengths

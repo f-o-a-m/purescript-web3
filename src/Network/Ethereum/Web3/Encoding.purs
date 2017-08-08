@@ -3,11 +3,15 @@ module Network.Ethereum.Web3.Encoding where
 import Prelude
 import Data.Maybe (Maybe)
 import Control.Error.Util (hush)
+import Data.ByteString (toUTF8, fromUTF8, empty, length) as BS
+import Type.Proxy (Proxy(..))
 import Text.Parsing.Parser (Parser, runParser)
 
+
 import Network.Ethereum.Web3.Types
-import Network.Ethereum.Web3.Encoding.Internal (int256HexBuilder, int256HexParser
-                                               ,textBuilder, textParser, take)
+import Network.Ethereum.Web3.Encoding.Internal (int256HexBuilder, int256HexParser, take)
+import Network.Ethereum.Web3.Encoding.Bytes (class BytesSize, bytesLength, BytesN(..), BytesD(..)
+                                            , bytesBuilder, bytesDecode, unBytesD, update)
 
 class ABIEncoding a where
   toDataBuilder :: a -> HexString
@@ -28,6 +32,7 @@ fromBool b = if b then one else zero
 toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
+
 instance abiEncodingBool :: ABIEncoding Boolean where
     toDataBuilder  = int256HexBuilder <<< fromBool
     fromDataParser = toBool <$> int256HexParser
@@ -36,18 +41,31 @@ instance abiEncodingInt :: ABIEncoding Int where
     toDataBuilder  = int256HexBuilder
     fromDataParser = toInt <$> int256HexParser
 
-instance abiEncodingString :: ABIEncoding String where
-    toDataBuilder  = textBuilder
-    fromDataParser = textParser
-
 instance abiEncodingAddress :: ABIEncoding Address where
     toDataBuilder (Address addr) = padLeft addr
     fromDataParser = do
       _ <- take 24
       Address <$> take 40
 
---instance ABIEncoding a => ABIEncoding (Array a) where
---    toDataBuilder x = int256HexBuilder (length x)
---                      <> foldMap toDataBuilder x
---    fromDataParser = do len <- int256HexParser
---                        take len <$> P.many1 fromDataParser
+instance abiEncodingBytesN :: BytesSize n => ABIEncoding (BytesN n) where
+  toDataBuilder (BytesN bs) = bytesBuilder bs
+  fromDataParser = do
+    let result = (BytesN BS.empty :: BytesN n)
+        len = bytesLength (Proxy :: Proxy n)
+        zeroBytes = getPadLength (len * 2)
+    void <<< take $ zeroBytes
+    raw <- take $ len * 2
+    pure <<< update result <<< bytesDecode <<< unHex $ raw
+
+instance abiEncodingBytesD :: ABIEncoding BytesD where
+  toDataBuilder (BytesD bytes) =
+    int256HexBuilder (BS.length bytes) <> bytesBuilder bytes
+
+  fromDataParser = do
+    len <- toInt <$> int256HexParser
+    BytesD <<< bytesDecode <<< unHex <$> take (len * 2)
+
+instance abiEncodingString :: ABIEncoding String where
+    toDataBuilder = toDataBuilder <<<  BytesD <<< BS.toUTF8
+    fromDataParser = BS.fromUTF8 <<< unBytesD <$> fromDataParser
+

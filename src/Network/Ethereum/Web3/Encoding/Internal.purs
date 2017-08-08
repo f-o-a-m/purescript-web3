@@ -2,8 +2,6 @@ module Network.Ethereum.Web3.Encoding.Internal
   ( class EncodingType, typeName, isDynamic
   , int256HexBuilder
   , int256HexParser
-  , textBuilder
-  , textParser
   , take
   ) where
 
@@ -67,19 +65,6 @@ int256HexBuilder x =
 -- | Parse a big number
 int256HexParser :: forall m . Monad m => ParserT String m BigNumber
 int256HexParser = fromHexString <$> take 64
-
--- | Encode dynamically sized string
-textBuilder :: String -> HexString
-textBuilder s = int256HexBuilder (length hx `div` 2) <> padLeftSigned (asSigned hx)
-  where hx = fromUtf8 s
-
--- | Parse dynamically sized string.
-textParser :: forall m . Monad m => ParserT String m String
-textParser = do
-    len <- toInt <$> int256HexParser
-    let zeroBytes = getPadLength len
-    void $ take (zeroBytes * 2)
-    toUtf8 <$> take (len * 2)
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString

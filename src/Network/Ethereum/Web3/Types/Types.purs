@@ -34,7 +34,7 @@ derive instance eqSign :: Eq Sign
 data Signed a = Signed Sign a
 
 instance showSigned :: Show a => Show (Signed a) where
-  show (Signed s a) = show s' <> show a
+  show (Signed s a) = s' <> show a
     where
       s' = case s of
         Pos -> ""
