@@ -3,6 +3,7 @@ module Network.Ethereum.Web3.Encoding.Bytes where
 import Prelude
 import Data.ByteString (ByteString)
 import Data.ByteString as BS
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Type.Proxy (Proxy(..))
 
@@ -14,7 +15,13 @@ import Network.Ethereum.Web3.Encoding.Internal (class EncodingType)
 -- * Statically sized byte array
 --------------------------------------------------------------------------------
 
-data BytesN n = BytesN ByteString
+newtype BytesN n = BytesN ByteString
+
+derive newtype instance eqBytesN :: Eq (BytesN n)
+
+instance showBytesN :: Show (BytesN n) where
+  show (BytesN bs) = BS.toString bs BS.Hex
+
 
 update :: forall n . BytesSize n => BytesN n -> ByteString -> BytesN n
 update _ = BytesN
@@ -32,6 +39,10 @@ bytesBuilder = padRight <<< HexString <<< flip BS.toString Hex
 bytesDecode :: String -> ByteString
 bytesDecode = flip BS.fromString Hex
 
+fromByteString :: forall n . BytesSize n => ByteString -> Maybe (BytesN n)
+fromByteString bs = if BS.length bs > bytesLength (Proxy :: Proxy n)
+                       then Nothing
+                       else Just $ BytesN bs
 
 --------------------------------------------------------------------------------
 -- * Dynamic length byte array
