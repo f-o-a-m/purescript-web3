@@ -79,14 +79,14 @@ fromWei val eu =
 -- | computes the number of bytes of padding for a bytestring of length 'len'
 getPadLength :: Int -> Int
 getPadLength len =
-  let n = len `mod` 32
-  in if n == 0 then 0 else 32 - n
+  let n = len `mod` 64
+  in if n == 0 then 0 else 64 - n
 
 -- | Pad a 'Signed HexString' on the left until it has
 -- length == 0 mod 64.
 padLeftSigned :: Signed HexString -> HexString
 padLeftSigned (Signed s hx) =
-    let padLength = 2 * getPadLength (length hx `div` 2)
+    let padLength = getPadLength $ length hx
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in padding <> hx
@@ -95,7 +95,7 @@ padLeftSigned (Signed s hx) =
 -- length 0 mod 64.
 padRightSigned :: Signed HexString -> HexString
 padRightSigned (Signed s hx) =
-    let padLength = 2 * getPadLength (length hx `div` 2)
+    let padLength = getPadLength $ length hx
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in hx <> padding
