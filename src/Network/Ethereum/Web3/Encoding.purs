@@ -53,8 +53,8 @@ instance abiEncodingBytesN :: BytesSize n => ABIEncoding (BytesN n) where
     let result = (BytesN BS.empty :: BytesN n)
         len = bytesLength (Proxy :: Proxy n)
         zeroBytes = getPadLength (len * 2)
-    void <<< take $ zeroBytes
     raw <- take $ len * 2
+    _ <- take $ zeroBytes
     pure <<< update result <<< bytesDecode <<< unHex $ raw
 
 instance abiEncodingBytesD :: ABIEncoding BytesD where
