@@ -32,7 +32,6 @@ fromBool b = if b then one else zero
 toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
-
 instance abiEncodingBool :: ABIEncoding Boolean where
     toDataBuilder  = int256HexBuilder <<< fromBool
     fromDataParser = toBool <$> int256HexParser

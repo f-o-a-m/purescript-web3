@@ -14,6 +14,7 @@ module Network.Ethereum.Web3.Types.Utils
   , extractTypeName
   , toSignedHexString
   , fromHexString
+  , fromHexStringSigned
   , toWei
   , fromWei
   ) where
@@ -34,7 +35,8 @@ import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
 import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
-import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal,
+                                              parseBigNumber, toTwosComplement)
 
 data EtherUnit =
     Wei
@@ -133,7 +135,6 @@ fromUtf8 s =
 fromAscii :: String -> HexString
 fromAscii = HexString <<< flip BS.toString Hex <<< flip BS.fromString ASCII
 
-
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =
   let str = HexString <<< toString hexadecimal $ bn
@@ -141,6 +142,8 @@ toSignedHexString bn =
   in Signed sgn str
 
 foreign import fromHexString :: HexString -> BigNumber
+
+foreign import fromHexStringSigned :: HexString -> BigNumber
 
 --  | Should be used to create full function/event name from json abi
 transformToFullName :: forall r s . { name :: String , inputs :: List { type_ :: String | r } | s } -> String

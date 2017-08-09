@@ -18,12 +18,12 @@ encodingSpec = describe "encoding-spec" do
   stringTests
   bytesDTests
   bytesNTests
+  intTests
 
 roundTrip :: forall r a . Show a => Eq a => ABIEncoding a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Just decoded
-
 
 stringTests :: forall r . Spec r Unit
 stringTests =
@@ -95,4 +95,25 @@ bytesNTests =
       it "can encode Bytes12" do
          let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: BytesN (B1 :& B2))
          let expected =  HexString "6761766f66796f726b0000000000000000000000000000000000000000000000"
+         roundTrip given expected
+
+
+intTests :: forall r . Spec r Unit
+intTests =
+    describe "int/uint tests" do
+
+      it "can encode int" do
+         let given = 21
+         let expected =  HexString "0000000000000000000000000000000000000000000000000000000000000015"
+         roundTrip given expected
+
+      it "can encode negative numbers" do
+         let given = negate 1
+         let expected =  HexString "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+         roundTrip given expected
+
+
+      it "can encode some big number" do
+         let given = 987654321
+         let expected =  HexString "000000000000000000000000000000000000000000000000000000003ade68b1"
          roundTrip given expected
