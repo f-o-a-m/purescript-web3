@@ -7,7 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Type.Proxy (Proxy(..))
 
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (HexString(..), padRight)
 import Node.Encoding (Encoding(Hex))
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType)
 

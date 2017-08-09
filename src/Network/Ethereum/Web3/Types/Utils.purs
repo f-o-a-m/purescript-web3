@@ -35,8 +35,7 @@ import Text.Parsing.Parser.String (char, skipSpaces)
 import Text.Parsing.Parser.Token (alphaNum)
 
 import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
-import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal,
-                                              parseBigNumber, toTwosComplement)
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
 
 data EtherUnit =
     Wei
@@ -166,8 +165,8 @@ extractTypeName a = runParser a extractTypeNameParser
 extractTypeNameParser :: Parser String String
 extractTypeNameParser = do
     _ <- skipMany alphaNum
-    types <- between (char '(') (char ')') typesParser
-    pure <<< joinWith "," <<< fromFoldable $ types
+    typs <- between (char '(') (char ')') typesParser
+    pure <<< joinWith "," <<< fromFoldable $ typs
   where
     typesParser :: Parser String (List String)
     typesParser = sepBy typeParser $ char ','

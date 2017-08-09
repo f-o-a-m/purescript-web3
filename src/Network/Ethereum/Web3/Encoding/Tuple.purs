@@ -6,9 +6,8 @@ import Data.Tuple (Tuple(..), snd)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
-import Text.Parsing.Parser (Parser)
 
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, length)
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
 

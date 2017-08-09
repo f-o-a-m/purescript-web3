@@ -9,7 +9,6 @@ import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Network.Ethereum.Web3.Types
 import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Encoding.Internal
 import Network.Ethereum.Web3.Encoding.Bytes(BytesD(..), BytesN(..), B0, B1, B2, B3, type (:&))
 
 
