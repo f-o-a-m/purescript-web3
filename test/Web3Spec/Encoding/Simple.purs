@@ -19,6 +19,7 @@ encodingSpec = describe "encoding-spec" do
   bytesDTests
   bytesNTests
   intTests
+  addressTests
 
 roundTrip :: forall r a . Show a => Eq a => ABIEncoding a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
@@ -116,4 +117,13 @@ intTests =
       it "can encode some big number" do
          let given = 987654321
          let expected =  HexString "000000000000000000000000000000000000000000000000000000003ade68b1"
+         roundTrip given expected
+
+addressTests :: forall r . Spec r Unit
+addressTests =
+    describe "addresses tests" do
+
+      it "can encode address" do
+         let given = Address <<< HexString $ "407d73d8a49eeb85d32cf465507dd71d507100c1"
+         let expected =  HexString "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
          roundTrip given expected
