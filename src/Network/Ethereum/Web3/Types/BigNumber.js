@@ -68,7 +68,7 @@ exports.reciprical = function (bn) {
 };
 
 exports.toTwosComplement = function (bn) {
-    var bigNumber = bn.round();
+  var bigNumber = bn.round();
   if (bigNumber.lessThan(0)) {
       return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bigNumber).plus(1);
   } else {

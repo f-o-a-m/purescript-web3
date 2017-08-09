@@ -64,7 +64,7 @@ int256HexBuilder x =
 
 -- | Parse a big number
 int256HexParser :: forall m . Monad m => ParserT String m BigNumber
-int256HexParser = fromHexString <$> take 64
+int256HexParser = fromHexStringSigned <$> take 64
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
