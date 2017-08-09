@@ -8,7 +8,7 @@ import Type.Proxy (Proxy(..))
 import Text.Parsing.Parser (Parser, runParser)
 
 
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (Address(..), BigNumber, HexString, getPadLength, padLeft, toInt, unHex)
 import Network.Ethereum.Web3.Encoding.Internal (int256HexBuilder, int256HexParser, take)
 import Network.Ethereum.Web3.Encoding.Bytes (class BytesSize, bytesLength, BytesN(..), BytesD(..)
                                             , bytesBuilder, bytesDecode, unBytesD, update)

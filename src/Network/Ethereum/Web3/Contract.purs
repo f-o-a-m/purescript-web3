@@ -7,7 +7,11 @@ import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web3M,
+                                    _data, _from, _gas, _to, _value, defaultTransactionOptions,
+                                    hexadecimal, parseBigNumber)
+
+
 
 class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
