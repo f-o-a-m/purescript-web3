@@ -18,8 +18,8 @@ import Network.Ethereum.Web3.Types (Address(..), BigNumber, HexString, getPadLen
                                     padLeft, toInt, unHex, hexLength)
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic, int256HexBuilder,
                                                 int256HexParser, take)
-import Network.Ethereum.Web3.Encoding.Bytes (class BytesSize, bytesLength, BytesN(..), BytesD(..)
-                                            , bytesBuilder, bytesDecode, unBytesD, update)
+import Network.Ethereum.Web3.Encoding.Bytes (BytesN(..), BytesD(..) , bytesBuilder, bytesDecode, unBytesD, update)
+import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal)
 
 class ABIEncoding a where
   toDataBuilder :: a -> HexString
@@ -54,11 +54,11 @@ instance abiEncodingAddress :: ABIEncoding Address where
       _ <- take 24
       Address <$> take 40
 
-instance abiEncodingBytesN :: BytesSize n => ABIEncoding (BytesN n) where
+instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
   toDataBuilder (BytesN bs) = bytesBuilder bs
   fromDataParser = do
     let result = (BytesN BS.empty :: BytesN n)
-        len = bytesLength (Proxy :: Proxy n)
+        len = sizeVal (Proxy :: Proxy n)
         zeroBytes = getPadLength (len * 2)
     raw <- take $ len * 2
     _ <- take $ zeroBytes
