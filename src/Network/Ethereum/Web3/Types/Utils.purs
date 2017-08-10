@@ -9,9 +9,6 @@ module Network.Ethereum.Web3.Types.Utils
   , fromUtf8
   , toAscii
   , fromAscii
-  , transformToFullName
-  , extractDisplayName
-  , extractTypeName
   , toSignedHexString
   , fromHexString
   , fromHexStringSigned
@@ -19,22 +16,15 @@ module Network.Ethereum.Web3.Types.Utils
   , fromWei
   ) where
 
-import Control.Fold (mconcat, foldl)
-import Data.Array (unsafeIndex, many, fromFoldable, replicate)
+import Prelude
+import Data.Array (unsafeIndex, replicate)
 import Data.ByteString (toString, fromString) as BS
-import Data.Either (Either)
-import Data.List (List)
-import Data.Maybe (Maybe(..), fromJust)
-import Data.String (Pattern(..), split, indexOf, take, joinWith, fromCharArray)
+import Data.Maybe (fromJust)
+import Data.String (Pattern(..), split, fromCharArray)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-import Prelude
-import Text.Parsing.Parser (Parser, ParseError, runParser)
-import Text.Parsing.Parser.Combinators (skipMany, sepBy, between)
-import Text.Parsing.Parser.String (char, skipSpaces)
-import Text.Parsing.Parser.Token (alphaNum)
 
-import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, length)
+import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, hexLength)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
 
 data EtherUnit =
@@ -87,7 +77,7 @@ getPadLength len =
 -- length == 0 mod 64.
 padLeftSigned :: Signed HexString -> HexString
 padLeftSigned (Signed s hx) =
-    let padLength = getPadLength $ length hx
+    let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in padding <> hx
@@ -96,7 +86,7 @@ padLeftSigned (Signed s hx) =
 -- length 0 mod 64.
 padRightSigned :: Signed HexString -> HexString
 padRightSigned (Signed s hx) =
-    let padLength = getPadLength $ length hx
+    let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in hx <> padding
@@ -143,32 +133,3 @@ toSignedHexString bn =
 foreign import fromHexString :: HexString -> BigNumber
 
 foreign import fromHexStringSigned :: HexString -> BigNumber
-
---  | Should be used to create full function/event name from json abi
-transformToFullName :: forall r s . { name :: String , inputs :: List { type_ :: String | r } | s } -> String
-transformToFullName a = case indexOf (Pattern "(") a.name of
-  Nothing -> a.name
-  Just _ -> let is = a.inputs
-                typeName = foldl mconcat $ map (\i -> i.type_) is
-            in "(" <> typeName <> ")"
-
--- | Should be called to get display name of contract function.
-extractDisplayName :: String -> String
-extractDisplayName a = case indexOf (Pattern "(") a of
-  Nothing -> a
-  Just n -> take n a
-
--- | Returns overloaded part of function/event name
-extractTypeName :: String -> Either ParseError String
-extractTypeName a = runParser a extractTypeNameParser
-
-extractTypeNameParser :: Parser String String
-extractTypeNameParser = do
-    _ <- skipMany alphaNum
-    typs <- between (char '(') (char ')') typesParser
-    pure <<< joinWith "," <<< fromFoldable $ typs
-  where
-    typesParser :: Parser String (List String)
-    typesParser = sepBy typeParser $ char ','
-    typeParser :: Parser String String
-    typeParser = skipSpaces *> (fromCharArray <$> many alphaNum)

@@ -13,7 +13,10 @@ import Data.Word (Word32)
 import Text.Parsing.Parser (ParserT)
 import Text.Parsing.Parser.Token (hexDigit)
 
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString(..),
+                                    embed, fromHexStringSigned, padLeftSigned,
+                                    toSignedHexString, toTwosComplement)
+
 
 --------------------------------------------------------------------------------
 -- | Encoding Types
