@@ -7,18 +7,14 @@ import Control.Monad.Aff (Aff)
 import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
 import Data.Monoid (class Monoid)
-import Data.Array (all ,elem)
-import Data.ByteString (ByteString, Encoding(Hex))
-import Data.ByteString as BS
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
-import Data.List (List)
 import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
-import Data.String (toCharArray, stripPrefix,  Pattern(..))
+import Data.String (stripPrefix,  Pattern(..))
 import Data.String (length) as S
 
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
@@ -45,9 +41,6 @@ instance eqSigned :: Eq a => Eq (Signed a) where
 
 instance mapSigned :: Functor Signed where
   map f (Signed s a) = Signed s (f a)
-
-unSigned :: forall a . Signed a -> a
-unSigned (Signed _ a) = a
 
 asSigned :: forall a . a -> Signed a
 asSigned a = Signed Pos a
@@ -77,22 +70,11 @@ instance decodeHexString :: Decode HexString where
 instance encodeHexString :: Encode HexString where
   encode = encode <<< append "0x" <<< unHex
 
-parseHexString :: String -> Maybe HexString
-parseHexString s =
-    let res = all go <<< toCharArray $ s
-    in if res then Just <<< HexString $ s else Nothing
-  where
-    go :: Char -> Boolean
-    go c = c `elem` ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
-
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
-pack :: HexString -> ByteString
-pack (HexString hx) = BS.fromString hx Hex
-
-length :: HexString -> Int
-length (HexString hx) = S.length hx
+hexLength :: HexString -> Int
+hexLength (HexString hx) = S.length hx
 
 --------------------------------------------------------------------------------
 -- * Addresses
@@ -291,35 +273,3 @@ derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 
 unWeb3MA :: forall eff a . Web3MA eff a -> Aff (eth :: ETH | eff) a
 unWeb3MA (Web3MA action) = action
-
---------------------------------------------------------------------------------
--- * Contract Interface and Event Description
---------------------------------------------------------------------------------
-
-data AbiElement = FunctionType | Event
-
-type FunctionType = { type_ :: FunctionClass
-                    , name :: String
-                    , inputs :: List FunctionInputs
-                    , constant :: Boolean
-                    , payable :: Boolean
-                    }
-
-data FunctionClass =
-    Function
-  | Constructor
-  | Fallback
-
-type FunctionInputs = { name :: String
-                      , type_ :: String
-                      }
-
-type Event = { name :: String
-             , inputs :: List EventInputs
-             , anonymous :: Boolean
-             }
-
-type EventInputs = { name :: String
-                   , type_ :: String
-                   , indexed :: Boolean
-                   }

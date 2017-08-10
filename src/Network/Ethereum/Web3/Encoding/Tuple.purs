@@ -6,10 +6,11 @@ import Data.Tuple (Tuple(..), snd)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
+import Type.Proxy (Proxy(..))
 
-import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, length)
-import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
+import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength)
+import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
+import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 
 -- | Argument offset calculator
 offset :: Int
@@ -21,7 +22,7 @@ offset :: Int
 offset totalArgs args = headerOffset + dataOffset
   where
     headerOffset = totalArgs * 32
-    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< length) args
+    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< hexLength) args
                    in rawLength `div` 2
 
 data EncodedValue =
@@ -50,7 +51,7 @@ instance abiDataHexString :: ABIData HexString where
 
 instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIData (b -> a) where
   _serialize (Tuple n l) x =
-    if isDynamic x
+    if isDynamic (Proxy :: Proxy b)
        then _serialize $ Tuple n (dynEncoding  : l)
        else _serialize $ Tuple n (staticEncoding  : l)
     where
@@ -61,13 +62,3 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
       staticEncoding = EncodedValue { headEnc : toDataBuilder x
                                     , tailEnc : mempty
                                     }
--- | Static argument parser
---sParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser a
---sParser x | isDynamic x = take 64 >> return undefined
---          | otherwise   = fromDataParser
-
----- | Dynamic argument parser
---dParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser String a
---dParser x
---  | isDynamic x = fromDataParser
---  | otherwise   = pure x

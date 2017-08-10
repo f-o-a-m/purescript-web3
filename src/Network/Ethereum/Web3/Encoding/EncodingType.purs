@@ -1,26 +1,22 @@
-module Network.Ethereum.Web3.Encoding.Internal
+module Network.Ethereum.Web3.Encoding.EncodingType
   ( class EncodingType, typeName, isDynamic
-  , int256HexBuilder
-  , int256HexParser
-  , take
   ) where
 
 import Prelude
-import Data.String (fromCharArray)
-import Data.Unfoldable (replicateA)
+import Type.Proxy (Proxy)
 import Data.Word (Word32)
-import Text.Parsing.Parser (ParserT)
-import Text.Parsing.Parser.Token (hexDigit)
+import Data.ByteString (ByteString)
 
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (Address, BigNumber)
 
 --------------------------------------------------------------------------------
+
 -- | Encoding Types
 --------------------------------------------------------------------------------
 
 class EncodingType a where
-  typeName :: a -> String
-  isDynamic :: a -> Boolean
+  typeName :: Proxy a -> String
+  isDynamic :: Proxy a -> Boolean
 
 instance encodingTypeBoolean :: EncodingType Boolean where
     typeName  = const "bool"
@@ -50,22 +46,6 @@ instance encodingTypeArray :: EncodingType a => EncodingType (Array a) where
     typeName  = const "[]"
     isDynamic = const true
 
---------------------------------------------------------------------------------
--- | Builders and Parsers
---------------------------------------------------------------------------------
-
--- | Encode anything any type of number that fits in a big numbed
-int256HexBuilder :: forall a . Algebra a BigNumber => a -> HexString
-int256HexBuilder x =
-  let x' = embed x
-  in if x' < zero
-       then int256HexBuilder <<< toTwosComplement $ x'
-       else padLeftSigned <<< toSignedHexString $ x'
-
--- | Parse a big number
-int256HexParser :: forall m . Monad m => ParserT String m BigNumber
-int256HexParser = fromHexStringSigned <$> take 64
-
--- | Read any number of HexDigits
-take :: forall m . Monad m => Int -> ParserT String m HexString
-take n = HexString <<< fromCharArray <$> replicateA n hexDigit
+instance encodingTypeBytesD :: EncodingType ByteString where
+  typeName  = const "bytes[]"
+  isDynamic = const true

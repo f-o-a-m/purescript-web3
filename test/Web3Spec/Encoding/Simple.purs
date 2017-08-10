@@ -7,9 +7,10 @@ import Test.Spec (Spec, describe, it)
 import Data.ByteString as BS
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
-import Network.Ethereum.Web3.Types
-import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Encoding.Bytes(BytesD(..), BytesN(..), B0, B1, B2, B3, type (:&))
+import Network.Ethereum.Web3.Types (Address(..), HexString(..))
+import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Encoding.Bytes(BytesN(..))
+import Network.Ethereum.Web3.Encoding.Size(D1, D2, D3, type (:&))
 
 
 encodingSpec :: forall r . Spec r Unit
@@ -55,14 +56,14 @@ bytesDTests =
     describe "bytesD tests" do
 
       it "can encode short bytesD" do
-         let given = BytesD <<< flip BS.fromString BS.Hex $ "c3a40000c3a4"
+         let given = flip BS.fromString BS.Hex $ "c3a40000c3a4"
          let expected = HexString $
                           "0000000000000000000000000000000000000000000000000000000000000006"
                        <> "c3a40000c3a40000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode long bytesD" do
-         let given = BytesD <<< flip BS.fromString BS.Hex $
+         let given = flip BS.fromString BS.Hex $
                             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -82,18 +83,18 @@ bytesNTests =
     describe "byteN tests" do
 
       it "can encode Bytes1" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf") :: BytesN B1)
+         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf") :: BytesN D1)
          let expected =  HexString "cf00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode Bytes3" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf0011") :: BytesN B3)
+         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf0011") :: BytesN D3)
          let expected =  HexString "cf00110000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
       it "can encode Bytes12" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: BytesN (B1 :& B2))
+         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: BytesN (D1 :& D2))
          let expected =  HexString "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
 
