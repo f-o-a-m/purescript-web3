@@ -1,17 +1,25 @@
 module Network.Ethereum.Web3.Encoding.AbiEncoding where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Control.Error.Util (hush)
+import Data.Array ((:))
+import Data.Array (uncons) as A
 import Data.Unfoldable (replicateA)
 import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Text.Parsing.Parser.Token (hexDigit)
-import Text.Parsing.Parser (Parser, ParserT, runParser)
+import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
+import Data.Foldable (fold, foldMap)
+import Data.Tuple (Tuple(..), fst, snd)
+import Data.Lens.Index (ix)
+import Data.Lens.Setter (over)
 
+import Network.Ethereum.Web3.Encoding.Size (class KnownNat)
+import Network.Ethereum.Web3.Encoding.Vector (Vector, unVector)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
-                                    embed, fromHexStringSigned, padLeft, padLeftSigned,
+                                    embed, fromHexStringSigned, padLeft, padLeftSigned, hexLength,
                                     padRight, toInt, toSignedHexString, toTwosComplement, unHex)
 
 class ABIEncoding a where
@@ -54,10 +62,15 @@ instance abiEncodingString :: ABIEncoding String where
     toDataBuilder = toDataBuilder <<< BS.toUTF8
     fromDataParser = BS.fromUTF8 <$> fromDataParser
 
+instance abiEncodingArray :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
+    toDataBuilder as = encodeArray <<< unVector $ as
+    fromDataParser = fail "oops"
+
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers
 --------------------------------------------------------------------------------
 
+-- | Bytestring
 bytesBuilder :: ByteString -> HexString
 bytesBuilder = padRight <<< HexString <<< flip BS.toString BS.Hex
 
@@ -76,12 +89,35 @@ int256HexBuilder x =
 int256HexParser :: forall m . Monad m => ParserT String m BigNumber
 int256HexParser = fromHexStringSigned <$> take 64
 
+-- | Boolean
 fromBool :: Boolean -> BigNumber
 fromBool b = if b then one else zero
 
 toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
+-- Vector
+accumulateOffsets :: Array Int -> Array Int
+accumulateOffsets as = go 0 as
+  where
+    go :: Int -> Array Int -> Array Int
+    go accum bs = case A.uncons bs of
+      Nothing -> []
+      Just ht -> let newAccum = accum + ht.head
+                 in newAccum : go newAccum ht.tail
+
+encodeArray :: forall a .
+               ABIEncoding a
+            => Array a
+            -> HexString
+encodeArray as =
+    let countEncs = map countEnc as
+        offsets = accumulateOffsets <<< over (ix 0) (\x -> x - 32) <<< map fst $ countEncs
+        encodings = map snd countEncs
+    in  foldMap toDataBuilder offsets <> fold encodings
+  where
+    countEnc a = let enc = toDataBuilder a
+                 in Tuple (hexLength enc `div` 2) enc
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
