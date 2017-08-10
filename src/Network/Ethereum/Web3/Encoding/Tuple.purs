@@ -62,13 +62,3 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
       staticEncoding = EncodedValue { headEnc : toDataBuilder x
                                     , tailEnc : mempty
                                     }
--- | Static argument parser
---sParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser a
---sParser x | isDynamic x = take 64 >> return undefined
---          | otherwise   = fromDataParser
-
----- | Dynamic argument parser
---dParser :: forall a . EncodingType a => ABIEncoding a => a -> Parser String a
---dParser x
---  | isDynamic x = fromDataParser
---  | otherwise   = pure x
