@@ -4,7 +4,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Control.Error.Util (hush)
 import Data.Array ((:))
-import Data.Array (uncons) as A
+import Data.Array (uncons, length) as A
 import Data.Unfoldable (replicateA)
 import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
@@ -62,8 +62,12 @@ instance abiEncodingString :: ABIEncoding String where
     toDataBuilder = toDataBuilder <<< BS.toUTF8
     fromDataParser = BS.fromUTF8 <$> fromDataParser
 
-instance abiEncodingArray :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
+instance abiEncodingVector :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
     toDataBuilder as = encodeArray <<< unVector $ as
+    fromDataParser = fail "oops"
+
+instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
+    toDataBuilder as = toDataBuilder (A.length as) <> encodeArray as
     fromDataParser = fail "oops"
 
 --------------------------------------------------------------------------------
