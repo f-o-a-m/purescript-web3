@@ -8,7 +8,7 @@ import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
 import Type.Proxy (Proxy(..))
 
-import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, length)
+import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength)
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
 
@@ -22,7 +22,7 @@ offset :: Int
 offset totalArgs args = headerOffset + dataOffset
   where
     headerOffset = totalArgs * 32
-    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< length) args
+    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< hexLength) args
                    in rawLength `div` 2
 
 data EncodedValue =

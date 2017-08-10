@@ -7,9 +7,9 @@ import Test.Spec (Spec, describe, it)
 import Data.ByteString as BS
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
-import Network.Ethereum.Web3.Types
+import Network.Ethereum.Web3.Types (Address(..), HexString(..))
 import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Encoding.Bytes(BytesD(..), BytesN(..), B0, B1, B2, B3, type (:&))
+import Network.Ethereum.Web3.Encoding.Bytes(BytesD(..), BytesN(..), B1, B2, B3, type (:&))
 
 
 encodingSpec :: forall r . Spec r Unit

@@ -1,13 +1,11 @@
 module Network.Ethereum.Web3.Encoding where
 
 import Prelude
-import Data.Maybe (Maybe)
-import Data.Monoid (mempty)
+import Data.Maybe (Maybe(..))
 import Control.Error.Util (hush)
 import Data.Array ((:))
-import Data.Array (head, uncons, length) as A
+import Data.Array (uncons, length) as A
 import Data.Foldable (fold, foldMap)
-import Data.Maybe (Maybe(..))
 import Data.ByteString (toUTF8, fromUTF8, empty, length) as BS
 import Data.Tuple (Tuple(..), fst, snd)
 import Type.Proxy (Proxy(..))
@@ -16,7 +14,8 @@ import Data.Lens.Setter (over)
 import Text.Parsing.Parser (Parser, runParser, fail)
 
 
-import Network.Ethereum.Web3.Types (Address(..), BigNumber, HexString, getPadLength, padLeft, toInt, unHex, length)
+import Network.Ethereum.Web3.Types (Address(..), BigNumber, HexString, getPadLength,
+                                    padLeft, toInt, unHex, hexLength)
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic, int256HexBuilder,
                                                 int256HexParser, take)
 import Network.Ethereum.Web3.Encoding.Bytes (class BytesSize, bytesLength, BytesN(..), BytesD(..)
@@ -100,10 +99,8 @@ encodeArray as =
              in  foldMap toDataBuilder offsets <> fold encodings
   where
     countEnc a = let enc = toDataBuilder a
-                 in Tuple (length enc `div` 2) enc
+                 in Tuple (hexLength enc `div` 2) enc
 
-newtype FixedArray n a = FixedArray (Array a)
-
-instance abiEncodingArray :: (EncodingType a, ABIEncoding a) => ABIEncoding (FixedArray n a) where
+instance abiEncodingArray :: (EncodingType a, ABIEncoding a) => ABIEncoding (Array a) where
     toDataBuilder = encodeArray
     fromDataParser = fail "oops"
