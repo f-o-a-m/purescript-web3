@@ -6,6 +6,7 @@ module Network.Ethereum.Web3.Encoding.Internal
   ) where
 
 import Prelude
+import Type.Proxy (Proxy)
 import Data.String (fromCharArray)
 import Data.Unfoldable (replicateA)
 import Data.Word (Word32)
@@ -19,8 +20,8 @@ import Network.Ethereum.Web3.Types
 --------------------------------------------------------------------------------
 
 class EncodingType a where
-  typeName :: a -> String
-  isDynamic :: a -> Boolean
+  typeName :: Proxy a -> String
+  isDynamic :: Proxy a -> Boolean
 
 instance encodingTypeBoolean :: EncodingType Boolean where
     typeName  = const "bool"

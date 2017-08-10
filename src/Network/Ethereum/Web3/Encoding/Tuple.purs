@@ -6,6 +6,7 @@ import Data.Tuple (Tuple(..), snd)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
+import Type.Proxy (Proxy(..))
 
 import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, length)
 import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
@@ -50,7 +51,7 @@ instance abiDataHexString :: ABIData HexString where
 
 instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIData (b -> a) where
   _serialize (Tuple n l) x =
-    if isDynamic x
+    if isDynamic (Proxy :: Proxy b)
        then _serialize $ Tuple n (dynEncoding  : l)
        else _serialize $ Tuple n (staticEncoding  : l)
     where
