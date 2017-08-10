@@ -26,6 +26,8 @@ instance abiEncodingAlgebra :: ABIEncoding BigNumber where
 fromData :: forall a . ABIEncoding a => HexString -> Maybe a
 fromData = hush <<< flip runParser fromDataParser <<< unHex
 
+-- | Instances
+
 instance abiEncodingBool :: ABIEncoding Boolean where
     toDataBuilder  = int256HexBuilder <<< fromBool
     fromDataParser = toBool <$> int256HexParser
