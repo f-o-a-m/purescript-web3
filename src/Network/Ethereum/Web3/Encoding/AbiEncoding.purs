@@ -3,6 +3,7 @@ module Network.Ethereum.Web3.Encoding.AbiEncoding where
 import Prelude
 import Data.Maybe (Maybe(..))
 import Control.Error.Util (hush)
+import Type.Proxy (Proxy(..))
 import Data.Array ((:))
 import Data.Array (uncons, length) as A
 import Data.Unfoldable (replicateA)
@@ -16,11 +17,12 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Lens.Index (ix)
 import Data.Lens.Setter (over)
 
-import Network.Ethereum.Web3.Encoding.Size (class KnownNat)
+import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal)
 import Network.Ethereum.Web3.Encoding.Vector (Vector, unVector)
+import Network.Ethereum.Web3.Encoding.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
                                     embed, fromHexStringSigned, padLeft, padLeftSigned, hexLength,
-                                    padRight, toInt, toSignedHexString, toTwosComplement, unHex)
+                                    getPadLength, padRight, toInt, toSignedHexString, toTwosComplement, unHex)
 
 class ABIEncoding a where
   toDataBuilder :: a -> HexString
@@ -61,6 +63,16 @@ instance abiEncodingBytesD :: ABIEncoding ByteString where
 instance abiEncodingString :: ABIEncoding String where
     toDataBuilder = toDataBuilder <<< BS.toUTF8
     fromDataParser = BS.fromUTF8 <$> fromDataParser
+
+instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
+  toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
+  fromDataParser = do
+    let len = sizeVal (Proxy :: Proxy n)
+        zeroBytes = getPadLength (len * 2)
+    raw <- take $ len * 2
+    _ <- take $ zeroBytes
+    pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
+
 
 instance abiEncodingVector :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
     toDataBuilder as = encodeArray <<< unVector $ as

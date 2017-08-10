@@ -3,11 +3,13 @@ module Network.Ethereum.Web3.Encoding.EncodingType
   ) where
 
 import Prelude
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 import Data.Word (Word32)
 import Data.ByteString (ByteString)
 
 import Network.Ethereum.Web3.Types (Address, BigNumber)
+import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal)
+import Network.Ethereum.Web3.Encoding.Bytes (BytesN)
 
 --------------------------------------------------------------------------------
 
@@ -45,6 +47,12 @@ instance encodingTypeAddress :: EncodingType Address where
 instance encodingTypeArray :: EncodingType a => EncodingType (Array a) where
     typeName  = const "[]"
     isDynamic = const true
+
+instance encodingTypeBytes :: KnownSize n => EncodingType (BytesN n) where
+    typeName  = let n = show (sizeVal (Proxy :: Proxy n))
+                in const $ "bytes[" <> n <> "]"
+    isDynamic = const false
+
 
 instance encodingTypeBytesD :: EncodingType ByteString where
   typeName  = const "bytes[]"
