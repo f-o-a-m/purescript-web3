@@ -4,12 +4,12 @@ import Prelude
 import Data.ByteString (ByteString)
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..))
-import Data.Monoid (class Monoid)
 import Type.Proxy (Proxy(..))
 
-import Network.Ethereum.Web3.Types (HexString(..), padRight)
+import Network.Ethereum.Web3.Types (HexString(..), getPadLength, unHex)
 import Node.Encoding (Encoding(Hex))
-import Network.Ethereum.Web3.Encoding.Internal (class EncodingType)
+import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType)
+import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, bytesBuilder, bytesDecode, take)
 import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal)
 
 --------------------------------------------------------------------------------
@@ -31,36 +31,18 @@ instance encodingTypeBytes :: KnownSize n => EncodingType (BytesN n) where
 instance showNat :: KnownSize n => Show (BytesN n) where
     show (BytesN bs) = show <<< HexString $ BS.toString bs Hex
 
-bytesBuilder :: ByteString -> HexString
-bytesBuilder = padRight <<< HexString <<< flip BS.toString Hex
-
-bytesDecode :: String -> ByteString
-bytesDecode = flip BS.fromString Hex
-
 fromByteString :: forall n . KnownSize n => ByteString -> Maybe (BytesN n)
 fromByteString bs = if BS.length bs > sizeVal (Proxy :: Proxy n)
                        then Nothing
                        else Just $ BytesN bs
 
---------------------------------------------------------------------------------
--- * Dynamic length byte array
---------------------------------------------------------------------------------
-
-newtype BytesD = BytesD ByteString
-
-unBytesD :: BytesD -> ByteString
-unBytesD (BytesD bs) = bs
-
-derive newtype instance eqBytesD :: Eq BytesD
-
-derive newtype instance semigroupBytesD :: Semigroup BytesD
-
-derive newtype instance monoidBytesD :: Monoid BytesD
-
-instance showBytesD :: Show BytesD where
-  show (BytesD bs) = BS.toString bs Hex
-
-instance encodingTypeBytesD :: EncodingType BytesD where
-  typeName  = const "bytes[]"
-  isDynamic = const true
+instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
+  toDataBuilder (BytesN bs) = bytesBuilder bs
+  fromDataParser = do
+    let result = (BytesN BS.empty :: BytesN n)
+        len = sizeVal (Proxy :: Proxy n)
+        zeroBytes = getPadLength (len * 2)
+    raw <- take $ len * 2
+    _ <- take $ zeroBytes
+    pure <<< update result <<< bytesDecode <<< unHex $ raw
 
