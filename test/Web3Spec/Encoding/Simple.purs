@@ -2,14 +2,15 @@ module Web3Spec.Encoding.Single (encodingSpec) where
 
 
 import Prelude
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Test.Spec (Spec, describe, it)
 import Data.ByteString as BS
+import Partial.Unsafe (unsafePartial)
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Network.Ethereum.Web3.Types (Address(..), HexString(..))
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Encoding.Bytes(BytesN(..))
+import Network.Ethereum.Web3.Encoding.Bytes(BytesN, fromByteString)
 import Network.Ethereum.Web3.Encoding.Size(D1, D2, D3, type (:&))
 
 
@@ -83,19 +84,22 @@ bytesNTests =
     describe "byteN tests" do
 
       it "can encode Bytes1" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf") :: BytesN D1)
-         let expected =  HexString "cf00000000000000000000000000000000000000000000000000000000000000"
+         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "cf") :: Maybe (BytesN D1)
+             given = unsafePartial $ fromJust mgiven
+             expected =  HexString "cf00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode Bytes3" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "cf0011") :: BytesN D3)
-         let expected =  HexString "cf00110000000000000000000000000000000000000000000000000000000000"
+         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "cf0011") :: Maybe (BytesN D3)
+             given = unsafePartial $ fromJust mgiven
+             expected =  HexString "cf00110000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
       it "can encode Bytes12" do
-         let given =  ((BytesN <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: BytesN (D1 :& D2))
-         let expected =  HexString "6761766f66796f726b0000000000000000000000000000000000000000000000"
+         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: Maybe (BytesN (D1 :& D2))
+             given = unsafePartial $ fromJust mgiven
+             expected =  HexString "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
