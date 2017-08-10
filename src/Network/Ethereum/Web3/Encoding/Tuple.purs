@@ -9,8 +9,8 @@ import Data.Foldable (fold, foldMap)
 import Type.Proxy (Proxy(..))
 
 import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength)
-import Network.Ethereum.Web3.Encoding.Internal (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
+import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
+import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 
 -- | Argument offset calculator
 offset :: Int

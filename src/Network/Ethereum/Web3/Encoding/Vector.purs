@@ -3,7 +3,8 @@ module Network.Ethereum.Web3.Encoding.Vector
     nilVector,
     vCons, (:<),
     vectorLength,
-    toVector
+    toVector,
+    encodeArray
   ) where
 
 import Prelude
@@ -19,7 +20,7 @@ import Data.Lens.Setter (over)
 import Text.Parsing.Parser (fail)
 
 import Network.Ethereum.Web3.Encoding.Size (class KnownNat, S, Z, natVal)
-import Network.Ethereum.Web3.Encoding (class ABIEncoding, toDataBuilder)
+import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 import Network.Ethereum.Web3.Types (HexString, hexLength)
 
 data Vector n a = Vector (Array a)
