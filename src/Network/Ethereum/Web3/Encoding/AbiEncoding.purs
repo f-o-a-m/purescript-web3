@@ -3,10 +3,10 @@ module Network.Ethereum.Web3.Encoding.AbiEncoding where
 import Prelude
 import Data.Maybe (Maybe(..))
 import Control.Error.Util (hush)
+import Data.Unfoldable (replicateA)
 import Type.Proxy (Proxy(..))
 import Data.Array ((:))
 import Data.Array (uncons, length) as A
-import Data.Unfoldable (replicateA)
 import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
@@ -17,7 +17,8 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Lens.Index (ix)
 import Data.Lens.Setter (over)
 
-import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal)
+import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Encoding.Vector (Vector, unVector)
 import Network.Ethereum.Web3.Encoding.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
@@ -74,12 +75,17 @@ instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
 
-instance abiEncodingVector :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
-    toDataBuilder as = encodeArray <<< unVector $ as
-    fromDataParser = fail "oops"
+instance abiEncodingVector :: (EncodingType a, ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
+    toDataBuilder as = if not $ isDynamic (Proxy :: Proxy a)
+                          then foldMap toDataBuilder as
+                          else encodeDynamicsArray <<< unVector $ as
+    fromDataParser = if not $ isDynamic (Proxy :: Proxy a)
+                        then let len = natVal (Proxy :: Proxy n)
+                             in replicateA len fromDataParser
+                        else fail "oops"
 
 instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
-    toDataBuilder as = toDataBuilder (A.length as) <> encodeArray as
+    toDataBuilder as = toDataBuilder (A.length as) <> foldMap toDataBuilder as
     fromDataParser = fail "oops"
 
 --------------------------------------------------------------------------------
@@ -122,11 +128,11 @@ accumulateOffsets as = go 0 as
       Just ht -> let newAccum = accum + ht.head
                  in newAccum : go newAccum ht.tail
 
-encodeArray :: forall a .
+encodeDynamicsArray :: forall a .
                ABIEncoding a
             => Array a
             -> HexString
-encodeArray as =
+encodeDynamicsArray as =
     let countEncs = map countEnc as
         offsets = accumulateOffsets <<< over (ix 0) (\x -> x - 32) <<< map fst $ countEncs
         encodings = map snd countEncs
@@ -134,6 +140,14 @@ encodeArray as =
   where
     countEnc a = let enc = toDataBuilder a
                  in Tuple (hexLength enc `div` 2) enc
+
+decodeArray :: forall n a .
+               ABIEncoding a
+            => KnownNat n
+            => Parser String (Vector n a)
+decodeArray =
+  let len = natVal (Proxy :: Proxy n)
+  in replicateA len fromDataParser
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString

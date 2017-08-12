@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Single (encodingSpec) where
+module Web3Spec.Encoding.Simple (encodingSimpleSpec) where
 
 
 import Prelude
@@ -14,8 +14,8 @@ import Network.Ethereum.Web3.Encoding.Bytes(BytesN, fromByteString)
 import Network.Ethereum.Web3.Encoding.Size(D1, D2, D3, type (:&))
 
 
-encodingSpec :: forall r . Spec r Unit
-encodingSpec = describe "encoding-spec" do
+encodingSimpleSpec :: forall r . Spec r Unit
+encodingSimpleSpec = describe "encoding-spec" do
   stringTests
   bytesDTests
   bytesNTests
