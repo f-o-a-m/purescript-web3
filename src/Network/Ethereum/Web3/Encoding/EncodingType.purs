@@ -8,7 +8,8 @@ import Data.Word (Word32)
 import Data.ByteString (ByteString)
 
 import Network.Ethereum.Web3.Types (Address, BigNumber)
-import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal)
+import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal, class KnownNat, natVal)
+import Network.Ethereum.Web3.Encoding.Vector (Vector)
 import Network.Ethereum.Web3.Encoding.Bytes (BytesN)
 
 --------------------------------------------------------------------------------
@@ -53,6 +54,11 @@ instance encodingTypeBytes :: KnownSize n => EncodingType (BytesN n) where
                 in const $ "bytes[" <> n <> "]"
     isDynamic = const false
 
+instance encodingTypeVector :: (KnownNat n, EncodingType a) => EncodingType (Vector n a) where
+    typeName  = let n = show (natVal (Proxy :: Proxy n))
+                    baseTypeName = typeName (Proxy :: Proxy a)
+                in const $ baseTypeName <> "[" <> n <> "]"
+    isDynamic = const $ isDynamic (Proxy :: Proxy a)
 
 instance encodingTypeBytesD :: EncodingType ByteString where
   typeName  = const "bytes[]"

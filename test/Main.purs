@@ -5,7 +5,8 @@ import Control.Monad.Eff (Eff)
 import Web3Spec.Types.Sha3 (sha3Spec)
 import Web3Spec.Types.Utils (utilsSpec)
 import Web3Spec.Types.BigNumber (bigNumberSpec)
-import Web3Spec.Encoding.Single (encodingSpec)
+import Web3Spec.Encoding.Simple (encodingSimpleSpec)
+import Web3Spec.Encoding.Containers (encodingContainersSpec)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
 
@@ -14,5 +15,6 @@ main = run [consoleReporter] $ do
   sha3Spec
   utilsSpec
   bigNumberSpec
-  encodingSpec
+  encodingContainersSpec
+  encodingSimpleSpec
 

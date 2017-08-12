@@ -13,11 +13,25 @@ import Data.Array ((:))
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Type.Proxy (Proxy(..))
+import Data.Traversable (class Traversable)
+import Data.Foldable (class Foldable)
+import Data.Unfoldable (class Unfoldable)
 
 import Network.Ethereum.Web3.Encoding.Size (class KnownNat, S, Z, natVal)
-import Network.Ethereum.Web3.Types (HexString)
 
-data Vector n a = Vector (Array a)
+newtype Vector n a = Vector (Array a)
+
+derive newtype instance showVector :: Show a => Show (Vector n a)
+
+derive newtype instance eqVector :: Eq a => Eq (Vector n a)
+
+derive newtype instance functorVector :: Functor (Vector n)
+
+derive newtype instance unfoldableVector :: Unfoldable (Vector n)
+
+derive newtype instance foldableVector :: Foldable (Vector n)
+
+derive newtype instance traversableVector :: Traversable (Vector n)
 
 unVector :: forall a n . Vector n a -> Array a
 unVector (Vector as) = as

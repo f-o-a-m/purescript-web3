@@ -45,3 +45,27 @@ utilsSpec = describe "utils-spec" do
         Just (toWei one Ether) `shouldEqual` parseBigNumber decimal "100000000000000000"
         Just (toWei (embed 10) TEther) `shouldEqual` parseBigNumber decimal "10000000000000000000000000000"
         (fromWei (embed 1000) KWei) `shouldEqual` (embed 1)
+
+--setCount(int count) returns (bool)
+--
+--"setcount(int)" -->> sha >>> -take 4 bytes = "abcd"
+--
+--data GetCount = GetCount ()
+--....
+--
+--data SetCount = SetCount (Bytes (D1 :& D2))
+--
+--instance AbiEncoding SetCount where
+--   toDataBuilder (SetCount n) = "abcd" <> toDatabuilder n
+--   fromDataParser = error "Don't need this"
+--
+--setCount :: Int -> Web3A Bool
+--setCount n = call simpleStorage Latest (SetCount n)
+
+
+
+
+
+
+
+
