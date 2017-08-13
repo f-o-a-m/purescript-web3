@@ -138,4 +138,4 @@ instance decodeBigNumber :: Decode BigNumber where
   decode = pure <<< toBigNumber
 
 instance encodeBigNumber :: Encode BigNumber where
-  encode = encode <<< toString Int.hexadecimal
+  encode = encode <<< (append "0x") <<< toString Int.hexadecimal
