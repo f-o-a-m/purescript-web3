@@ -79,6 +79,12 @@ bytesDTests =
                          <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff100"
          roundTrip given expected
 
+      it "can encode dave" do
+        let given = "dave"
+        let expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000004"
+                                <> "6461766500000000000000000000000000000000000000000000000000000000"
+        roundTrip given expected
+
 bytesNTests :: forall r . Spec r Unit
 bytesNTests =
     describe "byteN tests" do

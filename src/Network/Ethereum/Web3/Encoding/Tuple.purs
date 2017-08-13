@@ -1,15 +1,19 @@
 module Network.Ethereum.Web3.Encoding.Tuple where
 
 import Prelude
+import Data.String (joinWith)
 import Data.Array (reverse, (:))
 import Data.Tuple (Tuple(..), snd)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Foldable (fold, foldMap)
 import Type.Proxy (Proxy(..))
-import Text.Parsing.Parser(fail)
+import Control.Monad.State.Class (get)
+import Text.Parsing.Parser(Parser, ParseState(..))
+import Text.Parsing.Parser.Combinators (lookAhead)
+import Text.Parsing.Parser.Pos (Position(..))
 
-import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength)
+import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength, toInt)
 import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser, take)
 
@@ -64,12 +68,11 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
                                     , tailEnc : mempty
                                     }
 
-
 instance abiEncoding1 :: (ABIEncoding a,
                           EncodingType a
                          ) => ABIEncoding (Singleton a) where
   toDataBuilder (Singleton a) = _serialize (Tuple 1 []) a
-  fromDataParser = fail "oops"
+  fromDataParser = factorParser >>= pure <<< Singleton
 
 instance abiEncoding2 :: (ABIEncoding a,
                           EncodingType a,
@@ -77,7 +80,10 @@ instance abiEncoding2 :: (ABIEncoding a,
                           EncodingType b
                          ) => ABIEncoding (Tuple2 a b) where
   toDataBuilder (Tuple2 a b) = _serialize (Tuple 2 []) a b
-  fromDataParser = fail "oops"
+  fromDataParser = do
+    a <- factorParser
+    b <- factorParser
+    pure $ Tuple2 a b
 
 instance abiEncoding3 :: (ABIEncoding a,
                           EncodingType a,
@@ -87,10 +93,20 @@ instance abiEncoding3 :: (ABIEncoding a,
                           EncodingType c
                          ) => ABIEncoding (Tuple3 a b c) where
   toDataBuilder (Tuple3 a b c) = _serialize (Tuple 3 []) a b c
-  fromDataParser = fail "oops"
+  fromDataParser = do
+    a <- factorParser
+    b <- factorParser
+    c <- factorParser
+    pure $ Tuple3 a b c
 
 --------------------------------------------------------------------------------
 data Singleton a = Singleton a
+
+instance showSingleton :: Show a => Show (Singleton a) where
+  show (Singleton a) = makeTupleString [show a]
+
+instance eqSingleton :: Eq a => Eq (Singleton a) where
+  eq (Singleton a) (Singleton b) = a == b
 
 uncurry1 :: forall a b . (a -> b) -> Singleton a -> b
 uncurry1 f (Singleton a) = f a
@@ -98,7 +114,20 @@ uncurry1 f (Singleton a) = f a
 curry1 :: forall a b . (Singleton a -> b) -> a -> b
 curry1 f a = f (Singleton a)
 
+
+-- * Tuple2
+
 data Tuple2 a b = Tuple2 a b
+
+instance showTuple2 :: (Show a, Show b) => Show (Tuple2 a b) where
+  show (Tuple2 a b) = makeTupleString [ show a
+                                      , show b
+                                      ]
+
+instance eqTuple2 :: (Eq a, Eq b) => Eq (Tuple2 a b) where
+  eq (Tuple2 a b) (Tuple2 a' b') = a == a' && b == b'
+
+-- * Tuple3
 
 uncurry2 :: forall a b c . (a -> b -> c) -> Tuple2 a b -> c
 uncurry2 f (Tuple2 a b) = f a b
@@ -108,18 +137,36 @@ curry2 f a b = f (Tuple2 a b)
 
 data Tuple3 a b c = Tuple3 a b c
 
+instance showTuple3 :: (Show a, Show b, Show c) => Show (Tuple3 a b c) where
+  show (Tuple3 a b c) = makeTupleString [ show a
+                                        , show b
+                                        , show c
+                                        ]
+
+instance eqTuple3 :: (Eq a, Eq b, Eq c) => Eq (Tuple3 a b c) where
+  eq (Tuple3 a b c) (Tuple3 a' b' c') =
+    a == a' && b == b' && c == c'
+
 uncurry3 :: forall a b c d . (a -> b -> c -> d) -> Tuple3 a b c -> d
 uncurry3 f (Tuple3 a b c) = f a b c
 
 curry3 :: forall a b c d . (Tuple3 a b c -> d) -> a -> b -> c -> d
 curry3 f a b c = f (Tuple3 a b c)
 
----- | Static argument parser
---sParser :: EncodingType a => ABIEncoding a => a -> Parser a
---sParser x | isDynamic x = take 64 >>= \_ -> pure undefined
---          | otherwise   = fromDataParser
---
----- | Dynamic argument parser
---dParser :: EncodingType a => ABIEncoding a => a -> Parser a
---dParser x | isDynamic x = fromDataParser
---          | otherwise   = pure x
+--------------------------------------------------------------------------------
+
+makeTupleString :: Array String -> String
+makeTupleString as = "(" <> joinWith ", " as <> ")"
+
+factorParser :: forall a . ABIEncoding a => EncodingType a => Parser String a
+factorParser
+  | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
+  | otherwise = dParser
+
+dParser :: forall a . ABIEncoding a => Parser String a
+dParser = do
+  dataOffset <- toInt <$> fromDataParser
+  lookAhead $ do
+    (ParseState _ (Position p) _) <- get
+    _ <- take (dataOffset * 2 - (p.column - 1))
+    fromDataParser

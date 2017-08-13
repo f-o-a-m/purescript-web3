@@ -73,8 +73,3 @@ _call t mf cm dat = do
       defaultTransactionOptions # _to .~ Just t
                                 # _from .~ mf
                                 # _data .~ Just d
-
-
--- data Set = Set Int
--- instance ABIEncoding Set where
---   toDataBuilder (Set )

@@ -57,7 +57,7 @@ instance abiEncodingBytesD :: ABIEncoding ByteString where
     int256HexBuilder (BS.length bytes) <> bytesBuilder bytes
 
   fromDataParser = do
-    len <- toInt <$> int256HexParser
+    len <- toInt <$> fromDataParser
     bytesDecode <<< unHex <$> take (len * 2)
 
 instance abiEncodingString :: ABIEncoding String where
