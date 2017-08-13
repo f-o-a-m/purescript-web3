@@ -7,14 +7,17 @@ import Web3Spec.Types.Utils (utilsSpec)
 import Web3Spec.Types.BigNumber (bigNumberSpec)
 import Web3Spec.Encoding.Simple (encodingSimpleSpec)
 import Web3Spec.Encoding.Containers (encodingContainersSpec)
+import Web3Spec.Contract (simpleStorageSpec)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
+import Network.Ethereum.Web3.Types (ETH)
 
-main :: Eff (RunnerEffects ()) Unit
+main :: Eff (RunnerEffects (eth :: ETH)) Unit
 main = run [consoleReporter] $ do
   sha3Spec
   utilsSpec
   bigNumberSpec
   encodingContainersSpec
   encodingSimpleSpec
+  simpleStorageSpec
 

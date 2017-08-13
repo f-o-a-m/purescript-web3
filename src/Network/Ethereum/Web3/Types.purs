@@ -11,7 +11,7 @@ import Network.Ethereum.Web3.Types.Types (Address(..), Block(..), CallMode(..), 
                                           Web3M(..), Web3MA(..), _data, _from, _gas, _gasPrice, _nonce,
                                           _to, _value, asSigned, defaultTransactionOptions, hexLength,
                                           unHex, unWeb3M, unWeb3MA)
-  
+
 import Network.Ethereum.Web3.Types.Utils (EtherUnit(..), fromAscii, fromHexString, fromHexStringSigned, fromUtf8, fromWei, getPadLength, padLeft, padLeftSigned, padRight, padRightSigned, toAscii, toSignedHexString, toUtf8, toWei)
 import Network.Ethereum.Web3.Types.BigNumber (class Algebra, BigNumber, Radix, binary, decimal, embed, floor, hexadecimal, ladd, lmul, lsub, parseBigNumber, pow, radd, rmul, rsub, toInt, toString, toTwosComplement, (*<), (+<), (-<), (>*), (>+), (>-))
 import Network.Ethereum.Web3.Types.Sha3 (class SHA3, sha3)

@@ -13,29 +13,36 @@ import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web
 
 
 
-class ABIEncoding a <= Method a where
+class Method a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall e .
-              Address
+    sendTx :: Maybe Address
            -- ^ Contract address
+           -> Address
+           -- ^ from address
            -> BigNumber
            -- ^ paymentValue
            -> a
            -- ^ Method data
-           -> Web3M e HexString
+           -> Web3M () HexString
            -- ^ 'Web3' wrapped tx hash
 
     -- | Constant call given contract 'Address' in mode and given input data
-    call :: forall e b .
+    call :: forall b .
             ABIEncoding b
          => Address
          -- ^ Contract address
+         -> Maybe Address
+         -- from address
          -> CallMode
          -- ^ State mode for constant call (latest or pending)
          -> a
          -- ^ Method data
-         -> Web3M e b
+         -> Web3M () b
          -- ^ 'Web3' wrapped result
+
+instance methodAbiEncoding :: ABIEncoding a => Method a where
+  sendTx = _sendTransaction
+  call = _call
 
 _sendTransaction :: forall a .
                     ABIEncoding a

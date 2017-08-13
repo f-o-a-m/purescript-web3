@@ -21,6 +21,7 @@ exports._sendAsync = function (callback) {
 exports._send = function (provider) {
     return function (request) {
         return function () {
+            console.log(request);
             var res = provider.send(request);
             return res.result;
         };
