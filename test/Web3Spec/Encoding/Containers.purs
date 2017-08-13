@@ -80,7 +80,7 @@ tuplesTest =
       let given = Tuple2 true false
           expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
-      toDataBuilder given `shouldEqual` expected
+      roundTrip given expected
 
     it "can encode 1-tuples with dynamic arg" do
       let given = Singleton [true, false]
@@ -88,9 +88,9 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
-      toDataBuilder given `shouldEqual` expected
+      roundTrip given expected
 
-    it "can encode 3-tuples with a mix of args" do
+    it "can encode 3-tuples with a mix of args -- (String, Boolean, Array Int)" do
       let given = Tuple3 "dave" true [1,2,3]
           expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000060"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
@@ -102,4 +102,4 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000003"
 
-      toDataBuilder given `shouldEqual` expected
+      roundTrip given expected
