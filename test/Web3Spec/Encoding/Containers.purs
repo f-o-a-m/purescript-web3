@@ -10,6 +10,7 @@ import Test.Spec.Assertions (shouldEqual)
 import Data.ByteString as BS
 import Network.Ethereum.Web3.Types (Address(..), HexString(..))
 import Network.Ethereum.Web3.Encoding.Vector (Vector, toVector)
+import Network.Ethereum.Web3.Encoding.Tuple (Singleton(..), Tuple2(..), Tuple3(..))
 import Network.Ethereum.Web3.Encoding.Bytes(BytesN, fromByteString)
 import Network.Ethereum.Web3.Encoding.Size (N1, N2, N4, D1)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
@@ -18,6 +19,8 @@ import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuil
 encodingContainersSpec :: forall r . Spec r Unit
 encodingContainersSpec = describe "encoding-spec" do
   staticArraysTests
+  dynamicArraysTests
+  tuplesTest
 
 roundTrip :: forall r a . Show a => Eq a => ABIEncoding a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
@@ -57,3 +60,46 @@ staticArraysTests =
                                   <> "fb00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
+dynamicArraysTests :: forall r . Spec r Unit
+dynamicArraysTests =
+    describe "dynamically sized array tests" do
+
+      it "can encode dynamically sized lists of bools" do
+         let given = [true, true, false]
+             expected =  HexString $ "0000000000000000000000000000000000000000000000000000000000000003"
+                                  <> "0000000000000000000000000000000000000000000000000000000000000001"
+                                  <> "0000000000000000000000000000000000000000000000000000000000000001"
+                                  <> "0000000000000000000000000000000000000000000000000000000000000000"
+         roundTrip given expected
+
+tuplesTest :: forall r . Spec r Unit
+tuplesTest =
+  describe "tuples test" do
+
+    it "can encode 2-tuples with both static args" do
+      let given = Tuple2 true false
+          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "0000000000000000000000000000000000000000000000000000000000000000"
+      toDataBuilder given `shouldEqual` expected
+
+    it "can encode 1-tuples with dynamic arg" do
+      let given = Singleton [true, false]
+          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000020"
+                              <> "0000000000000000000000000000000000000000000000000000000000000002"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "0000000000000000000000000000000000000000000000000000000000000000"
+      toDataBuilder given `shouldEqual` expected
+
+    it "can encode 3-tuples with a mix of args" do
+      let given = Tuple3 "dave" true [1,2,3]
+          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000060"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "00000000000000000000000000000000000000000000000000000000000000a0"
+                              <> "0000000000000000000000000000000000000000000000000000000000000004"
+                              <> "6461766500000000000000000000000000000000000000000000000000000000"
+                              <> "0000000000000000000000000000000000000000000000000000000000000003"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "0000000000000000000000000000000000000000000000000000000000000002"
+                              <> "0000000000000000000000000000000000000000000000000000000000000003"
+
+      toDataBuilder given `shouldEqual` expected

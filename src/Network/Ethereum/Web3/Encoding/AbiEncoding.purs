@@ -11,15 +11,14 @@ import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Text.Parsing.Parser.Token (hexDigit)
-import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
+import Text.Parsing.Parser (Parser, ParserT, runParser)
 import Data.Foldable (fold, foldMap)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Lens.Index (ix)
 import Data.Lens.Setter (over)
 
 import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal, natVal)
-import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Encoding.Vector (Vector, unVector)
+import Network.Ethereum.Web3.Encoding.Vector (Vector)
 import Network.Ethereum.Web3.Encoding.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
                                     embed, fromHexStringSigned, padLeft, padLeftSigned, hexLength,
@@ -74,19 +73,18 @@ instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
     _ <- take $ zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
-
-instance abiEncodingVector :: (EncodingType a, ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
-    toDataBuilder as = if not $ isDynamic (Proxy :: Proxy a)
-                          then foldMap toDataBuilder as
-                          else encodeDynamicsArray <<< unVector $ as
-    fromDataParser = if not $ isDynamic (Proxy :: Proxy a)
-                        then let len = natVal (Proxy :: Proxy n)
-                             in replicateA len fromDataParser
-                        else fail "oops"
+instance abiEncodingVector :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
+    toDataBuilder as = foldMap toDataBuilder as
+    fromDataParser = let len = natVal (Proxy :: Proxy n)
+                     in replicateA len fromDataParser
 
 instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
     toDataBuilder as = toDataBuilder (A.length as) <> foldMap toDataBuilder as
-    fromDataParser = fail "oops"
+    fromDataParser = do
+      len <- toInt <$> fromDataParser
+      replicateA len fromDataParser
+
+
 
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers
