@@ -1,27 +1,23 @@
 module Network.Ethereum.Web3.Encoding.AbiEncoding where
 
 import Prelude
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Control.Error.Util (hush)
 import Data.Unfoldable (replicateA)
 import Type.Proxy (Proxy(..))
-import Data.Array ((:))
-import Data.Array (uncons, length) as A
+import Data.Array (length) as A
 import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser)
-import Data.Foldable (fold, foldMap)
-import Data.Tuple (Tuple(..), fst, snd)
-import Data.Lens.Index (ix)
-import Data.Lens.Setter (over)
+import Data.Foldable (foldMap)
 
 import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Encoding.Vector (Vector)
 import Network.Ethereum.Web3.Encoding.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
-                                    embed, fromHexStringSigned, padLeft, padLeftSigned, hexLength,
+                                    embed, fromHexStringSigned, padLeft, padLeftSigned,
                                     getPadLength, padRight, toInt, toSignedHexString, toTwosComplement, unHex)
 
 class ABIEncoding a where
@@ -115,37 +111,6 @@ fromBool b = if b then one else zero
 
 toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
-
--- Vector
-accumulateOffsets :: Array Int -> Array Int
-accumulateOffsets as = go 0 as
-  where
-    go :: Int -> Array Int -> Array Int
-    go accum bs = case A.uncons bs of
-      Nothing -> []
-      Just ht -> let newAccum = accum + ht.head
-                 in newAccum : go newAccum ht.tail
-
-encodeDynamicsArray :: forall a .
-               ABIEncoding a
-            => Array a
-            -> HexString
-encodeDynamicsArray as =
-    let countEncs = map countEnc as
-        offsets = accumulateOffsets <<< over (ix 0) (\x -> x - 32) <<< map fst $ countEncs
-        encodings = map snd countEncs
-    in  foldMap toDataBuilder offsets <> fold encodings
-  where
-    countEnc a = let enc = toDataBuilder a
-                 in Tuple (hexLength enc `div` 2) enc
-
-decodeArray :: forall n a .
-               ABIEncoding a
-            => KnownNat n
-            => Parser String (Vector n a)
-decodeArray =
-  let len = natVal (Proxy :: Proxy n)
-  in replicateA len fromDataParser
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
