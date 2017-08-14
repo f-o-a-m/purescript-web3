@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.Api where
 
 
 import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions)
-import Network.Ethereum.Web3.JsonRPC (remote)
+import Network.Ethereum.Web3.JsonRPC (remote, remoteAsync)
 
 
 type Web3 a = Web3M () a
@@ -34,7 +34,13 @@ eth_getTransaction = remote "eth_getTransactionByHash"
 eth_call :: TransactionOptions -> CallMode -> Web3 HexString
 eth_call = remote "eth_call"
 
+eth_call_async :: TransactionOptions -> CallMode -> Web3A HexString
+eth_call_async = remoteAsync "eth_call"
+
 -- | Creates new message call transaction or a contract creation,
 -- if the data field contains code.
 eth_sendTransaction :: TransactionOptions -> Web3 HexString
 eth_sendTransaction = remote "eth_sendTransaction"
+
+eth_sendTransaction_async :: TransactionOptions -> Web3A HexString
+eth_sendTransaction_async = remoteAsync "eth_sendTransaction"

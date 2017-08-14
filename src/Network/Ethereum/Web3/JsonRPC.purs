@@ -72,14 +72,6 @@ foreign import _sendAsync :: (Foreign -> Eff (eth :: ETH) Unit) -> Provider -> R
 remoteAsync :: forall a . RemoteAsync () a => MethodName -> a
 remoteAsync n = remoteAsync_ $ \provider ps -> makeAff (\error succ -> _sendAsync succ provider $ mkRequest n 1 ps)
 
---remoteAsync' :: forall a . Remote () a => MethodName -> a
---remoteAsync' = do
---    res <- makeAff (\error succ -> _sendAsync succ p req)
---    case runExcept <<< decode $ res of
---      -- TODO: fix bad error handling
---      Left e -> throwError <<< error <<< show $ e
---      Right r -> pure r
-
 newtype Request =
   Request { jsonrpc :: String
           , id :: Int

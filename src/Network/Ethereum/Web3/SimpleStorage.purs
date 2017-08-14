@@ -5,7 +5,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Text.Parsing.Parser (fail)
 
-import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, ETH, BigNumber, CallMode(..), unWeb3M)
+import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, BigNumber, CallMode(..))
 import Network.Ethereum.Web3.Contract (sendTx, call)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 
