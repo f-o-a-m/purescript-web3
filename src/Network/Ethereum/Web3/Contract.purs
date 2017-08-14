@@ -8,8 +8,7 @@ import Control.Monad.Error.Class (throwError)
 import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_sendTransaction, eth_sendTransaction_async)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web3M, Web3MA,
-                                    _data, _from, _gas, _to, _value, defaultTransactionOptions,
-                                    hexadecimal, parseBigNumber)
+                                    _data, _from, _to, _value, defaultTransactionOptions)
 
 
 
@@ -17,7 +16,7 @@ class Method a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: Maybe Address
            -- ^ Contract address
-           -> Address
+           -> Maybe Address
            -- ^ from address
            -> BigNumber
            -- ^ paymentValue
@@ -47,20 +46,18 @@ instance methodAbiEncoding :: ABIEncoding a => Method a where
 _sendTransaction :: forall a .
                     ABIEncoding a
                  => Maybe Address
-                 -> Address
+                 -> Maybe Address
                  -> BigNumber
                  -> a
                  -> Web3M () HexString
-_sendTransaction mto f val dat =
+_sendTransaction mto mf val dat =
     eth_sendTransaction (txdata $ toDataBuilder dat)
   where
-    defaultGas = parseBigNumber hexadecimal "0x2dc2dc"
     txdata d =
       defaultTransactionOptions # _to .~ mto
-                                # _from .~ Just f
+                                # _from .~ mf
                                 # _data .~ Just d
                                 # _value .~ Just val
-                                # _gas .~ defaultGas
 
 _call :: forall a b .
          ABIEncoding a
@@ -89,7 +86,7 @@ class AsyncMethod a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTxAsync :: Maybe Address
            -- ^ Contract address
-           -> Address
+           -> Maybe Address
            -- ^ from address
            -> BigNumber
            -- ^ paymentValue
@@ -119,20 +116,18 @@ instance methodAsyncAbiEncoding :: ABIEncoding a => AsyncMethod a where
 _sendTransactionAsync :: forall a .
                     ABIEncoding a
                  => Maybe Address
-                 -> Address
+                 -> Maybe Address
                  -> BigNumber
                  -> a
                  -> Web3MA () HexString
-_sendTransactionAsync mto f val dat =
+_sendTransactionAsync mto mf val dat =
     eth_sendTransaction_async (txdata $ toDataBuilder dat)
   where
-    defaultGas = parseBigNumber hexadecimal "0x2dc2dc"
     txdata d =
       defaultTransactionOptions # _to .~ mto
-                                # _from .~ Just f
+                                # _from .~ mf
                                 # _data .~ Just d
                                 # _value .~ Just val
-                                # _gas .~ defaultGas
 
 _callAsync :: forall a b .
          ABIEncoding a
