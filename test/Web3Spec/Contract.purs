@@ -3,7 +3,6 @@ module Web3Spec.Contract  where
 import Prelude
 import Test.Spec (Spec, describe, it)
 import Data.Maybe (Maybe(..))
-import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (fail)
 import Control.Monad.Eff.Class (liftEff)
@@ -11,7 +10,7 @@ import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
 
-import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, unWeb3M, unWeb3MA)
+import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, unWeb3M, unWeb3MA, unHex)
 import Network.Ethereum.Web3.Contract (sendTx, sendTxAsync)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 
@@ -39,10 +38,10 @@ simpleStorageSpec =
 
     it "can set the value of simple storage" do
       txHash <- liftEff $ unsafeCoerceEff $ unWeb3M $ set 100
-      _ <-  liftEff $ logShow txHash
+      _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
 
     it "can set the value of simple storage asynchronously" do
-      txHash <- unsafeCoerceAff $ unWeb3MA $ setA 100
-      _ <-  liftEff $ logShow txHash
+      txHash <- unsafeCoerceAff $ unWeb3MA $ setA 200
+      _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
