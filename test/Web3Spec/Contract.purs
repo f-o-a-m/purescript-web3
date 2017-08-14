@@ -27,10 +27,10 @@ instance abiEncodingSet :: ABIEncoding Set where
   fromDataParser = fail "No function parser"
 
 set :: Int -> Web3M () HexString
-set n = sendTx (Just ssAddress) adminAddress zero (Set n)
+set n = sendTx (Just ssAddress) (Just adminAddress) zero (Set n)
 
 setA :: Int -> Web3MA () HexString
-setA n = sendTxAsync (Just ssAddress) adminAddress zero (Set n)
+setA n = sendTxAsync (Just ssAddress) (Just adminAddress) zero (Set n)
 
 simpleStorageSpec :: forall r . Spec (eth :: ETH, console :: CONSOLE | r) Unit
 simpleStorageSpec =
