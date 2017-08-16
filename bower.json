@@ -18,7 +18,7 @@
     "purescript-foreign-generic": "^4.3.0",
     "purescript-debug": "^3.0.0",
     "purescript-errors": "^3.0.0",
-    "purescript-profunctor-lenses": "^3.4.0"
+    "purescript-profunctor-lenses": "^3.6.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",

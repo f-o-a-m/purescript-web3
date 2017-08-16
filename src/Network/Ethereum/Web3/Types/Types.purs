@@ -6,6 +6,9 @@ import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Reader.Trans (ReaderT, runReaderT)
+import Control.Monad.Reader.Class (class MonadAsk)
 import Data.Monoid (class Monoid)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
@@ -229,11 +232,13 @@ _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
 -- | Web3M
 --------------------------------------------------------------------------------
 
+foreign import data Provider :: Type
+
 -- | Synchronous Web3 Actions
 
 foreign import data ETH :: Effect
 
-newtype Web3M e a = Web3M (Eff (eth :: ETH , exception :: EXCEPTION | e) a)
+newtype Web3M e a = Web3M (ReaderT Provider (Eff (eth :: ETH , exception :: EXCEPTION | e)) a)
 
 derive newtype instance functorWeb3M :: Functor (Web3M e)
 
@@ -247,15 +252,17 @@ derive newtype instance monadWeb3M :: Monad (Web3M e)
 
 derive newtype instance monadEffWeb3M :: MonadEff (eth :: ETH, exception :: EXCEPTION | e) (Web3M e)
 
-instance monadThrowWeb3M :: MonadThrow Error (Web3M e) where
-    throwError = Web3M <<< throwException
+derive newtype instance monadAskWeb3M :: MonadAsk Provider (Web3M e)
 
-unWeb3M :: forall eff a . Web3M eff a -> Eff (eth :: ETH , exception :: EXCEPTION | eff) a
-unWeb3M (Web3M action) = action
+instance monadThrowWeb3M :: MonadThrow Error (Web3M e) where
+    throwError = Web3M <<< lift <<< throwException
+
+runWeb3M :: forall eff a . Provider -> Web3M eff a -> Eff (eth :: ETH , exception :: EXCEPTION | eff) a
+runWeb3M p (Web3M action) = runReaderT action p
 
 -- | Asynchronous Web3 Actions
 
-newtype Web3MA e a = Web3MA (Aff (eth :: ETH | e) a)
+newtype Web3MA e a = Web3MA (ReaderT Provider (Aff (eth :: ETH | e)) a)
 
 derive newtype instance functorWeb3MA :: Functor (Web3MA e)
 
@@ -269,7 +276,9 @@ derive newtype instance monadWeb3MA :: Monad (Web3MA e)
 
 derive newtype instance monadEffWeb3MA :: MonadEff (eth :: ETH | e) (Web3MA e)
 
+derive newtype instance monadAskWeb3MA :: MonadAsk Provider (Web3MA e)
+
 derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 
-unWeb3MA :: forall eff a . Web3MA eff a -> Aff (eth :: ETH | eff) a
-unWeb3MA (Web3MA action) = action
+runWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) a
+runWeb3MA p (Web3MA action) = runReaderT action p

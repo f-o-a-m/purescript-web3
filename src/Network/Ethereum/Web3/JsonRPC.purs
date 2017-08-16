@@ -14,9 +14,10 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
+import Control.Monad.Reader.Class (ask)
+import Control.Monad.Trans.Class (lift)
 
-import Network.Ethereum.Web3.Provider (Provider, getProvider)
-import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..))
+import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..), Provider)
 
 type MethodName = String
 
@@ -29,8 +30,8 @@ class Remote e a where
 
 instance remoteBase :: Decode a => Remote e (Web3M e a) where
   remote_ f = do
-    p <- liftEff getProvider
-    res <- Web3M $ f p mempty
+    p <- ask
+    res <- Web3M <<< lift $ f p mempty
     let decoded = runExcept <<< decode $ res
     case decoded of
       Left e -> throwError <<< error <<< show $ e
@@ -57,8 +58,8 @@ class RemoteAsync e a where
 
 instance remoteAsyncBase :: Decode a => RemoteAsync e (Web3MA e a) where
   remoteAsync_ f = do
-    p <- liftEff getProvider
-    res <- Web3MA $ f p mempty
+    p <- ask
+    res <- Web3MA <<< lift $ f p mempty
     let decoded = runExcept <<< decode $ res
     case decoded of
       Left e -> throwError <<< error <<< show $ e
