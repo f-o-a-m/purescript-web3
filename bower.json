@@ -8,26 +8,23 @@
   ],
   "dependencies": {
     "purescript-prelude": "^3.0.0",
-    "purescript-console": "^3.0.0",
     "bignumber.js": ">=2.0.0",
-    "crypto-js": "~3.1.4",
-    "purescript-typelevel": "^3.0.0",
-    "purescript-word": "^0.4.1",
-    "purescript-proxy": "^2.1.0",
-    "purescript-foreign": "^4.0.1",
-    "purescript-foreign-generic": "^4.3.0",
-    "purescript-debug": "^3.0.0",
-    "purescript-errors": "^3.0.0",
-    "purescript-profunctor-lenses": "^3.6.0"
+    "crypto-js": "~3.1.4"
   },
   "devDependencies": {
+    "purescript-errors": "^3.0.0",
+    "purescript-word": "^0.4.1",
     "purescript-psci-support": "^3.0.0",
+    "purescript-profunctor-lenses": "^3.6.0",
+    "purescript-foreign": "^4.0.1",
+    "purescript-foreign-generic": "^4.3.0",
     "purescript-spec": "^1.0.0",
+    "purescript-proxy": "^2.1.0",
+    "purescript-console": "^3.0.0",
     "purescript-bytestrings": "^5.0.1",
     "purescript-partial": "^1.2.1",
     "purescript-folds": "^3.1.0",
     "purescript-parsing": "^4.2.2",
-    "bignumber.js": "^4.0.2",
     "purescript-transformers": "^3.4.0",
     "purescript-identity": "^3.1.0"
   }
