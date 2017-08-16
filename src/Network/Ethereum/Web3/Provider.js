@@ -1,20 +1,25 @@
 "use strict";
 var Web3 = require('web3');
 
-var getProvider = function () {
-    var provider;
+exports.metamaskProvider = function () {
     if (typeof web3 !== 'undefined') {
         // Use Mist/MetaMask's provider
         console.log("using metamask provider");
-        provider = web3.currentProvider;
+        return web3.currentProvider;
     } else {
-        console.log("using http provider");
-        provider = new Web3.providers.HttpProvider("http://localhost:8545");
+        return new Error("No Metamask provider found.");
     }
-    return provider;
 };
 
-exports.getProvider = getProvider;
+exports.httpProvider = function (providerUrl) {
+    return function () {
+        if (typeof web3 !== 'undefined' && web3.currentProvider.host == providerUrl) {
+           return web3.currentProvider;
+        } else {
+           return new Web3.providers.HttpProvider(providerUrl);
+        }
+    };
+};
 
 exports.showProviderImpl = function (provider) {
     return provider.host;
