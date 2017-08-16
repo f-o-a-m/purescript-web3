@@ -20,7 +20,3 @@ exports.httpProvider = function (providerUrl) {
         }
     };
 };
-
-exports.showProviderImpl = function (provider) {
-    return provider.host;
-};

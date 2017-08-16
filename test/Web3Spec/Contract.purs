@@ -10,8 +10,9 @@ import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
 
-import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, unWeb3M, unWeb3MA, unHex)
+import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, runWeb3M, runWeb3MA, unHex)
 import Network.Ethereum.Web3.Contract (sendTx, sendTxAsync)
+import Network.Ethereum.Web3.Provider (httpProvider)
 import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
 
 ssAddress :: Address
@@ -37,11 +38,13 @@ simpleStorageSpec =
   describe "interacting with a SimpleStorage Contract" do
 
     it "can set the value of simple storage" do
-      txHash <- liftEff $ unsafeCoerceEff $ unWeb3M $ set 100
+      p <- liftEff <<< httpProvider $ "http://localhost:8545"
+      txHash <- liftEff $ unsafeCoerceEff $ runWeb3M p $ set 100
       _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
 
     it "can set the value of simple storage asynchronously" do
-      txHash <- unsafeCoerceAff $ unWeb3MA $ setA 200
+      p <- liftEff <<< httpProvider $ "http://localhost:8545"
+      txHash <- unsafeCoerceAff $ runWeb3MA p $ setA 200
       _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
