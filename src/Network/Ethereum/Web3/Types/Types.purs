@@ -3,12 +3,15 @@ module Network.Ethereum.Web3.Types.Types where
 import Prelude
 import Control.Monad.Eff (kind Effect, Eff)
 import Control.Monad.Eff.Class (class MonadEff)
+import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
 import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.Unsafe(unsafeCoerceAff)
 import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Reader.Class (class MonadAsk)
+import Control.Monad.Morph (hoist)
 import Data.Monoid (class Monoid)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
@@ -260,6 +263,9 @@ instance monadThrowWeb3M :: MonadThrow Error (Web3M e) where
 runWeb3M :: forall eff a . Provider -> Web3M eff a -> Eff (eth :: ETH , exception :: EXCEPTION | eff) a
 runWeb3M p (Web3M action) = runReaderT action p
 
+unsafeCoerceWeb3M :: forall e1 e2 . Web3M e1 ~> Web3M e2
+unsafeCoerceWeb3M (Web3M action) = Web3M $ hoist unsafeCoerceEff action
+
 -- | Asynchronous Web3 Actions
 
 newtype Web3MA e a = Web3MA (ReaderT Provider (Aff (eth :: ETH | e)) a)
@@ -282,3 +288,6 @@ derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 
 runWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) a
 runWeb3MA p (Web3MA action) = runReaderT action p
+
+unsafeCoerceWeb3MA :: forall e1 e2 . Web3MA e1 ~> Web3MA e2
+unsafeCoerceWeb3MA (Web3MA action) = Web3MA $ hoist unsafeCoerceAff action
