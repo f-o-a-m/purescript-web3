@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.Vector
+module Network.Ethereum.Web3.Solidity.Vector
   ( Vector,
     unVector,
     nilVector,
@@ -17,7 +17,7 @@ import Data.Traversable (class Traversable)
 import Data.Foldable (class Foldable)
 import Data.Unfoldable (class Unfoldable)
 
-import Network.Ethereum.Web3.Encoding.Size (class KnownNat, S, Z, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, S, Z, natVal)
 
 newtype Vector n a = Vector (Array a)
 
