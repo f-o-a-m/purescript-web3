@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.Tuple where
+module Network.Ethereum.Web3.Solidity.Tuple where
 
 import Prelude
 import Data.String (joinWith)
@@ -14,8 +14,8 @@ import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 
 import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength, toInt)
-import Network.Ethereum.Web3.Encoding.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser, take)
+import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser, take)
 
 -- | Argument offset calculator
 offset :: Int
