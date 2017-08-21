@@ -13,7 +13,7 @@ import Control.Monad.Eff.Console (CONSOLE, logShow)
 import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, runWeb3M, runWeb3MA, unHex)
 import Network.Ethereum.Web3.Contract (sendTx, sendTxAsync)
 import Network.Ethereum.Web3.Provider (httpProvider)
-import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
 
 ssAddress :: Address
 ssAddress = Address <<< HexString $ "c29313014a78b440876bac21be369c3047e313e7"

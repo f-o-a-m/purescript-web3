@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.Bytes
+module Network.Ethereum.Web3.Solidity.Bytes
   (BytesN,
    unBytesN,
    proxyBytesN,
@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
 
 import Network.Ethereum.Web3.Types (HexString(..))
-import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 
 --------------------------------------------------------------------------------
 -- * Statically sized byte array

@@ -6,7 +6,7 @@ import Data.Lens ((.~))
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
 import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_sendTransaction, eth_sendTransaction_async)
-import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web3M, Web3MA,
                                     _data, _from, _gas, _to, _value, defaultTransactionOptions,
                                     hexadecimal, parseBigNumber)

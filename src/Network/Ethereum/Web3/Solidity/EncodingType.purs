@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.EncodingType
+module Network.Ethereum.Web3.Solidity.EncodingType
   ( class EncodingType, typeName, isDynamic
   ) where
 
@@ -8,9 +8,9 @@ import Data.Word (Word32)
 import Data.ByteString (ByteString)
 
 import Network.Ethereum.Web3.Types (Address, BigNumber)
-import Network.Ethereum.Web3.Encoding.Size (class KnownSize, sizeVal, class KnownNat, natVal)
-import Network.Ethereum.Web3.Encoding.Vector (Vector)
-import Network.Ethereum.Web3.Encoding.Bytes (BytesN)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class KnownNat, natVal)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
 
 --------------------------------------------------------------------------------
 

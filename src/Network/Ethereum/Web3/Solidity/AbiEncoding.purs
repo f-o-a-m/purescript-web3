@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.AbiEncoding where
+module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
 import Data.Maybe (Maybe)
@@ -13,9 +13,9 @@ import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser)
 import Data.Foldable (foldMap)
 
-import Network.Ethereum.Web3.Encoding.Size (class KnownNat, class KnownSize, sizeVal, natVal)
-import Network.Ethereum.Web3.Encoding.Vector (Vector)
-import Network.Ethereum.Web3.Encoding.Bytes (BytesN, unBytesN, update, proxyBytesN)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class KnownSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
                                     embed, fromHexStringSigned, padLeft, padLeftSigned,
                                     getPadLength, padRight, toInt, toSignedHexString, toTwosComplement, unHex)
