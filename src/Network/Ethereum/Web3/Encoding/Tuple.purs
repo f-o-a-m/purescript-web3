@@ -100,7 +100,10 @@ instance abiEncoding3 :: (ABIEncoding a,
     pure $ Tuple3 a b c
 
 --------------------------------------------------------------------------------
-data Singleton a = Singleton a
+newtype Singleton a = Singleton a
+
+unSingleton :: forall a . Singleton a -> a
+unSingleton (Singleton a) = a
 
 instance showSingleton :: Show a => Show (Singleton a) where
   show (Singleton a) = makeTupleString [show a]
