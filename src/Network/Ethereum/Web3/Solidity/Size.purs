@@ -1,4 +1,4 @@
-module Network.Ethereum.Web3.Encoding.Size where
+module Network.Ethereum.Web3.Solidity.Size where
 
 import Prelude
 import Type.Proxy (Proxy(..))
