@@ -16,6 +16,6 @@ import Network.Ethereum.Web3.Solidity.Tuple (Singleton, unSingleton, uncurry1, c
                                              Tuple2, uncurry2, curry2,
                                              Tuple3, uncurry3, curry3)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser)
-import Network.Ethereum.Web3.Types (BigNumber)
+import Network.Ethereum.Web3.Types (BigNumber, Address)
 import Data.ByteString (ByteString)
 
