@@ -9,9 +9,9 @@ import Partial.Unsafe (unsafePartial)
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Network.Ethereum.Web3.Types (Address(..), HexString(..))
-import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Encoding.Bytes(BytesN, fromByteString)
-import Network.Ethereum.Web3.Encoding.Size(D1, D2, D3, type (:&))
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Solidity.Bytes(BytesN, fromByteString)
+import Network.Ethereum.Web3.Solidity.Size(D1, D2, D3, type (:&))
 
 
 encodingSimpleSpec :: forall r . Spec r Unit

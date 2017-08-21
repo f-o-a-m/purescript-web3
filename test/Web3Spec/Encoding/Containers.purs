@@ -9,11 +9,11 @@ import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Data.ByteString as BS
 import Network.Ethereum.Web3.Types (Address(..), HexString(..))
-import Network.Ethereum.Web3.Encoding.Vector (Vector, toVector)
-import Network.Ethereum.Web3.Encoding.Tuple (Singleton(..), Tuple2(..), Tuple3(..))
-import Network.Ethereum.Web3.Encoding.Bytes(BytesN, fromByteString)
-import Network.Ethereum.Web3.Encoding.Size (N1, N2, N4, D1)
-import Network.Ethereum.Web3.Encoding.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
+import Network.Ethereum.Web3.Solidity.Tuple (Singleton(..), Tuple2(..), Tuple3(..))
+import Network.Ethereum.Web3.Solidity.Bytes(BytesN, fromByteString)
+import Network.Ethereum.Web3.Solidity.Size (N1, N2, N4, D1)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 
 
 encodingContainersSpec :: forall r . Spec r Unit
