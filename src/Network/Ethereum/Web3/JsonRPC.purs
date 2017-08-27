@@ -1,17 +1,20 @@
 module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
+import Control.Alternative ((<|>))
 import Data.Array ((:))
 import Data.Monoid (mempty)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
+import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
-import Data.Foreign.Generic (defaultOptions, genericEncode)
-import Control.Monad.Aff (Aff, makeAff)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
+import Control.Monad.Aff (Aff, makeAff, liftEff')
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Error.Class (throwError)
+import Control.Monad.Eff.Exception (EXCEPTION, error, throwException)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
 import Control.Monad.Trans.Class (lift)
@@ -31,10 +34,7 @@ instance remoteBase :: Decode a => Remote e (Web3M e a) where
   remote_ f = do
     p <- ask
     res <- Web3M <<< lift $ f p mempty
-    let decoded = runExcept <<< decode $ res
-    case decoded of
-      Left e -> throwError <<< error <<< show $ e
-      Right a -> pure a
+    Web3M <<< lift <<< decodeResponse $ res
 
 instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
@@ -59,10 +59,9 @@ instance remoteAsyncBase :: Decode a => RemoteAsync e (Web3MA e a) where
   remoteAsync_ f = do
     p <- ask
     res <- Web3MA <<< lift $ f p mempty
-    let decoded = runExcept <<< decode $ res
-    case decoded of
-      Left e -> throwError <<< error <<< show $ e
-      Right a -> pure a
+    Web3MA <<< lift $ do
+      ea <- liftEff' <<< decodeResponse $ res
+      either throwError pure ea
 
 instance remoteAsyncInductive :: (Encode a, RemoteAsync e b) => RemoteAsync e (a -> b) where
   remoteAsync_ f x = remoteAsync_ $ \p args -> f p (encode x : args)
@@ -90,3 +89,36 @@ mkRequest name reqId ps = Request { jsonrpc : "2.0"
                                   , method : name
                                   , params : ps
                                   }
+
+data RpcError =
+  RpcError { code     :: Int
+           , message  :: String
+           }
+
+derive instance genericRpcError :: Generic RpcError _
+
+instance showRpcError :: Show RpcError where
+  show = genericShow
+
+instance decodeRpcError :: Decode RpcError where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+newtype Response = Response (Either RpcError Foreign)
+
+getResponse :: Response -> Either RpcError Foreign
+getResponse (Response r) = r
+
+instance decodeResponse' :: Decode Response where
+  decode a =
+    let errDecoder = readProp "error" a >>= decode
+    in Response <$> ((Left <$> errDecoder) <|> (Right <$> readProp "result" a))
+
+decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
+decodeResponse a = do
+    resp <- tryParse a
+    case getResponse resp of
+      Left err -> throwException <<< error <<< show $ err
+      Right f -> parseResult f
+  where
+    tryParse = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
+    parseResult = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
