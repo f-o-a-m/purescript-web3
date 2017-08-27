@@ -11,7 +11,7 @@ exports._sendAsync = function (callback) {
         return function(request) {
             return function() {
                 provider.sendAsync(request, function(err, response) {
-                    callback(response.result)();
+                    callback(response)();
                 });
             };
         };
@@ -21,8 +21,7 @@ exports._sendAsync = function (callback) {
 exports._send = function (provider) {
     return function (request) {
         return function () {
-            var res = provider.send(request);
-            return res.result;
+            return provider.send(request);
         };
     };
 };
