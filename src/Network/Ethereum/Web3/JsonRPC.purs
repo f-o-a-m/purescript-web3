@@ -118,7 +118,7 @@ decodeResponse a = do
     resp <- tryParse a
     case getResponse resp of
       Left err -> throwException <<< error <<< show $ err
-      Right f -> parseResult f
-  where
-    tryParse = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
-    parseResult = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
+      Right f -> tryParse f
+
+tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
+tryParse = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
