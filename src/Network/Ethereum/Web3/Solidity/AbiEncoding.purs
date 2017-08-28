@@ -13,7 +13,7 @@ import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser)
 import Data.Foldable (foldMap)
 
-import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class KnownSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
@@ -60,7 +60,7 @@ instance abiEncodingString :: ABIEncoding String where
     toDataBuilder = toDataBuilder <<< BS.toUTF8
     fromDataParser = BS.fromUTF8 <$> fromDataParser
 
-instance abiEncodingBytesN :: KnownSize n => ABIEncoding (BytesN n) where
+instance abiEncodingBytesN :: ByteSize n => ABIEncoding (BytesN n) where
   toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
   fromDataParser = do
     let len = sizeVal (Proxy :: Proxy n)
