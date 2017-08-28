@@ -5,7 +5,6 @@ module Network.Ethereum.Web3.Solidity.Int
   ) where
 
 import Prelude
-import Data.String (length)
 import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
 
