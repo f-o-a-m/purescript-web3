@@ -5,14 +5,15 @@ module Network.Ethereum.Web3.Solidity.Int
   ) where
 
 import Prelude
+import Data.String (length)
 import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
 
-import Network.Ethereum.Web3.Types (BigNumber, HexString(..), Signed(..), toSignedHexString, hexLength)
+import Network.Ethereum.Web3.Types (BigNumber, embed, pow, (-<))
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 
 --------------------------------------------------------------------------------
--- * Statically sized unsigned integers
+-- * Statically sized signed integers
 --------------------------------------------------------------------------------
 
 newtype IntN n = IntN BigNumber
@@ -25,9 +26,7 @@ unIntN (IntN a) = a
 
 intFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (IntN n)
 intFromBigNumber a
-    | a < zero = Nothing
-    | otherwise = let Signed _ hx = toSignedHexString a
-                      size = hexLength (maybePad hx) `div` 2
-                  in if size <= sizeVal (Proxy :: Proxy n) then Just <<< IntN $ a else Nothing
-  where
-    maybePad s = if hexLength s `mod` 2 == 0 then s else HexString "0" <> s
+  | a < zero = let minVal = negate $ (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - 1)
+            in if a < minVal then Nothing else Just <<< IntN $ a
+  | otherwise = let maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - 1) -< 1
+                in if a > maxVal then Nothing else Just <<< IntN $ a

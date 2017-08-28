@@ -54,8 +54,11 @@ instance sizeN8 :: KnownSize D8 where
 instance sizeN9 :: KnownSize D9 where
   sizeVal _ = 9
 
-instance sizeCons :: (KnownSize tens, KnownSize ones) => KnownSize (tens :& ones) where
+instance sizeConsTens :: (KnownSize tens, KnownSize ones) => KnownSize (tens :& ones) where
   sizeVal _ = 10 * (sizeVal (Proxy :: Proxy tens)) + sizeVal (Proxy :: Proxy ones)
+
+instance sizeConsHundreds :: (KnownSize hunds, KnownSize tens, KnownSize ones) => KnownSize (hunds :& (tens :& ones)) where
+  sizeVal _ = 100 * (sizeVal (Proxy :: Proxy hunds)) + 10 * (sizeVal (Proxy :: Proxy tens)) + sizeVal (Proxy :: Proxy ones)
 
 --------------------------------------------------------------------------------
 -- | Naturals
