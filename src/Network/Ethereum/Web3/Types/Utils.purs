@@ -67,7 +67,7 @@ fromWei val eu =
   let rate = recip $ toWeiRate eu
   in val * rate
 
--- | computes the number of bytes of padding for a bytestring of length 'len'
+-- | computes the number of 0s in padding for a bytestring of length 'len'
 getPadLength :: Int -> Int
 getPadLength len =
   let n = len `mod` 64

@@ -23,7 +23,7 @@ newtype BytesN n = BytesN ByteString
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
 
-instance showNat :: KnownSize n => Show (BytesN n) where
+instance showBytesN :: KnownSize n => Show (BytesN n) where
     show (BytesN bs) = show <<< HexString $ BS.toString bs Hex
 
 unBytesN :: forall n . KnownSize n => BytesN n -> ByteString
