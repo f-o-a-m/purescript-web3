@@ -13,7 +13,7 @@ import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Data.Foldable (foldMap)
 
-import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class UIntSize, class IntSize, class KnownSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
@@ -82,7 +82,7 @@ instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
       len <- toInt <$> uInt256HexParser
       replicateA len fromDataParser
 
-instance abiEncodingUint :: (KnownSize n, UIntSize n) => ABIEncoding (UIntN n) where
+instance abiEncodingUint :: IntSize n => ABIEncoding (UIntN n) where
   toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
   fromDataParser = do
     a <- uInt256HexParser
