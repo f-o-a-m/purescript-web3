@@ -21,7 +21,7 @@ data D8
 data D9
 
 data NumCons a b
-infix 6 type NumCons as :&
+infixr 6 type NumCons as :&
 
 class KnownSize d where
   sizeVal :: Proxy d -> Int

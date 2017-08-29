@@ -175,15 +175,15 @@ intNTests =
          roundTrip given expected
 
       it "can encode larger uint256" do
-         let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) -< 1) :: Maybe (IntN (D2 :& (D5 :& D6)))
+         let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) -< 1) :: Maybe (IntN (D2 :& D5 :& D6))
              given = unsafePartial $ fromJust mgiven
              expected =  HexString "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger int248" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 255 -< 1) :: Maybe (UIntN (D2 :& (D4 :& D8)))
+         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 255 -< 1) :: Maybe (UIntN (D2 :& D4 :& D8))
          mgiven `shouldEqual` Nothing
 
       it "can fail to encode larger negative int248" do
-         let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 +< 1) :: Maybe (UIntN (D2 :& (D4 :& D8)))
+         let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 +< 1) :: Maybe (UIntN (D2 :& D4 :& D8))
          mgiven `shouldEqual` Nothing
