@@ -17,8 +17,9 @@ import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 
 newtype IntN n = IntN BigNumber
 
-instance showIntN :: KnownSize n => Show (IntN n) where
-    show (IntN a) = show a
+derive newtype instance showIntN :: Show (IntN n)
+
+derive newtype instance eqIntN :: Eq (IntN n)
 
 unIntN :: forall n . KnownSize n => IntN n -> BigNumber
 unIntN (IntN a) = a
