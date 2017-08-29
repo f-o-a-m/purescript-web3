@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, maybe)
 import Control.Error.Util (hush)
 import Data.Unfoldable (replicateA)
 import Type.Proxy (Proxy(..))
@@ -10,11 +10,13 @@ import Data.String (fromCharArray)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Text.Parsing.Parser.Token (hexDigit)
-import Text.Parsing.Parser (Parser, ParserT, runParser)
+import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Data.Foldable (foldMap)
 
-import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class UIntSize, class IntSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..),
                                     embed, fromHexStringSigned, padLeft, padLeftSigned,
@@ -80,7 +82,23 @@ instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
       len <- toInt <$> fromDataParser
       replicateA len fromDataParser
 
+instance abiEncodingUint :: UIntSize n => ABIEncoding (UIntN n) where
+  toDataBuilder a = int256HexBuilder <<< unUIntN $ a
+  fromDataParser = do
+    a <- int256HexParser
+    maybe (fail $ msg a) pure <<< uIntNFromBigNumber $ a
+    where
+      msg n = let size = sizeVal (Proxy :: Proxy n)
+              in "Couldn't parse as uint" <> show size <> " : " <> show n
 
+instance abiEncodingIntN :: IntSize n => ABIEncoding (IntN n) where
+  toDataBuilder a = int256HexBuilder <<< unIntN $ a
+  fromDataParser = do
+    a <- int256HexParser
+    maybe (fail $ msg a) pure <<< intNFromBigNumber $ a
+    where
+      msg n = let size = sizeVal (Proxy :: Proxy n)
+              in "Couldn't parse as int" <> show size <> " : " <> show n
 
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers

@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Solidity.Int
   ( IntN,
     unIntN,
-    intFromBigNumber
+    intNFromBigNumber
   ) where
 
 import Prelude
@@ -23,8 +23,8 @@ instance showIntN :: KnownSize n => Show (IntN n) where
 unIntN :: forall n . KnownSize n => IntN n -> BigNumber
 unIntN (IntN a) = a
 
-intFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (IntN n)
-intFromBigNumber a
+intNFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (IntN n)
+intNFromBigNumber a
   | a < zero = let minVal = negate $ (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - 1)
             in if a < minVal then Nothing else Just <<< IntN $ a
   | otherwise = let maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - 1) -< 1

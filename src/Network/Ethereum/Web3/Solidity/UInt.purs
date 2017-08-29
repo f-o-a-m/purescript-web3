@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Solidity.UInt
   ( UIntN,
     unUIntN,
-    uIntFromBigNumber
+    uIntNFromBigNumber
   ) where
 
 import Prelude
@@ -24,8 +24,8 @@ instance showUIntN :: KnownSize n => Show (UIntN n) where
 unUIntN :: forall n . KnownSize n => UIntN n -> BigNumber
 unUIntN (UIntN a) = a
 
-uIntFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (UIntN n)
-uIntFromBigNumber a
+uIntNFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (UIntN n)
+uIntNFromBigNumber a
     | a < zero = Nothing
     | otherwise = let hx = maybePad <<< toString hexadecimal $ a
                       size = length hx `div` 2
