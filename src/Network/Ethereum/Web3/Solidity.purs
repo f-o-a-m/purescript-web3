@@ -3,6 +3,8 @@ module Network.Ethereum.Web3.Solidity
   , module Network.Ethereum.Web3.Solidity.Vector
   , module Network.Ethereum.Web3.Solidity.Bytes
   , module Network.Ethereum.Web3.Solidity.Tuple
+  , module Network.Ethereum.Web3.Solidity.Int
+  , module Network.Ethereum.Web3.Solidity.UInt
   , module Network.Ethereum.Web3.Solidity.AbiEncoding
   , module Network.Ethereum.Web3.Types
   , module Data.ByteString
@@ -15,6 +17,8 @@ import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, upda
 import Network.Ethereum.Web3.Solidity.Tuple (Singleton(..), unSingleton, uncurry1, curry1,
                                              Tuple2(..), uncurry2, curry2,
                                              Tuple3(..), uncurry3, curry3)
+import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser)
 import Network.Ethereum.Web3.Types (BigNumber, Address)
 import Data.ByteString (ByteString)

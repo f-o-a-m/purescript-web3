@@ -9,7 +9,14 @@ exports.fromHexString = function(str) {
 };
 
 var signedIsNegative = function (value) {
-    return (new BigNumber(value.substr(0, 1), 16).toString(2).substr(0, 1)) === '1';
+    var head = new BigNumber(value.substr(0, 1), 16).toString(2);
+    var msb;
+    if (head.length == 4) {
+        msb = head.substr(0,1);
+    } else {
+        msb = '0';
+    }
+    return msb === '1';
 };
 
 exports.fromHexStringSigned = function (value) {

@@ -1,7 +1,6 @@
 module Web3Spec.Types.Utils (utilsSpec) where
 
 import Prelude
-import Data.Either (Either(Right))
 import Data.Maybe  (Maybe(Just))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)

@@ -4,13 +4,14 @@ module Network.Ethereum.Web3.Solidity.EncodingType
 
 import Prelude
 import Type.Proxy (Proxy(..))
-import Data.Word (Word32)
 import Data.ByteString (ByteString)
 
 import Network.Ethereum.Web3.Types (Address, BigNumber)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class KnownNat, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
+import Network.Ethereum.Web3.Solidity.Int (IntN)
+import Network.Ethereum.Web3.Solidity.UInt (UIntN)
 
 --------------------------------------------------------------------------------
 
@@ -33,8 +34,12 @@ instance encodingTypeBigNumber:: EncodingType BigNumber where
     typeName  = const "int"
     isDynamic = const false
 
-instance encodingTypeWord :: EncodingType Word32 where
-    typeName  = const "uint"
+instance encodingTypeUIntN:: IntSize n => EncodingType (UIntN n) where
+    typeName  = const $ "uint" <> (show <<< sizeVal $ Proxy :: Proxy n)
+    isDynamic = const false
+
+instance encodingTypeIntN :: IntSize n => EncodingType (IntN n) where
+    typeName  = const $ "int" <> (show <<< sizeVal $ Proxy :: Proxy n)
     isDynamic = const false
 
 instance encodingTypeString :: EncodingType String where
