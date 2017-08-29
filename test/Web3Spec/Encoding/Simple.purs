@@ -8,7 +8,7 @@ import Data.ByteString as BS
 import Partial.Unsafe (unsafePartial)
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
-import Control.Monad.Eff.Console (logShow, CONSOLE)
+import Control.Monad.Eff.Console (CONSOLE)
 import Network.Ethereum.Web3.Types (Address(..), HexString(..), embed, pow, (-<), (+<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes(BytesN, fromByteString)

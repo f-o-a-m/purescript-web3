@@ -96,7 +96,7 @@ instance intSize256 :: IntSize (D2 :& D5 :& D6)
 
 class UIntSize n
 
-instance impliesSize :: (KnownSize n, IntSize n) => UIntSize n where
+instance impliesSize :: IntSize n => UIntSize n where
 
 class KnownSize n <= ByteSize n
 instance byteSize1 :: ByteSize D1
