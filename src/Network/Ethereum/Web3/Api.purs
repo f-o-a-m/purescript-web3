@@ -1,7 +1,9 @@
 module Network.Ethereum.Web3.Api where
 
 import Prelude
-import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions, unsafeCoerceWeb3M, unsafeCoerceWeb3MA)
+import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions)
+
+import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3M, unsafeCoerceWeb3MA)
 import Network.Ethereum.Web3.JsonRPC (remote, remoteAsync)
 
 
