@@ -15,7 +15,8 @@ import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web
 
 class Method a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: Maybe Address
+    sendTx :: forall e .
+              Maybe Address
            -- ^ Contract address
            -> Address
            -- ^ from address
@@ -23,11 +24,11 @@ class Method a where
            -- ^ paymentValue
            -> a
            -- ^ Method data
-           -> Web3M () HexString
+           -> Web3M e HexString
            -- ^ 'Web3' wrapped tx hash
 
     -- | Constant call given contract 'Address' in mode and given input data
-    call :: forall b .
+    call :: forall e b .
             ABIEncoding b
          => Address
          -- ^ Contract address
@@ -37,20 +38,20 @@ class Method a where
          -- ^ State mode for constant call (latest or pending)
          -> a
          -- ^ Method data
-         -> Web3M () b
+         -> Web3M e b
          -- ^ 'Web3' wrapped result
 
 instance methodAbiEncoding :: ABIEncoding a => Method a where
   sendTx = _sendTransaction
   call = _call
 
-_sendTransaction :: forall a .
+_sendTransaction :: forall a e .
                     ABIEncoding a
                  => Maybe Address
                  -> Address
                  -> BigNumber
                  -> a
-                 -> Web3M () HexString
+                 -> Web3M e HexString
 _sendTransaction mto f val dat =
     eth_sendTransaction (txdata $ toDataBuilder dat)
   where
@@ -62,14 +63,14 @@ _sendTransaction mto f val dat =
                                 # _value .~ Just val
                                 # _gas .~ defaultGas
 
-_call :: forall a b .
+_call :: forall a b e .
          ABIEncoding a
       => ABIEncoding b
       => Address
       -> Maybe Address
       -> CallMode
       -> a
-      -> Web3M () b
+      -> Web3M e b
 _call t mf cm dat = do
     res <- eth_call (txdata <<< toDataBuilder $ dat) cm
     case fromData res of
@@ -87,7 +88,8 @@ _call t mf cm dat = do
 --------------------------------------------------------------------------------
 class AsyncMethod a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTxAsync :: Maybe Address
+    sendTxAsync :: forall e .
+              Maybe Address
            -- ^ Contract address
            -> Address
            -- ^ from address
@@ -95,11 +97,11 @@ class AsyncMethod a where
            -- ^ paymentValue
            -> a
            -- ^ Method data
-           -> Web3MA () HexString
+           -> Web3MA e HexString
            -- ^ 'Web3' wrapped tx hash
 
     -- | Constant call given contract 'Address' in mode and given input data
-    callAsync :: forall b .
+    callAsync :: forall b e .
             ABIEncoding b
          => Address
          -- ^ Contract address
@@ -109,20 +111,20 @@ class AsyncMethod a where
          -- ^ State mode for constant call (latest or pending)
          -> a
          -- ^ Method data
-         -> Web3MA () b
+         -> Web3MA e b
          -- ^ 'Web3' wrapped result
 
 instance methodAsyncAbiEncoding :: ABIEncoding a => AsyncMethod a where
   sendTxAsync = _sendTransactionAsync
   callAsync = _callAsync
 
-_sendTransactionAsync :: forall a .
+_sendTransactionAsync :: forall a e .
                     ABIEncoding a
                  => Maybe Address
                  -> Address
                  -> BigNumber
                  -> a
-                 -> Web3MA () HexString
+                 -> Web3MA e HexString
 _sendTransactionAsync mto f val dat =
     eth_sendTransaction_async (txdata $ toDataBuilder dat)
   where
@@ -134,14 +136,14 @@ _sendTransactionAsync mto f val dat =
                                 # _value .~ Just val
                                 # _gas .~ defaultGas
 
-_callAsync :: forall a b .
+_callAsync :: forall a b e .
          ABIEncoding a
       => ABIEncoding b
       => Address
       -> Maybe Address
       -> CallMode
       -> a
-      -> Web3MA () b
+      -> Web3MA e b
 _callAsync t mf cm dat = do
     res <- eth_call_async (txdata <<< toDataBuilder $ dat) cm
     case fromData res of
