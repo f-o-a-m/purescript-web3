@@ -2,8 +2,8 @@ module Network.Ethereum.Web3.Solidity.Size where
 
 import Prelude
 import Type.Proxy (Proxy(..))
-import Math (log, ln10)
-import Data.Int (floor, pow, toNumber)
+import Data.Int (pow)
+import Data.String (length)
 
 --------------------------------------------------------------------------------
 -- * Type level byte array lengths
@@ -57,8 +57,8 @@ instance sizeN9 :: KnownSize D9 where
   sizeVal _ = 9
 
 instance sizeCons :: (KnownSize new, KnownSize old) => KnownSize (new :& old) where
-  sizeVal _ = let nDigits = floor $ (log <<< toNumber $ sizeVal (Proxy :: Proxy old)) / ln10
-              in (10 `pow` (nDigits + 1)) * (sizeVal (Proxy :: Proxy new)) + sizeVal (Proxy :: Proxy old)
+  sizeVal _ = let currentPow = (length <<< show <<< sizeVal $ (Proxy :: Proxy old)) - 1
+              in (10 `pow` (currentPow + 1)) * (sizeVal (Proxy :: Proxy new)) + sizeVal (Proxy :: Proxy old)
 
 class KnownSize n <= IntSize n
 instance intSize8 :: IntSize D8
