@@ -3,7 +3,7 @@ Purescript bindings for Web3
 
 ## Getting Started
 ```
-> git clone https://github.com/martyall/purescript-web3.git
+> git clone
 > cd purescript-web3
 > bower install
 > npm install
