@@ -10,6 +10,7 @@ module Network.Ethereum.Web3.Types.Utils
   , toAscii
   , fromAscii
   , toSignedHexString
+  , toHexString
   , fromHexString
   , fromHexStringSigned
   , toWei
@@ -17,15 +18,17 @@ module Network.Ethereum.Web3.Types.Utils
   ) where
 
 import Prelude
+
 import Data.Array (unsafeIndex, replicate)
 import Data.ByteString (toString, fromString) as BS
+import Data.Int (even)
 import Data.Maybe (fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
+import Data.String as S
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, hexLength)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
-
-import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, hexLength)
-import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
 
 data EtherUnit =
     Wei
@@ -126,9 +129,15 @@ fromAscii = HexString <<< flip BS.toString Hex <<< flip BS.fromString ASCII
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =
-  let str = HexString <<< toString hexadecimal $ bn
+  let rawStr = toString hexadecimal $ bn
+      str = HexString $ if even (S.length rawStr) then rawStr else "0" <> rawStr
       sgn = if bn < zero then Neg else Pos
   in Signed sgn str
+
+toHexString :: BigNumber -> HexString
+toHexString bn =
+  let Signed _ n = toSignedHexString bn
+  in n
 
 foreign import fromHexString :: HexString -> BigNumber
 
