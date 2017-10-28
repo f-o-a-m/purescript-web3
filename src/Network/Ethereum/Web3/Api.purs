@@ -3,9 +3,8 @@ module Network.Ethereum.Web3.Api where
 import Prelude
 import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions)
 
-import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3M, unsafeCoerceWeb3MA)
+import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3M, unsafeCoerceWeb3MA, defaultTransactionOptions)
 import Network.Ethereum.Web3.JsonRPC (remote, remoteAsync)
-
 
 -- | Returns current node version string.
 web3_clientVersion :: forall e . Web3M e String
@@ -42,3 +41,6 @@ eth_sendTransaction opts = unsafeCoerceWeb3M $ remote "eth_sendTransaction" opts
 
 eth_sendTransaction_async :: forall e . TransactionOptions -> Web3MA e HexString
 eth_sendTransaction_async opts = unsafeCoerceWeb3MA $ remoteAsync "eth_sendTransaction" opts :: Web3MA () HexString
+
+eth_getAccounts :: forall e . Web3MA e (Array Address)
+eth_getAccounts = unsafeCoerceWeb3MA $ remoteAsync "eth_accounts" defaultTransactionOptions :: Web3MA () (Array Address)
