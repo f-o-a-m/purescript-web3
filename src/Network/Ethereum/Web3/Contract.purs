@@ -1,19 +1,83 @@
 module Network.Ethereum.Web3.Contract where
 
 import Prelude
-import Data.Maybe (Maybe(..))
-import Data.Lens ((.~))
+
+import Control.Monad.Aff (Canceler(..))
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
+import Control.Monad.Reader (ReaderT)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Lens ((.~))
+import Data.Maybe (Maybe(..))
+import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_sendTransaction, eth_sendTransaction_async)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web3M, Web3MA,
-                                    _data, _from, _gas, _to, _value, defaultTransactionOptions,
-                                    hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change, Filter, HexString, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
 
+--------------------------------------------------------------------------------
+-- | Events
+--------------------------------------------------------------------------------
 
+data EventAction = ContinueEvent
+                 -- ^ Continue to listen events
+                 | TerminateEvent
+                 -- ^ Terminate event listener
 
-class Method a where
+derive instance genericEventAction :: Generic EventAction _
+
+instance showEventAction :: Show EventAction where
+  show = genericShow
+
+instance eqEventAction :: Eq EventAction where
+  eq = genericEq
+
+class ABIEncoding a <= Event a where
+    -- | Event filter structure used by low-level subscription methods
+    eventFilter :: a -> Address -> Filter
+
+    -- | Start an event listener for given contract 'Address' and callback
+    event :: forall e .
+             Address
+          -- ^ Contract address
+          -> (a -> ReaderT Change (Web3MA e) EventAction)
+          -- ^ 'Event' handler
+          -> Web3MA e (Canceler e)
+          -- ^ 'Web3' wrapped event handler spawn ident
+
+_event :: forall e a.
+          Event a
+       => Address
+       -> (a -> ReaderT Change (Web3MA e) EventAction)
+       -> Web3MA e (Canceler e)
+_event a f = pure mempty
+--    fid <- let ftyp = snd $ let x = undefined :: Event a => 
+--                            in  (f x, x)
+--           in  eth_newFilter (eventFilter ftyp a)
+--
+--    forkWeb3 $
+--        let loop = do liftIO (threadDelay 1000000)
+--                      changes <- eth_getFilterChanges fid
+--                      acts <- forM (mapMaybe pairChange changes) $ \(changeEvent, changeWithMeta) ->
+--                        runReaderT (f changeEvent) changeWithMeta
+--                      when (TerminateEvent `notElem` acts) loop
+--        in do loop
+--              eth_uninstallFilter fid
+--              return ()
+--  where
+--    prepareTopics = fmap (T.drop 2) . drop 1
+--    pairChange changeWithMeta = do
+--      changeEvent <- fromData $
+--        T.append (T.concat (prepareTopics $ changeTopics changeWithMeta))
+--                 (T.drop 2 $ changeData changeWithMeta)
+--      return (changeEvent, changeWithMeta)
+
+--------------------------------------------------------------------------------
+-- | Methods
+--------------------------------------------------------------------------------
+
+class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall e .
               Maybe Address
