@@ -17,7 +17,7 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_sendTransaction_async, eth_uninstallFilter)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
 import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
 import Type.Proxy (Proxy(..))
 
@@ -38,10 +38,12 @@ instance showEventAction :: Show EventAction where
 instance eqEventAction :: Eq EventAction where
   eq = genericEq
 
-class ABIEncoding a <= Event a where
+class ABIEncoding a <= EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
+
+class EventFilter a <= Event a where
     -- | Start an event listener for given contract 'Address' and callback
     event :: forall e .
              Provider
@@ -52,6 +54,7 @@ class ABIEncoding a <= Event a where
           -> Web3MA e (Canceler (eth :: ETH| e))
           -- ^ 'Web3' wrapped event handler spawn ident
 
+-- | Default implementation for Event class
 _event :: forall e a.
           Event a
        => Provider
