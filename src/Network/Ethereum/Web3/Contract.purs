@@ -44,7 +44,8 @@ class ABIEncoding a <= Event a where
 
     -- | Start an event listener for given contract 'Address' and callback
     event :: forall e .
-             Address
+             Provider
+          -> Address
           -- ^ Contract address
           -> (a -> ReaderT Change (Web3MA e) EventAction)
           -- ^ 'Event' handler
