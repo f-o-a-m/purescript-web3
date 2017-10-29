@@ -2,7 +2,8 @@ module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
 
-import Control.Monad.Aff (Aff)
+import Control.Monad.Aff (Aff, Canceler, forkAff)
+import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect, Eff)
 import Control.Monad.Eff.Class (class MonadEff)
@@ -284,12 +285,17 @@ derive newtype instance monadWeb3MA :: Monad (Web3MA e)
 
 derive newtype instance monadEffWeb3MA :: MonadEff (eth :: ETH | e) (Web3MA e)
 
+derive newtype instance monadAffWeb3MA ∷ MonadAff (eth :: ETH | e) (Web3MA e)
+
 derive newtype instance monadAskWeb3MA :: MonadAsk Provider (Web3MA e)
 
 derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 
 runWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) a
 runWeb3MA p (Web3MA action) = runReaderT action p
+
+forkWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) (Canceler (eth :: ETH | eff))
+forkWeb3MA p (Web3MA action) = forkAff $ runReaderT action p
 
 unsafeCoerceWeb3MA :: forall e1 e2 . Web3MA e1 ~> Web3MA e2
 unsafeCoerceWeb3MA (Web3MA action) = Web3MA $ hoist unsafeCoerceAff action
@@ -333,6 +339,22 @@ _toBlock :: Lens' Filter (Maybe HexString)
 _toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
 
+newtype FilterId = FilterId BigNumber
+
+derive instance genericFilterId :: Generic FilterId _
+
+instance showFilterId :: Show FilterId where
+  show = genericShow
+
+instance eqFilterId :: Eq FilterId where
+  eq = genericEq
+
+instance encodeFilterId :: Encode FilterId where
+  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+
+instance decodeFilterId :: Decode FilterId where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
 --------------------------------------------------------------------------------
 -- | Raw Event Log Changes
 --------------------------------------------------------------------------------
@@ -358,5 +380,5 @@ instance showChange :: Show Change where
 instance eqChange :: Eq Change where
   eq = genericEq
 
-instance decodeChange :: Decode Filter where
+instance decodeChange :: Decode Change where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
