@@ -49,7 +49,7 @@ class ABIEncoding a <= Event a where
           -- ^ Contract address
           -> (a -> ReaderT Change (Web3MA e) EventAction)
           -- ^ 'Event' handler
-          -> Web3MA e (Canceler e)
+          -> Web3MA e (Canceler (eth :: ETH| e))
           -- ^ 'Web3' wrapped event handler spawn ident
 
 _event :: forall e a.
