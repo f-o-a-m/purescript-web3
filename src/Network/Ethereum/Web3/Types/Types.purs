@@ -323,6 +323,14 @@ instance eqFilter :: Eq Filter where
 instance encodeFilter :: Encode Filter where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
+defaultFilter :: Filter
+defaultFilter =
+  Filter { address: NullOrUndefined Nothing
+         , topics: NullOrUndefined Nothing
+         , fromBlock: NullOrUndefined Nothing
+         , toBlock: NullOrUndefined Nothing
+         }
+
 _address :: Lens' Filter (Maybe Address)
 _address = lens (\(Filter f) -> unNullOrUndefined $ f.address)
           (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
