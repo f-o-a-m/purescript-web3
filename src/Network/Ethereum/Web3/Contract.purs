@@ -43,25 +43,14 @@ class ABIEncoding a <= EventFilter a where
     eventFilter :: Proxy a -> Address -> Filter
 
 
-class EventFilter a <= Event a where
-    -- | Start an event listener for given contract 'Address' and callback
-    event :: forall e .
-             Provider
-          -> Address
-          -- ^ Contract address
-          -> (a -> ReaderT Change (Web3MA e) EventAction)
-          -- ^ 'Event' handler
-          -> Web3MA e (Canceler (eth :: ETH| e))
-          -- ^ 'Web3' wrapped event handler spawn ident
-
 -- | Default implementation for Event class
-_event :: forall e a.
-          Event a
+event :: forall e a.
+          EventFilter a
        => Provider
        -> Address
        -> (a -> ReaderT Change (Web3MA e) EventAction)
        -> Web3MA e (Canceler (eth :: ETH | e))
-_event p addr handler = do
+event p addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     liftAff <<< forkWeb3MA p $ do
       loop fid
