@@ -156,6 +156,46 @@ uncurry3 f (Tuple3 a b c) = f a b c
 curry3 :: forall a b c d . (Tuple3 a b c -> d) -> a -> b -> c -> d
 curry3 f a b c = f (Tuple3 a b c)
 
+data Tuple4 a b c d = Tuple4 a b c d
+
+instance showTuple4 :: (Show a, Show b, Show c, Show d) => Show (Tuple4 a b c d) where
+  show (Tuple4 a b c d) = makeTupleString [ show a
+                                          , show b
+                                          , show c
+                                          , show d
+                                          ]
+
+instance eqTuple4 :: (Eq a, Eq b, Eq c, Eq d) => Eq (Tuple4 a b c d) where
+  eq (Tuple4 a b c d) (Tuple4 a' b' c' d') =
+    a == a' && b == b' && c == c' && d == d'
+
+uncurry4 :: forall a b c d e . (a -> b -> c -> d -> e) -> Tuple4 a b c d -> e
+uncurry4 f (Tuple4 a b c d) = f a b c d
+
+curry4 :: forall a b c d e . (Tuple4 a b c d-> e) -> a -> b -> c -> d -> e
+curry4 f a b c d = f (Tuple4 a b c d)
+
+
+data Tuple5 a b c d e = Tuple5 a b c d e
+
+instance showTuple5 :: (Show a, Show b, Show c, Show d, Show e) => Show (Tuple5 a b c d e) where
+  show (Tuple5 a b c d e) = makeTupleString [ show a
+                                            , show b
+                                            , show c
+                                            , show d
+                                            , show e
+                                            ]
+
+instance eqTuple5 :: (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (Tuple5 a b c d e) where
+  eq (Tuple5 a b c d e) (Tuple5 a' b' c' d' e') =
+    a == a' && b == b' && c == c' && d == d' && e == e'
+
+uncurry5 :: forall a b c d e f. (a -> b -> c -> d -> e -> f) -> Tuple5 a b c d e -> f
+uncurry5 f (Tuple5 a b c d f') = f a b c d f'
+
+curry5 :: forall a b c d e f g. (Tuple5 a b c d e -> f) -> a -> b -> c -> d -> e -> f
+curry5 f a b c d f' = f (Tuple5 a b c d f')
+
 --------------------------------------------------------------------------------
 
 makeTupleString :: Array String -> String

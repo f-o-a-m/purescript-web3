@@ -1,28 +1,30 @@
 module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
+
+import Control.Monad.Aff (Aff, Canceler, forkAff)
+import Control.Monad.Aff.Class (class MonadAff)
+import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect, Eff)
 import Control.Monad.Eff.Class (class MonadEff)
-import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
-import Control.Monad.Aff (Aff)
-import Control.Monad.Aff.Unsafe(unsafeCoerceAff)
-import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Reader.Trans (ReaderT, runReaderT)
-import Control.Monad.Reader.Class (class MonadAsk)
+import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
+import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Morph (hoist)
-import Data.Monoid (class Monoid)
+import Control.Monad.Reader.Class (class MonadAsk)
+import Control.Monad.Reader.Trans (ReaderT, runReaderT)
+import Control.Monad.Trans.Class (lift)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
+import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
-import Data.String (stripPrefix,  Pattern(..))
+import Data.Monoid (class Monoid)
 import Data.String (length) as S
-
+import Data.String (stripPrefix, Pattern(..))
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 
 --------------------------------------------------------------------------------
@@ -113,7 +115,7 @@ instance encodeCallMode :: Encode CallMode where
     Earliest -> encode "earliest"
     BlockNumber n -> encode n
 
-data Block
+newtype Block
   = Block { difficulty :: BigNumber
           , extraData :: HexString
           , gasLimit :: BigNumber
@@ -148,7 +150,7 @@ instance decodeBlock :: Decode Block where
 -- * Transaction
 --------------------------------------------------------------------------------
 
-data Transaction =
+newtype Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
               , blockHash :: HexString
@@ -174,7 +176,7 @@ instance decodeTransaction :: Decode Transaction where
 -- * TransactionOptions
 --------------------------------------------------------------------------------
 
-data TransactionOptions =
+newtype TransactionOptions =
   TransactionOptions { from :: NullOrUndefined Address
                      , to :: NullOrUndefined Address
                      , value :: NullOrUndefined BigNumber
@@ -231,6 +233,7 @@ _gasPrice = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gasPr
 _nonce :: Lens' TransactionOptions (Maybe BigNumber)
 _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
            (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
+
 --------------------------------------------------------------------------------
 -- | Web3M
 --------------------------------------------------------------------------------
@@ -282,6 +285,8 @@ derive newtype instance monadWeb3MA :: Monad (Web3MA e)
 
 derive newtype instance monadEffWeb3MA :: MonadEff (eth :: ETH | e) (Web3MA e)
 
+derive newtype instance monadAffWeb3MA ∷ MonadAff (eth :: ETH | e) (Web3MA e)
+
 derive newtype instance monadAskWeb3MA :: MonadAsk Provider (Web3MA e)
 
 derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
@@ -289,5 +294,99 @@ derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 runWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) a
 runWeb3MA p (Web3MA action) = runReaderT action p
 
+forkWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) (Canceler (eth :: ETH | eff))
+forkWeb3MA p (Web3MA action) = forkAff $ runReaderT action p
+
 unsafeCoerceWeb3MA :: forall e1 e2 . Web3MA e1 ~> Web3MA e2
 unsafeCoerceWeb3MA (Web3MA action) = Web3MA $ hoist unsafeCoerceAff action
+
+--------------------------------------------------------------------------------
+-- | Filters
+--------------------------------------------------------------------------------
+
+-- | Low-level event filter data structure
+newtype Filter = Filter
+  { address   :: NullOrUndefined Address
+  , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
+  , fromBlock :: NullOrUndefined HexString
+  , toBlock   :: NullOrUndefined HexString
+  }
+
+derive instance genericFilter :: Generic Filter _
+
+instance showFilter :: Show Filter where
+  show = genericShow
+
+instance eqFilter :: Eq Filter where
+  eq = genericEq
+
+instance encodeFilter :: Encode Filter where
+  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+
+defaultFilter :: Filter
+defaultFilter =
+  Filter { address: NullOrUndefined Nothing
+         , topics: NullOrUndefined Nothing
+         , fromBlock: NullOrUndefined Nothing
+         , toBlock: NullOrUndefined Nothing
+         }
+
+_address :: Lens' Filter (Maybe Address)
+_address = lens (\(Filter f) -> unNullOrUndefined $ f.address)
+          (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
+
+_topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
+_topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
+          (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
+
+_fromBlock :: Lens' Filter (Maybe HexString)
+_fromBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
+          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
+
+_toBlock :: Lens' Filter (Maybe HexString)
+_toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
+          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
+
+newtype FilterId = FilterId BigNumber
+
+derive instance genericFilterId :: Generic FilterId _
+
+instance showFilterId :: Show FilterId where
+  show = genericShow
+
+instance eqFilterId :: Eq FilterId where
+  eq = genericEq
+
+instance encodeFilterId :: Encode FilterId where
+  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+
+instance decodeFilterId :: Decode FilterId where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+--------------------------------------------------------------------------------
+-- | Raw Event Log Changes
+--------------------------------------------------------------------------------
+
+-- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
+-- and 'eth_getFilterLogs'
+newtype Change = Change
+  { logIndex         :: HexString
+  , transactionIndex :: HexString
+  , transactionHash  :: HexString
+  , blockHash        :: HexString
+  , blockNumber      :: HexString
+  , address          :: Address
+  , data             :: HexString
+  , topics           :: Array HexString
+  }
+
+derive instance genericChange :: Generic Change _
+
+instance showChange :: Show Change where
+  show = genericShow
+
+instance eqChange :: Eq Change where
+  eq = genericEq
+
+instance decodeChange :: Decode Change where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x

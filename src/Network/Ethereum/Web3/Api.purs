@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Api where
 
 import Prelude
-import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions)
+import Network.Ethereum.Web3.Types (Web3M, Web3MA, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions, Change, FilterId, Filter)
 
 import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3M, unsafeCoerceWeb3MA, defaultTransactionOptions)
 import Network.Ethereum.Web3.JsonRPC (remote, remoteAsync)
@@ -44,3 +44,19 @@ eth_sendTransaction_async opts = unsafeCoerceWeb3MA $ remoteAsync "eth_sendTrans
 
 eth_getAccounts :: forall e . Web3MA e (Array Address)
 eth_getAccounts = unsafeCoerceWeb3MA $ remoteAsync "eth_accounts" defaultTransactionOptions :: Web3MA () (Array Address)
+
+-- | Creates a filter object, based on filter options, to notify when the
+-- state changes (logs). To check if the state has changed, call
+-- 'getFilterChanges'.
+eth_newFilter :: forall e . Filter -> Web3MA e FilterId
+eth_newFilter f = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" f :: Web3MA () FilterId
+
+-- | Polling method for a filter, which returns an array of logs which
+-- occurred since last poll.
+eth_getFilterChanges :: forall e . FilterId -> Web3MA e (Array Change)
+eth_getFilterChanges fid = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" fid :: Web3MA () (Array Change)
+
+-- | Uninstalls a filter with given id.
+-- Should always be called when watch is no longer needed.
+eth_uninstallFilter :: forall e . FilterId -> Web3MA e Boolean
+eth_uninstallFilter fid = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" fid :: Web3MA () Boolean

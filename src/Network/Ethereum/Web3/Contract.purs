@@ -1,19 +1,79 @@
 module Network.Ethereum.Web3.Contract where
 
 import Prelude
-import Data.Maybe (Maybe(..))
-import Data.Lens ((.~))
+
+import Control.Monad.Aff (Canceler, delay)
+import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
-import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_sendTransaction, eth_sendTransaction_async)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, HexString, Web3M, Web3MA,
-                                    _data, _from, _gas, _to, _value, defaultTransactionOptions,
-                                    hexadecimal, parseBigNumber)
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Data.Array (notElem, catMaybes)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Lens ((.~))
+import Data.Maybe (Maybe(..))
+import Data.Time.Duration (Milliseconds(..))
+import Data.Traversable (for)
+import Data.Tuple (Tuple(..))
+import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_sendTransaction_async, eth_uninstallFilter)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
+import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
+import Type.Proxy (Proxy(..))
+
+--------------------------------------------------------------------------------
+-- | Events
+--------------------------------------------------------------------------------
+
+data EventAction = ContinueEvent
+                 -- ^ Continue to listen events
+                 | TerminateEvent
+                 -- ^ Terminate event listener
+
+derive instance genericEventAction :: Generic EventAction _
+
+instance showEventAction :: Show EventAction where
+  show = genericShow
+
+instance eqEventAction :: Eq EventAction where
+  eq = genericEq
+
+class ABIEncoding a <= EventFilter a where
+    -- | Event filter structure used by low-level subscription methods
+    eventFilter :: Proxy a -> Address -> Filter
 
 
+-- | Default implementation for Event class
+event :: forall e a.
+          EventFilter a
+       => Provider
+       -> Address
+       -> (a -> ReaderT Change (Web3MA e) EventAction)
+       -> Web3MA e (Canceler (eth :: ETH | e))
+event p addr handler = do
+    fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
+    liftAff <<< forkWeb3MA p $ do
+      loop fid
+      _ <- eth_uninstallFilter fid
+      pure unit
+  where
+    loop :: FilterId -> Web3MA e Unit
+    loop fltr = do
+      liftAff $ delay (Milliseconds 100.0)
+      changes <- eth_getFilterChanges fltr
+      acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
+        runReaderT (handler changeEvent) changeWithMeta
+      when (TerminateEvent `notElem` acts) $ loop fltr
+    pairChange :: Change -> Maybe (Tuple Change a)
+    pairChange rc@(Change rawChange) = do
+      change <- fromData rawChange.data
+      pure (Tuple rc change)
 
-class Method a where
+--------------------------------------------------------------------------------
+-- | Methods
+--------------------------------------------------------------------------------
+
+class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall e .
               Maybe Address
