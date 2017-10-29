@@ -7,7 +7,7 @@ import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ReaderT, runReaderT)
-import Data.Array (notElem)
+import Data.Array (notElem, catMaybes)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -18,7 +18,7 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_sendTransaction_async, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change, ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
+import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -68,9 +68,13 @@ _event p addr handler = do
     loop fltr = do
       liftAff $ delay (Milliseconds 100.0)
       changes <- eth_getFilterChanges fltr
-      acts <- for [] $ \(Tuple changeEvent changeWithMeta) ->
+      acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
         runReaderT (handler changeEvent) changeWithMeta
       when (TerminateEvent `notElem` acts) $ loop fltr
+    pairChange :: Change -> Maybe (Tuple Change a)
+    pairChange rc@(Change rawChange) = do
+      change <- fromData rawChange.data
+      pure (Tuple rc change)
 
 --------------------------------------------------------------------------------
 -- | Methods
