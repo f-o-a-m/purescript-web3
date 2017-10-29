@@ -193,7 +193,7 @@ instance eqTuple5 :: (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (Tuple5 a b c d e) whe
 uncurry5 :: forall a b c d e f. (a -> b -> c -> d -> e -> f) -> Tuple5 a b c d e -> f
 uncurry5 f (Tuple5 a b c d f') = f a b c d f'
 
-curry5 :: forall a b c d e f g. (Tuple5 a b c d e -> f) -> a -> b -> c -> d -> e -> f
+curry5 :: forall a b c d e f. (Tuple5 a b c d e -> f) -> a -> b -> c -> d -> e -> f
 curry5 f a b c d f' = f (Tuple5 a b c d f')
 
 --------------------------------------------------------------------------------
