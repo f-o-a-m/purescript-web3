@@ -1,24 +1,26 @@
 module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
+
 import Control.Alternative ((<|>))
-import Data.Array ((:))
-import Data.Monoid (mempty)
-import Data.Either (Either(..), either)
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (class Decode, class Encode, decode, encode)
-import Data.Foreign.Index (readProp)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
-import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
 import Control.Monad.Aff (Aff, makeAff, liftEff')
 import Control.Monad.Eff (Eff)
-import Control.Monad.Error.Class (throwError)
 import Control.Monad.Eff.Exception (EXCEPTION, error, throwException)
+import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
 import Control.Monad.Trans.Class (lift)
-
+import Data.Array ((:))
+import Data.Either (Either(..), either)
+import Data.Foreign (Foreign, unsafeFromForeign)
+import Data.Foreign (unsafeFromForeign)
+import Data.Foreign.Class (class Decode, class Encode, decode, encode)
+import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
+import Data.Foreign.Index (readProp)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Monoid (mempty)
+import Debug.Trace (traceA)
 import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..), Provider)
 
 type MethodName = String
@@ -59,6 +61,7 @@ instance remoteAsyncBase :: Decode a => RemoteAsync e (Web3MA e a) where
   remoteAsync_ f = do
     p <- ask
     res <- Web3MA <<< lift $ f p mempty
+    traceA <<< unsafeFromForeign $ res
     Web3MA <<< lift $ do
       ea <- liftEff' <<< decodeResponse $ res
       either throwError pure ea

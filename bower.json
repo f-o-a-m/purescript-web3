@@ -23,7 +23,8 @@
     "purescript-transformers": "^3.4.0",
     "purescript-identity": "^3.1.0",
     "purescript-aff": "^3.1.0",
-    "purescript-math": "^2.1.0"
+    "purescript-math": "^2.1.0",
+    "purescript-debug": "^3.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
