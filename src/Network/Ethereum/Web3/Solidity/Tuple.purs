@@ -99,6 +99,43 @@ instance abiEncoding3 :: (ABIEncoding a,
     c <- factorParser
     pure $ Tuple3 a b c
 
+instance abiEncoding4 :: (ABIEncoding a,
+                          EncodingType a,
+                          ABIEncoding b,
+                          EncodingType b,
+                          ABIEncoding c,
+                          EncodingType c,
+                          ABIEncoding d,
+                          EncodingType d
+                         ) => ABIEncoding (Tuple4 a b c d) where
+  toDataBuilder (Tuple4 a b c d) = _serialize (Tuple 4 []) a b c d
+  fromDataParser = do
+    a <- factorParser
+    b <- factorParser
+    c <- factorParser
+    d <- factorParser
+    pure $ Tuple4 a b c d
+
+instance abiEncoding5 :: (ABIEncoding a,
+                          EncodingType a,
+                          ABIEncoding b,
+                          EncodingType b,
+                          ABIEncoding c,
+                          EncodingType c,
+                          ABIEncoding d,
+                          EncodingType d,
+                          ABIEncoding e,
+                          EncodingType e
+                         ) => ABIEncoding (Tuple5 a b c d e) where
+  toDataBuilder (Tuple5 a b c d e) = _serialize (Tuple 5 []) a b c d e
+  fromDataParser = do
+    a <- factorParser
+    b <- factorParser
+    c <- factorParser
+    d <- factorParser
+    e <- factorParser
+    pure $ Tuple5 a b c d e
+
 --------------------------------------------------------------------------------
 newtype Singleton a = Singleton a
 
@@ -156,6 +193,8 @@ uncurry3 f (Tuple3 a b c) = f a b c
 curry3 :: forall a b c d . (Tuple3 a b c -> d) -> a -> b -> c -> d
 curry3 f a b c = f (Tuple3 a b c)
 
+-- * Tuple4
+
 data Tuple4 a b c d = Tuple4 a b c d
 
 instance showTuple4 :: (Show a, Show b, Show c, Show d) => Show (Tuple4 a b c d) where
@@ -175,6 +214,7 @@ uncurry4 f (Tuple4 a b c d) = f a b c d
 curry4 :: forall a b c d e . (Tuple4 a b c d-> e) -> a -> b -> c -> d -> e
 curry4 f a b c d = f (Tuple4 a b c d)
 
+-- * Tuple5
 
 data Tuple5 a b c d e = Tuple5 a b c d e
 
