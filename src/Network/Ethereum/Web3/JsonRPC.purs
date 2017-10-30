@@ -5,7 +5,7 @@ import Prelude
 import Control.Alternative ((<|>))
 import Control.Monad.Aff (Aff, makeAff, liftEff')
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Exception (EXCEPTION, error, throwException)
+import Control.Monad.Eff.Exception (EXCEPTION, error, throw)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
@@ -118,10 +118,11 @@ instance decodeResponse' :: Decode Response where
 
 decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
 decodeResponse a = do
+    traceA <<< unsafeFromForeign $ a
     resp <- tryParse a
     case getResponse resp of
-      Left err -> throwException <<< error <<< show $ err
+      Left err -> throw <<< show $ err
       Right f -> tryParse f
 
 tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
-tryParse = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
+tryParse = either (throw <<< show) pure <<< runExcept <<< decode
