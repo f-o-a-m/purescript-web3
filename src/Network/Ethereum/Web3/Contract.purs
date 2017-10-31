@@ -59,7 +59,9 @@ event p addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     traceA $ "FilterId: " <> show fid
     liftAff <<< forkWeb3MA p $ do
+      traceA "Entering loop"
       loop fid
+      traceA "Exiting loop"
       _ <- eth_uninstallFilter fid
       pure unit
   where
