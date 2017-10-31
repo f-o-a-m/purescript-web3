@@ -22,7 +22,6 @@ import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, 
 import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
 import Type.Proxy (Proxy(..))
 
-import Debug.Trace (traceA)
 
 --------------------------------------------------------------------------------
 -- | Events
@@ -55,26 +54,18 @@ event :: forall e a.
        -> Web3MA e (Canceler (eth :: ETH | e))
 event p addr handler = do
     let filter = eventFilter (Proxy :: Proxy a) addr
-    traceA $ show filter
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
-    traceA $ "FilterId: " <> show fid
     liftAff <<< forkWeb3MA p $ do
-      traceA "Entering loop"
       loop fid
-      traceA "Exiting loop"
       _ <- eth_uninstallFilter fid
       pure unit
   where
     loop :: FilterId -> Web3MA e Unit
     loop fltr = do
-      traceA "Pausing"
       liftAff $ delay (Milliseconds 100.0)
-      traceA "Polling for Changes"
       changes <- eth_getFilterChanges fltr
-      traceA $ show changes
       acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
         runReaderT (handler changeEvent) changeWithMeta
-      traceA "looping"
       when (TerminateEvent `notElem` acts) $ loop fltr
     pairChange :: Change -> Maybe (Tuple Change a)
     pairChange rc@(Change rawChange) = do
