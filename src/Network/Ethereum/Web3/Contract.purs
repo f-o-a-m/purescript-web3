@@ -2,10 +2,9 @@ module Network.Ethereum.Web3.Contract where
 
 import Prelude
 
-import Control.Monad.Aff (Canceler, delay, liftEff')
+import Control.Monad.Aff (Canceler, delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
-import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ReaderT, runReaderT)
 import Data.Array (notElem, catMaybes)

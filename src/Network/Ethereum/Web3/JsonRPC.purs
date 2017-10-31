@@ -5,7 +5,7 @@ import Prelude
 import Control.Alternative ((<|>))
 import Control.Monad.Aff (Aff, makeAff, liftEff')
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Exception (EXCEPTION, error, throw)
+import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
