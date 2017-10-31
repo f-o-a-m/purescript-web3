@@ -16,7 +16,7 @@
     "purescript-foreign-generic": "^4.3.0",
     "purescript-proxy": "^2.1.0",
     "purescript-console": "^3.0.0",
-    "purescript-bytestrings": "^5.0.1",
+    "purescript-bytestrings": "^6.0.0",
     "purescript-partial": "^1.2.1",
     "purescript-folds": "^3.1.0",
     "purescript-parsing": "^4.2.2",
