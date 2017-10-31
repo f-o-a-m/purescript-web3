@@ -20,9 +20,9 @@ module Network.Ethereum.Web3.Types.Utils
 import Prelude
 
 import Data.Array (unsafeIndex, replicate)
-import Data.ByteString (toString, fromString) as BS
+import Data.ByteString (ByteString, toString, fromString) as BS
 import Data.Int (even)
-import Data.Maybe (fromJust)
+import Data.Maybe (Maybe, fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
 import Data.String as S
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
@@ -111,21 +111,24 @@ padRight = padRightSigned <<< asSigned
 toUtf8 :: HexString -> String
 toUtf8 (HexString hx) =
   let hx' = unsafePartial $ split (Pattern "00") hx `unsafeIndex` 0
-  in flip BS.toString UTF8 $ BS.fromString hx Hex
+  in flip BS.toString UTF8 $ bs hx
+    where
+  bs :: String -> BS.ByteString
+  bs hx = unsafePartial $ fromJust $ BS.fromString hx Hex
 
 -- | Takes a hex string and produces the corresponding ASCII decoded string.
 toAscii :: HexString -> String
-toAscii (HexString hx) = flip BS.toString ASCII $ BS.fromString hx Hex
+toAscii (HexString hx) = flip BS.toString ASCII $ unsafePartial $ fromJust $ BS.fromString hx Hex
 
 -- | Get the 'HexString' corresponding to the UTF8 encoding.
 fromUtf8 :: String -> HexString
 fromUtf8 s =
   let s' = unsafePartial $ split (Pattern "\0000") s `unsafeIndex` 0
-  in HexString <<< flip BS.toString Hex <<< flip BS.fromString UTF8 $ s'
+  in HexString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString UTF8 $ s'
 
 -- | Get the 'HexString' corresponding to the ASCII encoding.
 fromAscii :: String -> HexString
-fromAscii = HexString <<< flip BS.toString Hex <<< flip BS.fromString ASCII
+fromAscii s = HexString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString ASCII $ s
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =
