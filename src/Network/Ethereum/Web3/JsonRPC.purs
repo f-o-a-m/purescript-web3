@@ -3,11 +3,10 @@ module Network.Ethereum.Web3.JsonRPC where
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff, error, liftEff', makeAff, nonCanceler)
+import Control.Monad.Aff (Aff, liftEff')
 import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
-import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
 import Control.Monad.Trans.Class (lift)
@@ -21,9 +20,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, Provider, Web3M(..), Web3MA(..))
-
-import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError)
-
 
 type MethodName = String
 
