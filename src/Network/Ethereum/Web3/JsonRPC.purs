@@ -3,7 +3,8 @@ module Network.Ethereum.Web3.JsonRPC where
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff, makeAff, liftEff')
+import Control.Monad.Aff (Aff, error, liftEff', makeAff, nonCanceler)
+import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Error.Class (throwError)
@@ -19,7 +20,10 @@ import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..), Provider)
+import Network.Ethereum.Web3.Types (ETH, Provider, Web3M(..), Web3MA(..))
+
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError)
+
 
 type MethodName = String
 
@@ -59,17 +63,15 @@ instance remoteAsyncBase :: Decode a => RemoteAsync e (Web3MA e a) where
   remoteAsync_ f = do
     p <- ask
     res <- Web3MA <<< lift $ f p mempty
-    Web3MA <<< lift $ do
-      ea <- liftEff' <<< decodeResponse $ res
-      either throwError pure ea
+    Web3MA <<< lift $ liftEff' <<< decodeResponse $ res
 
 instance remoteAsyncInductive :: (Encode a, RemoteAsync e b) => RemoteAsync e (a -> b) where
   remoteAsync_ f x = remoteAsync_ $ \p args -> f p (encode x : args)
 
-foreign import _sendAsync :: (Foreign -> Eff (eth :: ETH) Unit) -> Provider -> Request -> Eff (eth :: ETH) Unit
+foreign import _sendAsync :: Provider -> Request -> EffFnAff (eth :: ETH) Foreign
 
 remoteAsync :: forall a . RemoteAsync () a => MethodName -> a
-remoteAsync n = remoteAsync_ $ \provider ps -> makeAff (\error succ -> _sendAsync succ provider $ mkRequest n 1 ps)
+remoteAsync n = remoteAsync_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
 
 newtype Request =
   Request { jsonrpc :: String

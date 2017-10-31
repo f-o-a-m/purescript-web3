@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.Types.Types where
 
 import Prelude
 
-import Control.Monad.Aff (Aff, Canceler, forkAff)
+import Control.Monad.Aff (Aff, Fiber, forkAff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect, Eff)
@@ -294,7 +294,7 @@ derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA e)
 runWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) a
 runWeb3MA p (Web3MA action) = runReaderT action p
 
-forkWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) (Canceler (eth :: ETH | eff))
+forkWeb3MA :: forall eff a . Provider -> Web3MA eff a -> Aff (eth :: ETH | eff) (Fiber (eth :: ETH | eff) a)
 forkWeb3MA p (Web3MA action) = forkAff $ runReaderT action p
 
 unsafeCoerceWeb3MA :: forall e1 e2 . Web3MA e1 ~> Web3MA e2

@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.Contract where
 
 import Prelude
 
-import Control.Monad.Aff (Canceler, delay)
+import Control.Monad.Aff (Fiber, delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
@@ -50,7 +50,7 @@ event :: forall e a.
        => Provider
        -> Address
        -> (a -> ReaderT Change (Web3MA e) EventAction)
-       -> Web3MA e (Canceler (eth :: ETH | e))
+       -> Web3MA e (Fiber (eth :: ETH | e) Unit)
 event p addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     liftAff <<< forkWeb3MA p $ do
