@@ -67,6 +67,7 @@ event p addr handler = do
     loop fltr = do
       liftAff $ delay (Milliseconds 100.0)
       changes <- eth_getFilterChanges fltr
+      traceA $ show changes
       acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
         runReaderT (handler changeEvent) changeWithMeta
       when (TerminateEvent `notElem` acts) $ loop fltr
