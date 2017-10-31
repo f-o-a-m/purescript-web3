@@ -52,7 +52,6 @@ event :: forall e a.
        -> (a -> ReaderT Change (Web3MA e) EventAction)
        -> Web3MA e (Canceler (eth :: ETH | e))
 event p addr handler = do
-    let filter = eventFilter (Proxy :: Proxy a) addr
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     liftAff <<< forkWeb3MA p $ do
       loop fid
