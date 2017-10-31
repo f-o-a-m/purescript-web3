@@ -347,7 +347,7 @@ _toBlock :: Lens' Filter (Maybe HexString)
 _toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
 
-newtype FilterId = FilterId BigNumber
+newtype FilterId = FilterId HexString
 
 derive instance genericFilterId :: Generic FilterId _
 
