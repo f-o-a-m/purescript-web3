@@ -343,7 +343,7 @@ instance abiEncoding12 :: (ABIEncoding a,
                            EncodingType k,
                            ABIEncoding l,
                            EncodingType l
-                          ) => ABIEncoding (Tuple12 a b c d e f g h i j h k l) where
+                          ) => ABIEncoding (Tuple12 a b c d e f g h i j k l) where
   toDataBuilder (Tuple12 a b c d e f g h i j k l) = _serialize (Tuple 12 []) a b c d e f g h i j k l
   fromDataParser = do
     a <- factorParser
@@ -387,7 +387,7 @@ instance abiEncoding13 :: (ABIEncoding a,
                            EncodingType l,
                            ABIEncoding m,
                            EncodingType m
-                          ) => ABIEncoding (Tuple13 a b c d e f g h i j h k l m) where
+                          ) => ABIEncoding (Tuple13 a b c d e f g h i j k l m) where
   toDataBuilder (Tuple13 a b c d e f g h i j k l m) = _serialize (Tuple 13 []) a b c d e f g h i j k l m
   fromDataParser = do
     a <- factorParser
@@ -434,7 +434,7 @@ instance abiEncoding14 :: (ABIEncoding a,
                            EncodingType m,
                            ABIEncoding n,
                            EncodingType n
-                          ) => ABIEncoding (Tuple14 a b c d e f g h i j h k l m n) where
+                          ) => ABIEncoding (Tuple14 a b c d e f g h i j k l m n) where
   toDataBuilder (Tuple14 a b c d e f g h i j k l m n) = _serialize (Tuple 14 []) a b c d e f g h i j k l m n
   fromDataParser = do
     a <- factorParser
@@ -484,7 +484,7 @@ instance abiEncoding15 :: (ABIEncoding a,
                            EncodingType n,
                            ABIEncoding o,
                            EncodingType o
-                          ) => ABIEncoding (Tuple15 a b c d e f g h i j h k l m n o) where
+                          ) => ABIEncoding (Tuple15 a b c d e f g h i j k l m n o) where
   toDataBuilder (Tuple15 a b c d e f g h i j k l m n o) = _serialize (Tuple 15 []) a b c d e f g h i j k l m n o
   fromDataParser = do
     a <- factorParser
@@ -536,7 +536,7 @@ instance abiEncoding16 :: (ABIEncoding a,
                            EncodingType o,
                            ABIEncoding p,
                            EncodingType p
-                          ) => ABIEncoding (Tuple16 a b c d e f g h i j h k l m n o p) where
+                          ) => ABIEncoding (Tuple16 a b c d e f g h i j k l m n o p) where
   toDataBuilder (Tuple16 a b c d e f g h i j k l m n o p) = _serialize (Tuple 16 []) a b c d e f g h i j k l m n o p
   fromDataParser = do
     a <- factorParser
@@ -675,7 +675,7 @@ instance eqTuple6 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (Tuple6 a b c d 
     a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
 
 uncurry6 :: forall a b c d e f g. (a -> b -> c -> d -> e -> f -> g) -> Tuple6 a b c d e f -> g
-uncurry6 fun (Tuple6 a b c d e f) = f a b c d e f' g
+uncurry6 fun (Tuple6 a b c d e f) = fun a b c d e f
 
 curry6 :: forall a b c d e f g. (Tuple6 a b c d e f -> g) -> a -> b -> c -> d -> e -> f -> g
 curry6 fun a b c d e f = fun (Tuple6 a b c d e f)
@@ -724,10 +724,10 @@ instance eqTuple8 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => Eq (Tup
     a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h'
 
 uncurry8 :: forall a b c d e f g h i. (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Tuple8 a b c d e f g h -> i
-uncurry8 fun (Tuple8 a b c d f g h) = fun a b c d e f g h
+uncurry8 fun (Tuple8 a b c d e f g h) = fun a b c d e f g h
 
 curry8 :: forall a b c d e f g h i. (Tuple8 a b c d e f g h -> i) -> a -> b -> c -> d -> e -> f -> g -> h -> i
-curry8 fun a b c d e f g h i = fun (Tuple8 a b c d e f g)
+curry8 fun a b c d e f g h = fun (Tuple8 a b c d e f g h)
 
 -- * Tuple9
 
@@ -838,7 +838,7 @@ uncurry12 :: forall a b c d e f g h i j k l m. (a -> b -> c -> d -> e -> f -> g 
 uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 
 curry12 :: forall a b c d e f g h i j k l m. (Tuple12 a b c d e f g h i j k l -> m) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m
-curry12 fun a b c d e f g h i j k = fun (Tuple12 a b c d e f g h i j k) 
+curry12 fun a b c d e f g h i j k l = fun (Tuple12 a b c d e f g h i j k l) 
 
 
 -- * Tuple13
@@ -869,7 +869,7 @@ uncurry13 :: forall a b c d e f g h i j k l m n. (a -> b -> c -> d -> e -> f -> 
 uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l m
 
 curry13 :: forall a b c d e f g h i j k l m n. (Tuple13 a b c d e f g h i j k l m -> n) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n
-curry13 fun a b c d e f g h i j k m = fun (Tuple13 a b c d e f g h i j k m) 
+curry13 fun a b c d e f g h i j k l m = fun (Tuple13 a b c d e f g h i j k l m) 
 
 
 -- * Tuple14
@@ -901,7 +901,7 @@ uncurry14 :: forall a b c d e f g h i j k l m n o. (a -> b -> c -> d -> e -> f -
 uncurry14 fun (Tuple14 a b c d e f g h i j k l m n) = fun a b c d e f g h i j k l m n
 
 curry14 :: forall a b c d e f g h i j k l m n o. (Tuple14 a b c d e f g h i j k l m n -> o) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o
-curry14 fun a b c d e f g h i j k m n = fun (Tuple14 a b c d e f g h i j k m n) 
+curry14 fun a b c d e f g h i j k l m n = fun (Tuple14 a b c d e f g h i j k l m n) 
 
 -- * Tuple15
 
@@ -933,7 +933,7 @@ uncurry15 :: forall a b c d e f g h i j k l m n o p. (a -> b -> c -> d -> e -> f
 uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j k l m n o
 
 curry15 :: forall a b c d e f g h i j k l m n o p. (Tuple15 a b c d e f g h i j k l m n o -> p) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p
-curry15 fun a b c d e f g h i j k m n o = fun (Tuple15 a b c d e f g h i j k m n o) 
+curry15 fun a b c d e f g h i j k l m n o = fun (Tuple15 a b c d e f g h i j k l m n o) 
 
 
 -- * Tuple16
@@ -966,8 +966,8 @@ instance eqTuple16 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq 
 uncurry16 :: forall a b c d e f g h i j k l m n o p q. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q) -> Tuple16 a b c d e f g h i j k l m n o p -> q
 uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i j k l m n o p
 
-curry16 :: forall a b c d e f g h i j k l m n o p q. (Tuple15 a b c d e f g h i j k l m n o p -> q) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q
-curry16 fun a b c d e f g h i j k m n o p = fun (Tuple16 a b c d e f g h i j k m n o p) 
+curry16 :: forall a b c d e f g h i j k l m n o p q. (Tuple16 a b c d e f g h i j k l m n o p -> q) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q
+curry16 fun a b c d e f g h i j k l m n o p = fun (Tuple16 a b c d e f g h i j k l m n o p) 
 
 
 

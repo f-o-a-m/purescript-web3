@@ -63,5 +63,5 @@ eth_uninstallFilter fid = unsafeCoerceWeb3MA $ remoteAsync "eth_uninstallFilter"
 
 -- | Uninstalls a filter with given id.
 -- Should always be called when watch is no longer needed.
-net_version :: forall e . Web3MA e BigNumber
-net_version = unsafeCoerceWeb3MA $ remoteAsync "net_version" :: Web3MA () BigNumber
+net_version :: forall e . Web3MA e HexString
+net_version = unsafeCoerceWeb3MA $ remoteAsync "net_version" :: Web3MA () HexString
