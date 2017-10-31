@@ -1,24 +1,24 @@
 module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
+
 import Control.Alternative ((<|>))
-import Data.Array ((:))
-import Data.Monoid (mempty)
-import Data.Either (Either(..), either)
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (class Decode, class Encode, decode, encode)
-import Data.Foreign.Index (readProp)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
-import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
 import Control.Monad.Aff (Aff, makeAff, liftEff')
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Exception (EXCEPTION, error, throw)
 import Control.Monad.Error.Class (throwError)
-import Control.Monad.Eff.Exception (EXCEPTION, error, throwException)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader.Class (ask)
 import Control.Monad.Trans.Class (lift)
-
+import Data.Array ((:))
+import Data.Either (Either(..), either)
+import Data.Foreign (Foreign)
+import Data.Foreign.Class (class Decode, class Encode, decode, encode)
+import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
+import Data.Foreign.Index (readProp)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..), Provider)
 
 type MethodName = String
@@ -117,8 +117,8 @@ decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTIO
 decodeResponse a = do
     resp <- tryParse a
     case getResponse resp of
-      Left err -> throwException <<< error <<< show $ err
+      Left err -> throw <<< show $ err
       Right f -> tryParse f
 
 tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
-tryParse = either (throwException <<< error <<< show) pure <<< runExcept <<< decode
+tryParse = either (throw <<< show) pure <<< runExcept <<< decode

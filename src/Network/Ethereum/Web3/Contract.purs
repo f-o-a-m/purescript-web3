@@ -2,9 +2,10 @@ module Network.Ethereum.Web3.Contract where
 
 import Prelude
 
-import Control.Monad.Aff (Canceler, delay)
+import Control.Monad.Aff (Canceler, delay, liftEff')
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ReaderT, runReaderT)
 import Data.Array (notElem, catMaybes)
@@ -20,6 +21,7 @@ import Network.Ethereum.Web3.Api (eth_call, eth_call_async, eth_getFilterChanges
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
 import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Provider, Web3M, Web3MA, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, forkWeb3MA)
 import Type.Proxy (Proxy(..))
+
 
 --------------------------------------------------------------------------------
 -- | Events
@@ -51,6 +53,7 @@ event :: forall e a.
        -> (a -> ReaderT Change (Web3MA e) EventAction)
        -> Web3MA e (Canceler (eth :: ETH | e))
 event p addr handler = do
+    let filter = eventFilter (Proxy :: Proxy a) addr
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     liftAff <<< forkWeb3MA p $ do
       loop fid
