@@ -54,12 +54,12 @@ eth_newFilter f = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" f :: Web3MA (
 -- | Polling method for a filter, which returns an array of logs which
 -- occurred since last poll.
 eth_getFilterChanges :: forall e . FilterId -> Web3MA e (Array Change)
-eth_getFilterChanges fid = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" fid :: Web3MA () (Array Change)
+eth_getFilterChanges fid = unsafeCoerceWeb3MA $ remoteAsync "eth_getFilterChanges" fid :: Web3MA () (Array Change)
 
 -- | Uninstalls a filter with given id.
 -- Should always be called when watch is no longer needed.
 eth_uninstallFilter :: forall e . FilterId -> Web3MA e Boolean
-eth_uninstallFilter fid = unsafeCoerceWeb3MA $ remoteAsync "eth_newFilter" fid :: Web3MA () Boolean
+eth_uninstallFilter fid = unsafeCoerceWeb3MA $ remoteAsync "eth_uninstallFilter" fid :: Web3MA () Boolean
 
 -- | Uninstalls a filter with given id.
 -- Should always be called when watch is no longer needed.
