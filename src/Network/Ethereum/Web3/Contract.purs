@@ -67,11 +67,14 @@ event p addr handler = do
   where
     loop :: FilterId -> Web3MA e Unit
     loop fltr = do
+      traceA "Pausing"
       liftAff $ delay (Milliseconds 100.0)
+      traceA "Polling for Changes"
       changes <- eth_getFilterChanges fltr
       traceA $ show changes
       acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
         runReaderT (handler changeEvent) changeWithMeta
+      traceA "looping"
       when (TerminateEvent `notElem` acts) $ loop fltr
     pairChange :: Change -> Maybe (Tuple Change a)
     pairChange rc@(Change rawChange) = do
