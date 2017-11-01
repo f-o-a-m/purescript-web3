@@ -22,6 +22,7 @@ import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ET
 import Type.Proxy (Proxy(..))
 
 
+import Debug.Trace (traceA)
 --------------------------------------------------------------------------------
 -- | Events
 --------------------------------------------------------------------------------
@@ -54,7 +55,9 @@ event :: forall e a.
 event p addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
     liftAff <<< forkWeb3MA p $ do
+      traceA "about to loop"
       loop fid
+      traceA "uninstalling filter"
       _ <- eth_uninstallFilter fid
       pure unit
   where
@@ -62,7 +65,9 @@ event p addr handler = do
     loop fltr = do
       liftAff $ delay (Milliseconds 100.0)
       changes <- eth_getFilterChanges fltr
-      acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) ->
+      traceA $ show changes
+      acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) -> do
+        traceA "for"
         runReaderT (handler changeEvent) changeWithMeta
       when (TerminateEvent `notElem` acts) $ loop fltr
     pairChange :: Change -> Maybe (Tuple Change a)
