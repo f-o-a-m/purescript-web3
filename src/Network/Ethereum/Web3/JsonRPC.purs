@@ -8,7 +8,6 @@ import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Except (runExcept)
-import Control.Monad.Reader.Class (ask)
 import Control.Monad.Trans.Class (lift)
 import Data.Array ((:))
 import Data.Either (Either(..), either)
@@ -19,7 +18,8 @@ import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Types (ETH, Provider, Web3M(..), Web3MA(..))
+import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..))
+import Network.Ethereum.Web3.Provider (class IsSyncProvider, class IsAsyncProvider, Provider, getSyncProvider, getAsyncProvider)
 
 
 type MethodName = String
@@ -31,11 +31,11 @@ type MethodName = String
 class Remote e a where
   remote_ :: (Provider -> Array Foreign -> Eff (eth :: ETH, exception :: EXCEPTION | e) Foreign) -> a
 
-instance remoteBase :: Decode a => Remote e (Web3M e a) where
+instance remoteBase :: (IsSyncProvider p , Decode a) => Remote e (Web3M p e a) where
   remote_ f = do
-    p <- ask
-    res <- Web3M <<< lift $ f p mempty
-    Web3M <<< lift <<< decodeResponse $ res
+    p <- getSyncProvider
+    res <- Web3M $ f p mempty
+    Web3M $ decodeResponse res
 
 instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
@@ -56,11 +56,11 @@ remote n = remote_ $ \provider ps -> _send provider $ mkRequest n 1 ps
 class RemoteAsync e a where
   remoteAsync_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | e) Foreign) -> a
 
-instance remoteAsyncBase :: Decode a => RemoteAsync e (Web3MA e a) where
+instance remoteAsyncBase :: (IsAsyncProvider p, Decode a) => RemoteAsync e (Web3MA p e a) where
   remoteAsync_ f = do
-    p <- ask
-    res <- Web3MA <<< lift $ f p mempty
-    Web3MA <<< lift $ liftEff' <<< decodeResponse $ res
+    p <- getAsyncProvider
+    res <- Web3MA $ f p mempty
+    Web3MA $ liftEff' <<< decodeResponse $ res
 
 instance remoteAsyncInductive :: (Encode a, RemoteAsync e b) => RemoteAsync e (a -> b) where
   remoteAsync_ f x = remoteAsync_ $ \p args -> f p (encode x : args)
