@@ -8,7 +8,6 @@ import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Except (runExcept)
-import Control.Monad.Trans.Class (lift)
 import Data.Array ((:))
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign)
@@ -18,57 +17,32 @@ import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..))
-import Network.Ethereum.Web3.Provider (class IsSyncProvider, class IsAsyncProvider, Provider, getSyncProvider, getAsyncProvider)
+import Network.Ethereum.Web3.Types (ETH, Web3(..))
+import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
 
 
 type MethodName = String
 
 --------------------------------------------------------------------------------
--- * Synchronous RPC Calls
+-- * Asynchronous RPC Calls
 --------------------------------------------------------------------------------
 
 class Remote e a where
-  remote_ :: (Provider -> Array Foreign -> Eff (eth :: ETH, exception :: EXCEPTION | e) Foreign) -> a
+  remote_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | e) Foreign) -> a
 
-instance remoteBase :: (IsSyncProvider p , Decode a) => Remote e (Web3M p e a) where
+instance remoteBase :: (IsAsyncProvider p, Decode a) => Remote e (Web3 p e a) where
   remote_ f = do
-    p <- getSyncProvider
-    res <- Web3M $ f p mempty
-    Web3M $ decodeResponse res
+    p <- getAsyncProvider
+    res <- Web3 $ f p mempty
+    Web3 $ liftEff' <<< decodeResponse $ res
 
 instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
 
-foreign import _send :: Provider -> Request ->  Eff (eth :: ETH, exception :: EXCEPTION) Foreign
-
--- | Remote call of JSON-RPC method.
--- Arguments of function are stored into @params@ request array.
--- Try and figure out a way to put other @e@ here instead of ().
-remote :: forall a . Remote () a => MethodName -> a
-remote n = remote_ $ \provider ps -> _send provider $ mkRequest n 1 ps
-
-
---------------------------------------------------------------------------------
--- * Asynchronous RPC Calls
---------------------------------------------------------------------------------
-
-class RemoteAsync e a where
-  remoteAsync_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | e) Foreign) -> a
-
-instance remoteAsyncBase :: (IsAsyncProvider p, Decode a) => RemoteAsync e (Web3MA p e a) where
-  remoteAsync_ f = do
-    p <- getAsyncProvider
-    res <- Web3MA $ f p mempty
-    Web3MA $ liftEff' <<< decodeResponse $ res
-
-instance remoteAsyncInductive :: (Encode a, RemoteAsync e b) => RemoteAsync e (a -> b) where
-  remoteAsync_ f x = remoteAsync_ $ \p args -> f p (encode x : args)
-
 foreign import _sendAsync :: Provider -> Request -> EffFnAff (eth :: ETH) Foreign
 
-remoteAsync :: forall a . RemoteAsync () a => MethodName -> a
-remoteAsync n = remoteAsync_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
+remote :: forall a . Remote () a => MethodName -> a
+remote n = remote_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
 
 newtype Request =
   Request { jsonrpc :: String

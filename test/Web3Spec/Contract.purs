@@ -1,19 +1,17 @@
 module Web3Spec.Contract  where
 
 import Prelude
-import Test.Spec (Spec, describe, it)
+
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (logShow)
 import Data.Maybe (Maybe(..))
+import Network.Ethereum.Web3.Contract (sendTx)
+import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
+import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3(..), unHex)
+import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (fail)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
-import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
-import Control.Monad.Eff.Console (CONSOLE, logShow)
-
-import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3M, Web3MA, ETH, runWeb3M, runWeb3MA, unHex)
-import Network.Ethereum.Web3.Contract (sendTx, sendTxAsync)
-import Network.Ethereum.Web3.Provider (httpProvider)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
 
 ssAddress :: Address
 ssAddress = Address <<< HexString $ "c29313014a78b440876bac21be369c3047e313e7"
@@ -27,24 +25,18 @@ instance abiEncodingSet :: ABIEncoding Set where
   toDataBuilder (Set n) = HexString "60fe47b1" <> toDataBuilder n
   fromDataParser = fail "No function parser"
 
-set :: Int -> Web3M () HexString
-set n = sendTx (Just ssAddress) adminAddress zero (Set n)
+data HttpProvider
 
-setA :: Int -> Web3MA () HexString
-setA n = sendTxAsync (Just ssAddress) adminAddress zero (Set n)
+instance isAsyncHttp :: IsAsyncProvider HttpProvider where
+  getAsyncProvider = Web3 <<< liftEff <<< httpProvider $ "http://localhost:8545"
 
-simpleStorageSpec :: forall r . Spec (eth :: ETH, console :: CONSOLE | r) Unit
+setA :: forall e . Int -> Web3 HttpProvider e HexString
+setA n = sendTx (Just ssAddress) adminAddress zero (Set n)
+
+simpleStorageSpec :: forall r . Spec _ Unit
 simpleStorageSpec =
   describe "interacting with a SimpleStorage Contract" do
-
-    it "can set the value of simple storage" do
-      p <- liftEff <<< httpProvider $ "http://localhost:8545"
-      txHash <- liftEff $ unsafeCoerceEff $ runWeb3M p $ set 100
-      _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
-      true `shouldEqual` true
-
     it "can set the value of simple storage asynchronously" do
-      p <- liftEff <<< httpProvider $ "http://localhost:8545"
-      txHash <- unsafeCoerceAff $ runWeb3MA p $ setA 200
+      txHash <- runWeb3 $ setA 200
       _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
