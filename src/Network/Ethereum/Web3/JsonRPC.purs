@@ -8,7 +8,6 @@ import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Except (runExcept)
-import Control.Monad.Trans.Class (lift)
 import Data.Array ((:))
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign)
@@ -20,7 +19,6 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..))
 import Network.Ethereum.Web3.Provider (class IsSyncProvider, class IsAsyncProvider, Provider, getSyncProvider, getAsyncProvider)
-
 
 type MethodName = String
 
