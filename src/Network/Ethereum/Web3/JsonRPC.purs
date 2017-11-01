@@ -21,6 +21,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, Provider, Web3M(..), Web3MA(..))
 
+
 type MethodName = String
 
 --------------------------------------------------------------------------------

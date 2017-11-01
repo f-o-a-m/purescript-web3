@@ -3,13 +3,13 @@
 
 exports._sendAsync = function (provider) {
     return function (request) {
-        return function(callback) {
+        return function(onError, onSuccess) {
             var uncurriedSendAsync = function(req) {
                 return function(cb) {
                     provider.sendAsync(req, cb);
                 };
             };
-            var cancel = uncurriedSendAsync(request)(callback);
+            var cancel = uncurriedSendAsync(request);
             return function (cancelError, onCancelerError, onCancelerSuccess) {
                 cancel();
                 onCancelerSuccess();
