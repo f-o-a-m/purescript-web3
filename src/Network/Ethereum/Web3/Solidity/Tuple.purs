@@ -3,11 +3,11 @@ module Network.Ethereum.Web3.Solidity.Tuple where
 import Prelude
 
 import Control.Monad.State.Class (get)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Array (reverse, (:))
 import Data.Foldable (fold, foldMap)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Tuple (Tuple(..), snd)
@@ -74,19 +74,16 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
 instance abiEncoding1 :: (ABIEncoding a,
                           EncodingType a
                          ) => ABIEncoding (Singleton a) where
-  toDataBuilder (Singleton a) = _serialize (Tuple 1 []) a
-  fromDataParser = factorParser >>= pure <<< Singleton
+  toDataBuilder = uncurry1 $ _serialize (Tuple 1 [])
+  fromDataParser = Singleton <$> factorParser
 
 instance abiEncoding2 :: (ABIEncoding a,
                           EncodingType a,
                           ABIEncoding b,
                           EncodingType b
                          ) => ABIEncoding (Tuple2 a b) where
-  toDataBuilder (Tuple2 a b) = _serialize (Tuple 2 []) a b
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    pure $ Tuple2 a b
+  toDataBuilder = uncurry2 $ _serialize (Tuple 2 [])
+  fromDataParser = Tuple2 <$> factorParser <*> factorParser
 
 instance abiEncoding3 :: (ABIEncoding a,
                           EncodingType a,
@@ -95,12 +92,8 @@ instance abiEncoding3 :: (ABIEncoding a,
                           ABIEncoding c,
                           EncodingType c
                          ) => ABIEncoding (Tuple3 a b c) where
-  toDataBuilder (Tuple3 a b c) = _serialize (Tuple 3 []) a b c
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    pure $ Tuple3 a b c
+  toDataBuilder = uncurry3 $ _serialize (Tuple 3 [])
+  fromDataParser = Tuple3 <$> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding4 :: (ABIEncoding a,
                           EncodingType a,
@@ -111,13 +104,8 @@ instance abiEncoding4 :: (ABIEncoding a,
                           ABIEncoding d,
                           EncodingType d
                          ) => ABIEncoding (Tuple4 a b c d) where
-  toDataBuilder (Tuple4 a b c d) = _serialize (Tuple 4 []) a b c d
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    pure $ Tuple4 a b c d
+  toDataBuilder = uncurry4 $ _serialize (Tuple 4 [])
+  fromDataParser = Tuple4 <$> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding5 :: (ABIEncoding a,
                           EncodingType a,
@@ -130,14 +118,8 @@ instance abiEncoding5 :: (ABIEncoding a,
                           ABIEncoding e,
                           EncodingType e
                          ) => ABIEncoding (Tuple5 a b c d e) where
-  toDataBuilder (Tuple5 a b c d e) = _serialize (Tuple 5 []) a b c d e
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    pure $ Tuple5 a b c d e
+  toDataBuilder = uncurry5 $ _serialize (Tuple 5 [])
+  fromDataParser = Tuple5 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding6 :: (ABIEncoding a,
                           EncodingType a,
@@ -152,15 +134,8 @@ instance abiEncoding6 :: (ABIEncoding a,
                           ABIEncoding f,
                           EncodingType f
                          ) => ABIEncoding (Tuple6 a b c d e f) where
-  toDataBuilder (Tuple6 a b c d e f) = _serialize (Tuple 6 []) a b c d e f
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    pure $ Tuple6 a b c d e f
+  toDataBuilder = uncurry6 $ _serialize (Tuple 6 [])
+  fromDataParser = Tuple6 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding7 :: (ABIEncoding a,
                           EncodingType a,
@@ -177,16 +152,8 @@ instance abiEncoding7 :: (ABIEncoding a,
                           ABIEncoding g,
                           EncodingType g
                          ) => ABIEncoding (Tuple7 a b c d e f g) where
-  toDataBuilder (Tuple7 a b c d e f g) = _serialize (Tuple 7 []) a b c d e f g
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    pure $ Tuple7 a b c d e f g
+  toDataBuilder = uncurry7 $ _serialize (Tuple 7 [])
+  fromDataParser = Tuple7 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding8 :: (ABIEncoding a,
                           EncodingType a,
@@ -205,17 +172,8 @@ instance abiEncoding8 :: (ABIEncoding a,
                           ABIEncoding h,
                           EncodingType h
                          ) => ABIEncoding (Tuple8 a b c d e f g h) where
-  toDataBuilder (Tuple8 a b c d e f g h) = _serialize (Tuple 8 []) a b c d e f g h
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    pure $ Tuple8 a b c d e f g h
+  toDataBuilder = uncurry8 $ _serialize (Tuple 8 [])
+  fromDataParser = Tuple8 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding9 :: (ABIEncoding a,
                           EncodingType a,
@@ -236,18 +194,9 @@ instance abiEncoding9 :: (ABIEncoding a,
                           ABIEncoding i,
                           EncodingType i
                          ) => ABIEncoding (Tuple9 a b c d e f g h i) where
-  toDataBuilder (Tuple9 a b c d e f g h i) = _serialize (Tuple 9 []) a b c d e f g h i
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    pure $ Tuple9 a b c d e f g h i
+  toDataBuilder = uncurry9 $ _serialize (Tuple 9 [])
+  fromDataParser = Tuple9 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                          <*> factorParser
 
 instance abiEncoding10 :: (ABIEncoding a,
                            EncodingType a,
@@ -270,19 +219,9 @@ instance abiEncoding10 :: (ABIEncoding a,
                            ABIEncoding j,
                            EncodingType j
                           ) => ABIEncoding (Tuple10 a b c d e f g h i j) where
-  toDataBuilder (Tuple10 a b c d e f g h i j) = _serialize (Tuple 10 []) a b c d e f g h i j
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    pure $ Tuple10 a b c d e f g h i j
+  toDataBuilder = uncurry10 $ _serialize (Tuple 10 [])
+  fromDataParser = Tuple10 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser
 
 instance abiEncoding11 :: (ABIEncoding a,
                            EncodingType a,
@@ -307,20 +246,10 @@ instance abiEncoding11 :: (ABIEncoding a,
                            ABIEncoding k,
                            EncodingType k
                           ) => ABIEncoding (Tuple11 a b c d e f g h i j k) where
-  toDataBuilder (Tuple11 a b c d e f g h i j k) = _serialize (Tuple 11 []) a b c d e f g h i j k
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    pure $ Tuple11 a b c d e f g h i j k
+  toDataBuilder = uncurry11 $ _serialize (Tuple 11 [])
+  fromDataParser = Tuple11 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser
+
 
 instance abiEncoding12 :: (ABIEncoding a,
                            EncodingType a,
@@ -347,21 +276,9 @@ instance abiEncoding12 :: (ABIEncoding a,
                            ABIEncoding l,
                            EncodingType l
                           ) => ABIEncoding (Tuple12 a b c d e f g h i j k l) where
-  toDataBuilder (Tuple12 a b c d e f g h i j k l) = _serialize (Tuple 12 []) a b c d e f g h i j k l
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    pure $ Tuple12 a b c d e f g h i j k l
+  toDataBuilder = uncurry12 $ _serialize (Tuple 12 [])
+  fromDataParser = Tuple12 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding13 :: (ABIEncoding a,
@@ -391,22 +308,9 @@ instance abiEncoding13 :: (ABIEncoding a,
                            ABIEncoding m,
                            EncodingType m
                           ) => ABIEncoding (Tuple13 a b c d e f g h i j k l m) where
-  toDataBuilder (Tuple13 a b c d e f g h i j k l m) = _serialize (Tuple 13 []) a b c d e f g h i j k l m
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    pure $ Tuple13 a b c d e f g h i j k l m
+  toDataBuilder = uncurry13 $ _serialize (Tuple 13 [])
+  fromDataParser = Tuple13 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding14 :: (ABIEncoding a,
@@ -438,23 +342,9 @@ instance abiEncoding14 :: (ABIEncoding a,
                            ABIEncoding n,
                            EncodingType n
                           ) => ABIEncoding (Tuple14 a b c d e f g h i j k l m n) where
-  toDataBuilder (Tuple14 a b c d e f g h i j k l m n) = _serialize (Tuple 14 []) a b c d e f g h i j k l m n
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    pure $ Tuple14 a b c d e f g h i j k l m n
+  toDataBuilder = uncurry14 $ _serialize (Tuple 14 [])
+  fromDataParser = Tuple14 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding15 :: (ABIEncoding a,
@@ -488,24 +378,9 @@ instance abiEncoding15 :: (ABIEncoding a,
                            ABIEncoding o,
                            EncodingType o
                           ) => ABIEncoding (Tuple15 a b c d e f g h i j k l m n o) where
-  toDataBuilder (Tuple15 a b c d e f g h i j k l m n o) = _serialize (Tuple 15 []) a b c d e f g h i j k l m n o
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    o <- factorParser
-    pure $ Tuple15 a b c d e f g h i j k l m n o
+  toDataBuilder = uncurry15 $ _serialize (Tuple 15 [])
+  fromDataParser = Tuple15 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding16 :: (ABIEncoding a,
                            EncodingType a,
@@ -540,25 +415,9 @@ instance abiEncoding16 :: (ABIEncoding a,
                            ABIEncoding p,
                            EncodingType p
                           ) => ABIEncoding (Tuple16 a b c d e f g h i j k l m n o p) where
-  toDataBuilder (Tuple16 a b c d e f g h i j k l m n o p) = _serialize (Tuple 16 []) a b c d e f g h i j k l m n o p
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    o <- factorParser
-    p <- factorParser
-    pure $ Tuple16 a b c d e f g h i j k l m n o p
+  toDataBuilder = uncurry16 $ _serialize (Tuple 16 [])
+  fromDataParser = Tuple16 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 --------------------------------------------------------------------------------
 newtype Singleton a = Singleton a
