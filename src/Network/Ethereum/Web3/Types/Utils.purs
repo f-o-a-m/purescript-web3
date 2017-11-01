@@ -22,7 +22,7 @@ import Prelude
 import Data.Array (unsafeIndex, replicate)
 import Data.ByteString (ByteString, toString, fromString) as BS
 import Data.Int (even)
-import Data.Maybe (Maybe, fromJust)
+import Data.Maybe (fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
 import Data.String as S
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
@@ -114,7 +114,7 @@ toUtf8 (HexString hx) =
   in flip BS.toString UTF8 $ bs hx
     where
   bs :: String -> BS.ByteString
-  bs hx = unsafePartial $ fromJust $ BS.fromString hx Hex
+  bs hxstr = unsafePartial $ fromJust $ BS.fromString hxstr Hex
 
 -- | Takes a hex string and produces the corresponding ASCII decoded string.
 toAscii :: HexString -> String
