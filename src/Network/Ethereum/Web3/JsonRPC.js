@@ -1,18 +1,19 @@
 "use strict";
 
-//exports._sendAsync = function (provider) {
-//    return function ()
-//
-//    provider.sendAsync(args)
-//};
 
-exports._sendAsync = function (callback) {
-    return function (provider) {
-        return function(request) {
-            return function() {
-                provider.sendAsync(request, function(err, response) {
-                    callback(response)();
-                });
+exports._sendAsync = function (provider) {
+    return function (request) {
+        return function(onError, onSuccess) {
+            var cancel = provider.sendAsync(request, function(err, succ) {
+                if (err) {
+                    onError(err);
+                } else {
+                    onSuccess(succ);
+                }
+            });
+            return function (cancelError, onCancelerError, onCancelerSuccess) {
+                cancel();
+                onCancelerSuccess();
             };
         };
     };
