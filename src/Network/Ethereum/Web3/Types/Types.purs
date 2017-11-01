@@ -5,10 +5,9 @@ import Prelude
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
-import Control.Monad.Eff (kind Effect, Eff)
+import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
-import Control.Monad.Eff.Exception (Error, EXCEPTION, throwException)
-import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
+import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
@@ -238,48 +237,28 @@ _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
 
 foreign import data ETH :: Effect
 
-newtype Web3M p e a = Web3M (Eff (eth :: ETH , exception :: EXCEPTION | e) a)
-
-derive newtype instance functorWeb3M :: Functor (Web3M p e)
-
-derive newtype instance applyWeb3M :: Apply (Web3M p e)
-
-derive newtype instance applicativeWeb3M :: Applicative (Web3M p e)
-
-derive newtype instance bindWeb3M :: Bind (Web3M p e)
-
-derive newtype instance monadWeb3M :: Monad (Web3M p e)
-
-derive newtype instance monadEffWeb3M :: MonadEff (eth :: ETH, exception :: EXCEPTION | e) (Web3M p e)
-
-instance monadThrowWeb3M :: MonadThrow Error (Web3M p e) where
-    throwError = Web3M <<< throwException
-
-unsafeCoerceWeb3M :: forall p e1 e2 . Web3M p e1 ~> Web3M p e2
-unsafeCoerceWeb3M (Web3M action) = Web3M $ unsafeCoerceEff action
-
 -- | Asynchronous Web3 Actions
 
-newtype Web3MA p e a = Web3MA (Aff (eth :: ETH | e) a)
+newtype Web3 p e a = Web3 (Aff (eth :: ETH | e) a)
 
-derive newtype instance functorWeb3MA :: Functor (Web3MA p e)
+derive newtype instance functorWeb3 :: Functor (Web3 p e)
 
-derive newtype instance applyWeb3MA :: Apply (Web3MA p e)
+derive newtype instance applyWeb3 :: Apply (Web3 p e)
 
-derive newtype instance applicativeWeb3MA :: Applicative (Web3MA p e)
+derive newtype instance applicativeWeb3 :: Applicative (Web3 p e)
 
-derive newtype instance bindWeb3MA :: Bind (Web3MA p e)
+derive newtype instance bindWeb3 :: Bind (Web3 p e)
 
-derive newtype instance monadWeb3MA :: Monad (Web3MA p e)
+derive newtype instance monadWeb3 :: Monad (Web3 p e)
 
-derive newtype instance monadEffWeb3MA :: MonadEff (eth :: ETH | e) (Web3MA p e)
+derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 p e)
 
-derive newtype instance monadAffWeb3MA ∷ MonadAff (eth :: ETH | e) (Web3MA p e)
+derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 p e)
 
-derive newtype instance monadThrowWeb3MA :: MonadThrow Error (Web3MA p e)
+derive newtype instance monadThrowWeb3 :: MonadThrow Error (Web3 p e)
 
-unsafeCoerceWeb3MA :: forall p e1 e2 . Web3MA p e1 ~> Web3MA p e2
-unsafeCoerceWeb3MA (Web3MA action) = Web3MA $ unsafeCoerceAff action
+unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
+unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 
 --------------------------------------------------------------------------------
 -- | Filters

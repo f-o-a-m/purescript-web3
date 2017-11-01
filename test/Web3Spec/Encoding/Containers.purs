@@ -49,11 +49,11 @@ staticArraysTests =
          roundTrip given expected
 
       it "can encode statically sized vectors of statically sized bytes" do
-         let elem1 = (unsafePartial $ fromJust <<< fromByteString <<< flip BS.fromString BS.Hex $ "cf") :: BytesN D1
-             elem2 = (unsafePartial $ fromJust <<< fromByteString <<< flip BS.fromString BS.Hex $ "68") :: BytesN D1
-             elem3 = (unsafePartial $ fromJust <<< fromByteString <<< flip BS.fromString BS.Hex $ "4d") :: BytesN D1
-             elem4 = (unsafePartial $ fromJust <<< fromByteString <<< flip BS.fromString BS.Hex $ "fb") :: BytesN D1
-             given = (unsafePartial $ fromJust <<< toVector $ [elem1, elem2, elem3, elem4]) :: Vector N4 (BytesN D1)
+         let elem1 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "cf") :: BytesN D1
+             elem2 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "68") :: BytesN D1
+             elem3 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "4d") :: BytesN D1
+             elem4 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "fb") :: BytesN D1
+             given = unsafePartial $ fromJust (toVector $ [elem1, elem2, elem3, elem4]) :: Vector N4 (BytesN D1)
              expected =  HexString $ "cf00000000000000000000000000000000000000000000000000000000000000"
                                   <> "6800000000000000000000000000000000000000000000000000000000000000"
                                   <> "4d00000000000000000000000000000000000000000000000000000000000000"

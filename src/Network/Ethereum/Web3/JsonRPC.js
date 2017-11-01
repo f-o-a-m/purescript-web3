@@ -18,11 +18,3 @@ exports._sendAsync = function (provider) {
         };
     };
 };
-
-exports._send = function (provider) {
-    return function (request) {
-        return function () {
-            return provider.send(request);
-        };
-    };
-};
