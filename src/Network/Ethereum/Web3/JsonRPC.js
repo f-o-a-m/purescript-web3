@@ -15,7 +15,9 @@ exports._sendAsync = function (provider) {
                     });
                 };
             };
+            console.log(request);
             var cancel = uncurriedSendAsync(request);
+            console.log(cancel);
             return function (cancelError, onCancelerError, onCancelerSuccess) {
                 cancel();
                 onCancelerSuccess();
