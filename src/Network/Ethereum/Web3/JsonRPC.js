@@ -6,11 +6,11 @@ exports._sendAsync = function (provider) {
         return function(onError, onSuccess) {
             console.log(request);
             var cancel = provider.sendAsync(request, function(err, succ) {
-                console.log("error", err);
-                console.log("result", succ);
                 if (err) {
+                    console.log("gotError: ", err);
                     onError(err);
                 } else {
+                    console.log("gotSuccess: ", succ);
                     onSuccess(succ);
                 }
             });
