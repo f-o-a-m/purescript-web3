@@ -1,7 +1,7 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe, maybe, fromJust)
 import Control.Error.Util (hush)
 import Data.Unfoldable (replicateA)
 import Type.Proxy (Proxy(..))
@@ -12,6 +12,7 @@ import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding
 import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Data.Foldable (foldMap)
+import Partial.Unsafe (unsafePartial)
 
 import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
@@ -109,7 +110,7 @@ bytesBuilder :: ByteString -> HexString
 bytesBuilder = padRight <<< HexString <<< flip BS.toString BS.Hex
 
 bytesDecode :: String -> ByteString
-bytesDecode = flip BS.fromString BS.Hex
+bytesDecode s = unsafePartial $ fromJust $ flip BS.fromString BS.Hex s
 
 -- | Encode anything any type of number that fits in a big numbed
 int256HexBuilder :: forall a . Algebra a BigNumber => a -> HexString

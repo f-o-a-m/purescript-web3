@@ -20,7 +20,6 @@ import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, Web3(..))
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
 
-
 type MethodName = String
 
 --------------------------------------------------------------------------------

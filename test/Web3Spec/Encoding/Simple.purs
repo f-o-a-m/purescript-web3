@@ -62,14 +62,14 @@ bytesDTests =
     describe "bytesD tests" do
 
       it "can encode short bytesD" do
-         let given = flip BS.fromString BS.Hex $ "c3a40000c3a4"
+         let given = unsafePartial $ fromJust $flip BS.fromString BS.Hex $ "c3a40000c3a4"
          let expected = HexString $
                           "0000000000000000000000000000000000000000000000000000000000000006"
                        <> "c3a40000c3a40000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode long bytesD" do
-         let given = flip BS.fromString BS.Hex $
+         let given = unsafePartial $ fromJust $ flip BS.fromString BS.Hex $
                             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -95,20 +95,20 @@ bytesNTests =
     describe "byteN tests" do
 
       it "can encode Bytes1" do
-         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "cf") :: Maybe (BytesN D1)
+         let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf") :: Maybe (BytesN D1)
              given = unsafePartial $ fromJust mgiven
              expected =  HexString "cf00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode Bytes3" do
-         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "cf0011") :: Maybe (BytesN D3)
+         let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf0011") :: Maybe (BytesN D3)
              given = unsafePartial $ fromJust mgiven
              expected =  HexString "cf00110000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
       it "can encode Bytes12" do
-         let mgiven =  (fromByteString <<< flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: Maybe (BytesN (D1 :& D2))
+         let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: Maybe (BytesN (D1 :& D2))
              given = unsafePartial $ fromJust mgiven
              expected =  HexString "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
