@@ -5,7 +5,7 @@ exports._sendAsync = function (provider) {
     return function (request) {
         return function(onError, onSuccess) {
             console.log(request);
-            var req = provider.sendAsync(request, function(err, succ) {
+            var cancel = provider.sendAsync(request, function(err, succ) {
                 if (err) {
                     console.log("gotError: ", err);
                     onError(err);
@@ -14,10 +14,6 @@ exports._sendAsync = function (provider) {
                     onSuccess(succ);
                 }
             });
-            return function (cancelError, onCancelerError, onCancelerSuccess) {
-                req.cancel();
-                onCancelerSuccess();
-            };
         };
     };
 };
