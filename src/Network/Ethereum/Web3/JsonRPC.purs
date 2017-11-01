@@ -19,7 +19,7 @@ import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..), Provider)
+import Network.Ethereum.Web3.Types (ETH, Web3M(..), Web3MA(..))
 import Network.Ethereum.Web3.Provider (class IsSyncProvider, class IsAsyncProvider, Provider, getSyncProvider, getAsyncProvider)
 
 type MethodName = String
@@ -58,11 +58,6 @@ class RemoteAsync e a where
 
 instance remoteAsyncBase :: (IsAsyncProvider p, Decode a) => RemoteAsync e (Web3MA p e a) where
   remoteAsync_ f = do
-    p <- ask
-    res <- Web3MA <<< lift $ f p mempty
-    Web3MA <<< lift $ do
-      ea <- liftEff' <<< decodeResponse $ res
-      either throwError pure ea
     p <- getAsyncProvider
     res <- Web3MA $ f p mempty
     Web3MA $ liftEff' <<< decodeResponse $ res
@@ -119,7 +114,6 @@ instance decodeResponse' :: Decode Response where
 
 decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
 decodeResponse a = do
-    traceA <<< unsafeFromForeign $ a
     resp <- tryParse a
     case getResponse resp of
       Left err -> throw <<< show $ err
