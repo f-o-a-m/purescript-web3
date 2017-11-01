@@ -4,19 +4,14 @@
 exports._sendAsync = function (provider) {
     return function (request) {
         return function(onError, onSuccess) {
-            var uncurriedSendAsync = function(req) {
-                return function(cb) {
-                    provider.sendAsync(req, function(err, succ) {
-                        if (err) {
-                            return err;
-                        } else {
-                            onSuccess(succ);
-                        }
-                    });
-                };
-            };
             console.log(request);
-            var cancel = uncurriedSendAsync(request);
+            var cancel = provider.sendAsync(function(err, succ) {
+                if (err) {
+                    onError(err);
+                } else {
+                    onSuccess(succ);
+                }
+            });
             console.log(cancel);
             return function (cancelError, onCancelerError, onCancelerSuccess) {
                 cancel();
