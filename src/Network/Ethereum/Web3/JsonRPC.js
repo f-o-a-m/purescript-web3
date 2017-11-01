@@ -14,6 +14,10 @@ exports._sendAsync = function (provider) {
                     onSuccess(succ);
                 }
             });
+            return function (cancelError, onCancelerError, onCancelerSuccess) {
+                cancel();
+                onCancelerSuccess();
+            };
         };
     };
 };

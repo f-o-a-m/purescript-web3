@@ -64,7 +64,7 @@ event p addr handler = do
     loop :: FilterId -> Web3MA e Unit
     loop fltr = do
       traceA "delay"
-      liftAff $ delay (Milliseconds 100.0)
+      _ <- liftAff $ delay (Milliseconds 100.0)
       traceA "getChanges"
       changes <- eth_getFilterChanges fltr
       traceA $ show changes
