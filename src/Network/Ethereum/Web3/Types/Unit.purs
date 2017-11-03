@@ -20,15 +20,8 @@ import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
-data U0
-data U1
-data U2
-data U3
-data U4
-data U5
-data U6
-data U7
 
+-- | Ether value in denomination `a`
 newtype Value a = Value BigNumber
 
 derive newtype instance eqValue :: Eq (Value a)
@@ -42,10 +35,12 @@ derive newtype instance decodeValue ::  Decode (Value a)
 unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
 
+-- | Useful for converting to and from the base denomination `Wei`
 class  Unit a where
     fromWei :: BigNumber -> Value a
     toWei :: Value a -> BigNumber
 
+-- | Convert between two denominations
 convert :: forall a b . Unit a => Unit b => Value a -> Value b
 convert = fromWei <<< toWei
 
@@ -76,11 +71,15 @@ instance ringUnitSpec :: UnitSpec a => Ring (Value a) where
 instance recipValue :: UnitSpec a => DivisionRing (Value a) where
   recip (Value a) = Value $ recip a
 
+data U0
+
 type Wei = Value U0
 
 instance unitSpecWei :: UnitSpec U0 where
     divider = const $ unsafeConvert "1"
     name    = const "wei"
+
+data U1
 
 -- | Babbage unit type
 type Babbage = Value U1
@@ -89,12 +88,16 @@ instance unitSpecB :: UnitSpec U1 where
     divider = const $ unsafeConvert "1000"
     name    = const "babbage"
 
+data U2
+
 -- | Lovelace unit type
 type Lovelace = Value U2
 
 instance unitSpecL :: UnitSpec U2 where
     divider = const $ unsafeConvert "1000000"
     name    = const "lovelace"
+
+data U3
 
 -- | Shannon unit type
 type Shannon = Value U3
@@ -103,12 +106,16 @@ instance unitSpecS :: UnitSpec U3 where
     divider = const $ unsafeConvert "1000000000"
     name    = const "shannon"
 
+data U4
+
 -- | Szabo unit type
 type Szabo = Value U4
 
 instance unitSpecSz :: UnitSpec U4 where
     divider = const $ unsafeConvert "1000000000000"
     name    = const "szabo"
+
+data U5
 
 -- | Finney unit type
 type Finney = Value U5
@@ -117,12 +124,16 @@ instance unitSpecF :: UnitSpec U5 where
     divider = const $ unsafeConvert "1000000000000000"
     name    = const "finney"
 
+data U6
+
 -- | Ether unit type
 type Ether  = Value U6
 
 instance unitSpecE :: UnitSpec U6 where
     divider = const $ unsafeConvert "1000000000000000000"
     name    = const "ether"
+
+data U7
 
 -- | KEther unit type
 type KEther = Value U7

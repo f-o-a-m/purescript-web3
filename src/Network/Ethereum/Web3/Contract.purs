@@ -25,6 +25,7 @@ import Type.Proxy (Proxy(..))
 -- | Events
 --------------------------------------------------------------------------------
 
+-- | Represents a flag to continue or discontinue listening to the filter
 data EventAction = ContinueEvent
                  -- ^ Continue to listen events
                  | TerminateEvent
@@ -43,7 +44,8 @@ class ABIEncoding a <= EventFilter a where
     eventFilter :: Proxy a -> Address -> Filter
 
 
--- | Default implementation for Event class
+-- | Start listening to events eminating from the given address and caught by the filter,
+-- | using the handler to process the data and decide whether to continue
 event :: forall p e a.
           IsAsyncProvider p
        => EventFilter a
@@ -74,6 +76,8 @@ event addr handler = do
 -- | Methods
 --------------------------------------------------------------------------------
 
+-- | Class paramaterized by values which are ABIEncodable, allowing the templating of
+-- | of a transaction with this value as the payload.
 class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall p e .

@@ -13,7 +13,7 @@ import Data.Monoid.Additive (Additive(..))
 import Data.Tuple (Tuple(..), snd)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser, take)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength, toInt)
+import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength, unsafeToInt)
 import Text.Parsing.Parser (Parser, ParseState(..))
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
@@ -726,7 +726,7 @@ factorParser
 
 dParser :: forall a . ABIEncoding a => Parser String a
 dParser = do
-  dataOffset <- toInt <$> fromDataParser
+  dataOffset <- unsafeToInt <$> fromDataParser
   lookAhead $ do
     (ParseState _ (Position p) _) <- get
     _ <- take (dataOffset * 2 - (p.column - 1))

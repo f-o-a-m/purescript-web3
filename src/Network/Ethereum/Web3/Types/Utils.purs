@@ -28,14 +28,13 @@ import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 
 
--- | computes the number of 0s in padding for a bytestring of length 'len'
+-- | Computes the number of 0s needed to pad a bytestring of the input length
 getPadLength :: Int -> Int
 getPadLength len =
   let n = len `mod` 64
   in if n == 0 then 0 else 64 - n
 
--- | Pad a 'Signed HexString' on the left until it has
--- length == 0 mod 64.
+-- | Pad a `Signed HexString` on the left until it has length == 0 mod 64.
 padLeftSigned :: Signed HexString -> HexString
 padLeftSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
@@ -43,8 +42,7 @@ padLeftSigned (Signed s hx) =
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in padding <> hx
 
--- | Pad a 'Signed HexString' on the right until it has
--- length 0 mod 64.
+-- | Pad a `Signed HexString` on the right until it has length 0 mod 64.
 padRightSigned :: Signed HexString -> HexString
 padRightSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
@@ -52,20 +50,18 @@ padRightSigned (Signed s hx) =
         padding = HexString <<< fromCharArray $ replicate padLength sgn
     in hx <> padding
 
--- | Pad a 'HexString' on the left with '0's until it has
--- length == 0 mod 64.
+-- | Pad a `HexString` on the left with '0's until it has length == 0 mod 64.
 padLeft :: HexString -> HexString
 padLeft = padLeftSigned <<< asSigned
 
 
--- | Pad a 'HexString' on the right with '0's until it has
--- length 0 mod 64.
+-- | Pad a `HexString` on the right with 0's until it has length 0 mod 64.
 padRight :: HexString -> HexString
 padRight = padRightSigned <<< asSigned
 
 -- | Takes a hex string and produces the corresponding UTF8-decoded string.
--- This breaks at the first null octet, following the web3 function 'toUft8'.
--- Since 'split' always returns a nonempty list, this index is actually safe.
+-- | This breaks at the first null octet, following the web3 function `toUft8`.
+--   Since 'split' always returns a nonempty list, this index is actually safe.
 toUtf8 :: HexString -> String
 toUtf8 (HexString hx) =
   let hx' = unsafePartial $ split (Pattern "00") hx `unsafeIndex` 0
