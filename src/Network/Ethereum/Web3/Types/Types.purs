@@ -56,7 +56,7 @@ asSigned a = Signed Pos a
 -- * HexString
 --------------------------------------------------------------------------------
 
--- | Represents a base16, utf* encoded bytestring
+-- | Represents a base16, utf8 encoded bytestring
 newtype HexString = HexString String
 
 instance showHexString :: Show HexString where
@@ -238,7 +238,7 @@ _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
            (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
 
 --------------------------------------------------------------------------------
--- | Web3M
+-- * Web3M
 --------------------------------------------------------------------------------
 
 foreign import data ETH :: Effect
@@ -267,7 +267,7 @@ unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
 unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 
 --------------------------------------------------------------------------------
--- | Filters
+-- * Filters
 --------------------------------------------------------------------------------
 
 -- | Low-level event filter data structure
@@ -331,11 +331,11 @@ instance decodeFilterId :: Decode FilterId where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
--- | Raw Event Log Changes
+-- * Raw Event Log Changes
 --------------------------------------------------------------------------------
 
 -- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
--- and 'eth_getFilterLogs'
+-- | and 'eth_getFilterLogs'
 newtype Change = Change
   { logIndex         :: HexString
   , transactionIndex :: HexString

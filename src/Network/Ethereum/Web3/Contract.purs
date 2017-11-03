@@ -22,7 +22,7 @@ import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, 
 import Network.Ethereum.Web3.Types (Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, Value, Wei, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
--- | Events
+-- * Events
 --------------------------------------------------------------------------------
 
 -- | Represents a flag to continue or discontinue listening to the filter
@@ -73,7 +73,7 @@ event addr handler = do
       pure (Tuple rc change)
 
 --------------------------------------------------------------------------------
--- | Methods
+-- * Methods
 --------------------------------------------------------------------------------
 
 -- | Class paramaterized by values which are ABIEncodable, allowing the templating of
