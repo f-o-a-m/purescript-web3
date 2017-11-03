@@ -12,14 +12,16 @@ module Network.Ethereum.Web3.Types.BigNumber
   , parseBigNumber
   , toTwosComplement
   , toInt
+  , floorBigNumber
   , module Int
   ) where
 
 import Prelude
-import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
-import Data.Maybe (Maybe(..))
+
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, encode)
+import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
+import Data.Maybe (Maybe(..))
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -131,6 +133,8 @@ foreign import toNumber :: BigNumber -> Number
 
 toInt :: BigNumber -> Int
 toInt = Int.floor <<< toNumber
+
+foreign import floorBigNumber :: BigNumber -> BigNumber
 
 foreign import toBigNumber :: Foreign -> BigNumber
 

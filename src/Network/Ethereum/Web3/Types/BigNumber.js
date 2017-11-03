@@ -76,6 +76,11 @@ exports.toTwosComplement = function (bn) {
   }
 };
 
+exports.floorBigNumber = function(bn) {
+    var bnStr = bn.toString(10);
+    var newBn = new BigNumber(bnStr, 10);
+    return newBn.floor();
+};
 
 exports.pow = function(n) {
     return function (m) { return n.pow(m); };
