@@ -26,6 +26,7 @@ type MethodName = String
 -- * Asynchronous RPC Calls
 --------------------------------------------------------------------------------
 
+-- | Class representing a builder for a Web3 query
 class Remote e a where
   remote_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | e) Foreign) -> a
 
@@ -40,9 +41,11 @@ instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
 
 foreign import _sendAsync :: Provider -> Request -> EffFnAff (eth :: ETH) Foreign
 
+-- | Execute the Web3 query constructed inductively by the builder
 remote :: forall a . Remote () a => MethodName -> a
 remote n = remote_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
 
+-- | Web3 json RPC format
 newtype Request =
   Request { jsonrpc :: String
           , id :: Int
@@ -85,6 +88,7 @@ instance decodeResponse' :: Decode Response where
     let errDecoder = readProp "error" a >>= decode
     in Response <$> ((Left <$> errDecoder) <|> (Right <$> readProp "result" a))
 
+-- | Attempt to decode the response, throwing an Error in case of failure
 decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
 decodeResponse a = do
     resp <- tryParse a

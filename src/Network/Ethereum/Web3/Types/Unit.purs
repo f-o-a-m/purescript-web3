@@ -1,15 +1,19 @@
 module Network.Ethereum.Web3.Types.Unit
   ( class Unit, fromWei, toWei
+  , class UnitSpec
+  , divider
+  , name
   , convert
-  , U0, Wei
-  , U1, Babbage
-  , U2, Lovelace
-  , U3, Shannon
-  , U4, Szabo
-  , U5, Finney
-  , U6, Ether
-  , U7, KEther
+  , Wei
+  , Babbage
+  , Lovelace
+  , Shannon
+  , Szabo
+  , Finney
+  , Ether
+  , KEther
   , Value
+  , mkValue
   ) where
 
 import Prelude
@@ -20,15 +24,8 @@ import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
-data U0
-data U1
-data U2
-data U3
-data U4
-data U5
-data U6
-data U7
 
+-- | Ether value in denomination `a`
 newtype Value a = Value BigNumber
 
 derive newtype instance eqValue :: Eq (Value a)
@@ -42,16 +39,18 @@ derive newtype instance decodeValue ::  Decode (Value a)
 unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
 
-class  Unit a where
-    fromWei :: BigNumber -> Value a
-    toWei :: Value a -> BigNumber
+-- | Useful for converting to and from the base denomination `Wei`
+class Unit a where
+    fromWei :: BigNumber -> a
+    toWei :: a -> BigNumber
 
-convert :: forall a b . Unit a => Unit b => Value a -> Value b
+-- | Convert between two denominations
+convert :: forall a b . Unit a => Unit b => a -> b
 convert = fromWei <<< toWei
 
 class UnitSpec a where
     divider :: Proxy a -> BigNumber
-    name    :: Value a -> String
+    name    :: Proxy a -> String
 
 mkValue :: forall a . UnitSpec a => BigNumber -> Value a
 mkValue = modify res <<< floorBigNumber <<< (mul (divider res))
@@ -62,7 +61,7 @@ mkValue = modify res <<< floorBigNumber <<< (mul (divider res))
 
 instance unitUnitSpec :: UnitSpec a => Unit (Value a) where
     fromWei = Value
-    toWei (Value a) = a
+    toWei = unValue
 
 instance semiringUnitSpec :: UnitSpec a => Semiring (Value a) where
    add a b = Value (unValue a `add` unValue b)
@@ -73,61 +72,58 @@ instance semiringUnitSpec :: UnitSpec a => Semiring (Value a) where
 instance ringUnitSpec :: UnitSpec a => Ring (Value a) where
    sub a b = Value (unValue a `sub` unValue b)
 
-instance recipValue :: UnitSpec a => DivisionRing (Value a) where
-  recip (Value a) = Value $ recip a
+data Wei
 
-type Wei = Value U0
-
-instance unitSpecWei :: UnitSpec U0 where
+instance unitSpecWei :: UnitSpec Wei where
     divider = const $ unsafeConvert "1"
     name    = const "wei"
 
 -- | Babbage unit type
-type Babbage = Value U1
+data Babbage
 
-instance unitSpecB :: UnitSpec U1 where
+instance unitSpecB :: UnitSpec Babbage where
     divider = const $ unsafeConvert "1000"
     name    = const "babbage"
 
 -- | Lovelace unit type
-type Lovelace = Value U2
+data Lovelace
 
-instance unitSpecL :: UnitSpec U2 where
+instance unitSpecL :: UnitSpec Lovelace where
     divider = const $ unsafeConvert "1000000"
     name    = const "lovelace"
 
 -- | Shannon unit type
-type Shannon = Value U3
+data Shannon
 
-instance unitSpecS :: UnitSpec U3 where
+instance unitSpecS :: UnitSpec Shannon where
     divider = const $ unsafeConvert "1000000000"
     name    = const "shannon"
 
 -- | Szabo unit type
-type Szabo = Value U4
+data Szabo
 
-instance unitSpecSz :: UnitSpec U4 where
+instance unitSpecSz :: UnitSpec Szabo where
     divider = const $ unsafeConvert "1000000000000"
     name    = const "szabo"
 
 -- | Finney unit type
-type Finney = Value U5
+data Finney
 
-instance unitSpecF :: UnitSpec U5 where
+instance unitSpecF :: UnitSpec Finney where
     divider = const $ unsafeConvert "1000000000000000"
     name    = const "finney"
 
 -- | Ether unit type
-type Ether  = Value U6
+data Ether
 
-instance unitSpecE :: UnitSpec U6 where
+instance unitSpecE :: UnitSpec Ether where
     divider = const $ unsafeConvert "1000000000000000000"
     name    = const "ether"
 
 -- | KEther unit type
-type KEther = Value U7
+data KEther
 
-instance unitSpecKE :: UnitSpec U7 where
+instance unitSpecKE :: UnitSpec KEther where
     divider = const $ unsafeConvert $ "1000000000000000000000"
     name    = const "kether"
 

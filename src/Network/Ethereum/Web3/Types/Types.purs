@@ -31,6 +31,8 @@ data Sign = Pos | Neg
 
 derive instance eqSign :: Eq Sign
 
+
+-- | Represents values that can be either positive or negative.
 data Signed a = Signed Sign a
 
 instance showSigned :: Show a => Show (Signed a) where
@@ -46,6 +48,7 @@ instance eqSigned :: Eq a => Eq (Signed a) where
 instance mapSigned :: Functor Signed where
   map f (Signed s a) = Signed s (f a)
 
+-- | Coerce a value into a positive signed value
 asSigned :: forall a . a -> Signed a
 asSigned a = Signed Pos a
 
@@ -53,6 +56,7 @@ asSigned a = Signed Pos a
 -- * HexString
 --------------------------------------------------------------------------------
 
+-- | Represents a base16, utf8 encoded bytestring
 newtype HexString = HexString String
 
 instance showHexString :: Show HexString where
@@ -77,6 +81,7 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
+-- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
 hexLength (HexString hx) = S.length hx
 
@@ -84,6 +89,7 @@ hexLength (HexString hx) = S.length hx
 -- * Addresses
 --------------------------------------------------------------------------------
 
+-- | Represents and Ethereum address, which is a 20 byte `HexString`
 newtype Address = Address HexString
 
 derive newtype instance addressShow :: Show Address
@@ -98,6 +104,7 @@ derive newtype instance encodeAddress :: Encode Address
 -- * Block
 --------------------------------------------------------------------------------
 
+-- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data CallMode =
     Latest
   | Pending
@@ -231,14 +238,12 @@ _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
            (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
 
 --------------------------------------------------------------------------------
--- | Web3M
+-- * Web3M
 --------------------------------------------------------------------------------
-
--- | Synchronous Web3 Actions
 
 foreign import data ETH :: Effect
 
--- | Asynchronous Web3 Actions
+-- | A monad for asynchronous Web3 actions
 
 newtype Web3 p e a = Web3 (Aff (eth :: ETH | e) a)
 
@@ -262,7 +267,7 @@ unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
 unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 
 --------------------------------------------------------------------------------
--- | Filters
+-- * Filters
 --------------------------------------------------------------------------------
 
 -- | Low-level event filter data structure
@@ -308,6 +313,7 @@ _toBlock :: Lens' Filter (Maybe HexString)
 _toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
 
+-- | Used by the ethereum client to identify the filter you are querying
 newtype FilterId = FilterId HexString
 
 derive instance genericFilterId :: Generic FilterId _
@@ -325,11 +331,11 @@ instance decodeFilterId :: Decode FilterId where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
--- | Raw Event Log Changes
+-- * Raw Event Log Changes
 --------------------------------------------------------------------------------
 
 -- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
--- and 'eth_getFilterLogs'
+-- | and 'eth_getFilterLogs'
 newtype Change = Change
   { logIndex         :: HexString
   , transactionIndex :: HexString
