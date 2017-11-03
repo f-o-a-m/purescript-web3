@@ -52,6 +52,7 @@ class UnitSpec a where
     divider :: Proxy a -> BigNumber
     name    :: Proxy a -> String
 
+-- | Convert a big number into value, first using `floor` function to take the integer part
 mkValue :: forall a . UnitSpec a => BigNumber -> Value a
 mkValue = modify res <<< floorBigNumber <<< (mul (divider res))
   where res :: UnitSpec a => Proxy a
