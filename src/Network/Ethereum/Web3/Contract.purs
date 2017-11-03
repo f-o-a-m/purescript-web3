@@ -19,7 +19,7 @@ import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3, getAsyncProvider)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
-import Network.Ethereum.Web3.Types (Address, BigNumber, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types (Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, Value, Wei, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- | Events
@@ -82,7 +82,7 @@ class ABIEncoding a <= Method a where
            -- ^ Contract address
            -> Address
            -- ^ from address
-           -> BigNumber
+           -> Value Wei
            -- ^ paymentValue
            -> a
            -- ^ Method data
@@ -113,7 +113,7 @@ _sendTransaction :: forall p a e .
                  => ABIEncoding a
                  => Maybe Address
                  -> Address
-                 -> BigNumber
+                 -> Value Wei
                  -> a
                  -> Web3 p e HexString
 _sendTransaction mto f val dat =

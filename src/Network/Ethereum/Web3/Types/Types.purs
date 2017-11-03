@@ -21,6 +21,7 @@ import Data.Monoid (class Monoid)
 import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..))
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
+import Network.Ethereum.Web3.Types.Unit (Value, Wei)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -153,7 +154,7 @@ newtype Transaction =
               , transactionIndex :: BigNumber
               , from :: Address
               , to :: NullOrUndefined Address
-              , value :: BigNumber
+              , value :: Value Wei
               , gas :: BigNumber
               , gasPrice :: BigNumber
               , input :: HexString
@@ -174,7 +175,7 @@ instance decodeTransaction :: Decode Transaction where
 newtype TransactionOptions =
   TransactionOptions { from :: NullOrUndefined Address
                      , to :: NullOrUndefined Address
-                     , value :: NullOrUndefined BigNumber
+                     , value :: NullOrUndefined (Value Wei)
                      , gas :: NullOrUndefined BigNumber
                      , gasPrice :: NullOrUndefined BigNumber
                      , data :: NullOrUndefined HexString
@@ -213,7 +214,7 @@ _data :: Lens' TransactionOptions (Maybe HexString)
 _data = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.data)
            (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = NullOrUndefined dat})
 
-_value :: Lens' TransactionOptions (Maybe BigNumber)
+_value :: Lens' TransactionOptions (Maybe (Value Wei))
 _value = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.value)
            (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined val})
 

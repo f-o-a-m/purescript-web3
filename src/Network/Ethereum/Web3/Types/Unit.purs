@@ -1,7 +1,20 @@
-module Network.Ethereum.Web3.Unit where
+module Network.Ethereum.Web3.Types.Unit
+  ( class Unit, fromWei, toWei
+  , convert
+  , U0, Wei
+  , U1, Babbage
+  , U2, Lovelace
+  , U3, Shannon
+  , U4, Szabo
+  , U5, Finney
+  , U6, Ether
+  , U7, KEther
+  , Value
+  ) where
 
 import Prelude
 
+import Data.Foreign.Class (class Decode, class Encode)
 import Data.Maybe (fromJust)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
@@ -20,9 +33,14 @@ newtype Value a = Value BigNumber
 
 derive newtype instance eqValue :: Eq (Value a)
 
+derive newtype instance showValue :: Show (Value a)
+
+derive newtype instance encodeValue ::  Encode (Value a)
+
+derive newtype instance decodeValue ::  Decode (Value a)
+
 unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
-
 
 class  Unit a where
     fromWei :: BigNumber -> Value a
@@ -35,7 +53,7 @@ class UnitSpec a where
     divider :: Proxy a -> BigNumber
     name    :: Value a -> String
 
-mkValue :: forall a b . UnitSpec a => BigNumber -> Value a
+mkValue :: forall a . UnitSpec a => BigNumber -> Value a
 mkValue = modify res <<< floorBigNumber <<< (mul (divider res))
   where res :: UnitSpec a => Proxy a
         res = Proxy
