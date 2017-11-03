@@ -19,7 +19,7 @@ import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3, getAsyncProvider)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
-import Network.Ethereum.Web3.Types (Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, Value, Wei, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types (class Unit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, convert)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- * Events
@@ -80,13 +80,14 @@ event addr handler = do
 -- | of a transaction with this value as the payload.
 class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall p e .
+    sendTx :: forall p e u.
               IsAsyncProvider p
+           => Unit u
            => Maybe Address
            -- ^ Contract address
            -> Address
            -- ^ from address
-           -> Value Wei
+           -> u
            -- ^ paymentValue
            -> a
            -- ^ Method data
@@ -112,12 +113,13 @@ instance methodAbiEncoding :: ABIEncoding a => Method a where
   sendTx = _sendTransaction
   call = _call
 
-_sendTransaction :: forall p a e .
+_sendTransaction :: forall p a e u .
                     IsAsyncProvider p
                  => ABIEncoding a
+                 => Unit u
                  => Maybe Address
                  -> Address
-                 -> Value Wei
+                 -> u
                  -> a
                  -> Web3 p e HexString
 _sendTransaction mto f val dat =
@@ -128,7 +130,7 @@ _sendTransaction mto f val dat =
       defaultTransactionOptions # _to .~ mto
                                 # _from .~ Just f
                                 # _data .~ Just d
-                                # _value .~ Just val
+                                # _value .~ Just (convert val)
                                 # _gas .~ defaultGas
 
 _call :: forall p a b e .

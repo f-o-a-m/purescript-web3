@@ -8,7 +8,7 @@ import Data.Maybe (Maybe(..))
 import Network.Ethereum.Web3.Contract (sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
-import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3(..), unHex)
+import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3(..), Ether, Value, unHex)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (fail)
@@ -31,7 +31,7 @@ instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = Web3 <<< liftEff <<< httpProvider $ "http://localhost:8545"
 
 setA :: forall e . Int -> Web3 HttpProvider e HexString
-setA n = sendTx (Just ssAddress) adminAddress zero (Set n)
+setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) (Set n)
 
 simpleStorageSpec :: forall r . Spec _ Unit
 simpleStorageSpec =

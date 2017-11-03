@@ -12,4 +12,4 @@ import Network.Ethereum.Web3.Types.Types (Address(..), Block(..), CallMode(..), 
 import Network.Ethereum.Web3.Types.Utils (fromAscii, fromHexString, fromHexStringSigned, fromUtf8, getPadLength, padLeft, padLeftSigned, padRight, padRightSigned, toAscii, toSignedHexString, toHexString, toUtf8)
 import Network.Ethereum.Web3.Types.BigNumber (class Algebra, BigNumber, Radix, binary, decimal, embed, floor, hexadecimal, ladd, lmul, lsub, parseBigNumber, pow, radd, rmul, rsub, unsafeToInt, toString, toTwosComplement, (*<), (+<), (-<), (>*), (>+), (>-))
 import Network.Ethereum.Web3.Types.Sha3 (class SHA3, sha3)
-import Network.Ethereum.Web3.Types.Unit (class Unit, fromWei, toWei, convert , U0, Wei , U1, Babbage , U2, Lovelace, U3, Shannon, U4, Szabo, U5, Finney, U6, Ether, U7, KEther, Value)
+import Network.Ethereum.Web3.Types.Unit (class Unit, fromWei, toWei, convert , Wei, Babbage , Lovelace, Shannon, Szabo, Finney, Ether, KEther, Value)
