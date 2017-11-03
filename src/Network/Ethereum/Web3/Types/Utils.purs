@@ -1,6 +1,5 @@
 module Network.Ethereum.Web3.Types.Utils
-  ( EtherUnit(..)
-  , getPadLength
+  ( getPadLength
   , padLeftSigned
   , padLeft
   , padRightSigned
@@ -13,8 +12,6 @@ module Network.Ethereum.Web3.Types.Utils
   , toHexString
   , fromHexString
   , fromHexStringSigned
-  , toWei
-  , fromWei
   ) where
 
 import Prelude
@@ -25,50 +22,11 @@ import Data.Int (even)
 import Data.Maybe (fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
 import Data.String as S
-import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, decimal, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, hexadecimal)
 import Network.Ethereum.Web3.Types.Types (HexString(..), Sign(..), Signed(..), asSigned, hexLength)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 
-data EtherUnit =
-    Wei
-  | KWei
-  | MWei
-  | GWei
-  | Szabo
-  | Finney
-  | Ether
-  | MEther
-  | GEther
-  | TEther
-
--- | Takes a unit to convert from to get the value in Wei
-toWeiRate :: EtherUnit -> BigNumber
-toWeiRate eu =
-  let rate = case eu of
-               Wei    -> "1"
-               KWei   -> "1000"
-               MWei   -> "1000000"
-               GWei   -> "1000000000"
-               Szabo  -> "1000000000000"
-               Finney -> "1000000000000000"
-               Ether  -> "100000000000000000"
-               MEther -> "1000000000000000000000"
-               GEther -> "1000000000000000000000000"
-               TEther -> "1000000000000000000000000000"
-  in unsafePartial $ fromJust <<< parseBigNumber decimal $ rate
-
--- | Convert 'val' many of 'eu' to its value in Wei
-toWei :: BigNumber -> EtherUnit -> BigNumber
-toWei val eu =
-  let rate = toWeiRate eu
-  in val * rate
-
--- | Convert 'val many' Wei to get its value in 'eu'.
-fromWei :: BigNumber -> EtherUnit -> BigNumber
-fromWei val eu =
-  let rate = recip $ toWeiRate eu
-  in val * rate
 
 -- | computes the number of 0s in padding for a bytestring of length 'len'
 getPadLength :: Int -> Int
