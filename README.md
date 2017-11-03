@@ -9,7 +9,6 @@ Purescript bindings for Web3
 ```
 > git clone
 > cd purescript-web3
-> bower install
 > npm install
 > pulp build
 > pulp test
