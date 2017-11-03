@@ -5,9 +5,11 @@ import Prelude
 import Control.Monad.State.Class (get)
 import Data.Array (reverse, (:))
 import Data.Foldable (fold, foldMap)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
-import Data.String (joinWith)
 import Data.Tuple (Tuple(..), snd)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromDataParser, take)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
@@ -16,6 +18,7 @@ import Text.Parsing.Parser (Parser, ParseState(..))
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
+
 
 -- | Argument offset calculator
 offset :: Int
@@ -71,19 +74,16 @@ instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIDa
 instance abiEncoding1 :: (ABIEncoding a,
                           EncodingType a
                          ) => ABIEncoding (Singleton a) where
-  toDataBuilder (Singleton a) = _serialize (Tuple 1 []) a
-  fromDataParser = factorParser >>= pure <<< Singleton
+  toDataBuilder = uncurry1 $ _serialize (Tuple 1 [])
+  fromDataParser = Singleton <$> factorParser
 
 instance abiEncoding2 :: (ABIEncoding a,
                           EncodingType a,
                           ABIEncoding b,
                           EncodingType b
                          ) => ABIEncoding (Tuple2 a b) where
-  toDataBuilder (Tuple2 a b) = _serialize (Tuple 2 []) a b
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    pure $ Tuple2 a b
+  toDataBuilder = uncurry2 $ _serialize (Tuple 2 [])
+  fromDataParser = Tuple2 <$> factorParser <*> factorParser
 
 instance abiEncoding3 :: (ABIEncoding a,
                           EncodingType a,
@@ -92,12 +92,8 @@ instance abiEncoding3 :: (ABIEncoding a,
                           ABIEncoding c,
                           EncodingType c
                          ) => ABIEncoding (Tuple3 a b c) where
-  toDataBuilder (Tuple3 a b c) = _serialize (Tuple 3 []) a b c
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    pure $ Tuple3 a b c
+  toDataBuilder = uncurry3 $ _serialize (Tuple 3 [])
+  fromDataParser = Tuple3 <$> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding4 :: (ABIEncoding a,
                           EncodingType a,
@@ -108,13 +104,8 @@ instance abiEncoding4 :: (ABIEncoding a,
                           ABIEncoding d,
                           EncodingType d
                          ) => ABIEncoding (Tuple4 a b c d) where
-  toDataBuilder (Tuple4 a b c d) = _serialize (Tuple 4 []) a b c d
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    pure $ Tuple4 a b c d
+  toDataBuilder = uncurry4 $ _serialize (Tuple 4 [])
+  fromDataParser = Tuple4 <$> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding5 :: (ABIEncoding a,
                           EncodingType a,
@@ -127,14 +118,8 @@ instance abiEncoding5 :: (ABIEncoding a,
                           ABIEncoding e,
                           EncodingType e
                          ) => ABIEncoding (Tuple5 a b c d e) where
-  toDataBuilder (Tuple5 a b c d e) = _serialize (Tuple 5 []) a b c d e
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    pure $ Tuple5 a b c d e
+  toDataBuilder = uncurry5 $ _serialize (Tuple 5 [])
+  fromDataParser = Tuple5 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding6 :: (ABIEncoding a,
                           EncodingType a,
@@ -149,15 +134,8 @@ instance abiEncoding6 :: (ABIEncoding a,
                           ABIEncoding f,
                           EncodingType f
                          ) => ABIEncoding (Tuple6 a b c d e f) where
-  toDataBuilder (Tuple6 a b c d e f) = _serialize (Tuple 6 []) a b c d e f
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    pure $ Tuple6 a b c d e f
+  toDataBuilder = uncurry6 $ _serialize (Tuple 6 [])
+  fromDataParser = Tuple6 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding7 :: (ABIEncoding a,
                           EncodingType a,
@@ -174,16 +152,8 @@ instance abiEncoding7 :: (ABIEncoding a,
                           ABIEncoding g,
                           EncodingType g
                          ) => ABIEncoding (Tuple7 a b c d e f g) where
-  toDataBuilder (Tuple7 a b c d e f g) = _serialize (Tuple 7 []) a b c d e f g
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    pure $ Tuple7 a b c d e f g
+  toDataBuilder = uncurry7 $ _serialize (Tuple 7 [])
+  fromDataParser = Tuple7 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding8 :: (ABIEncoding a,
                           EncodingType a,
@@ -202,17 +172,8 @@ instance abiEncoding8 :: (ABIEncoding a,
                           ABIEncoding h,
                           EncodingType h
                          ) => ABIEncoding (Tuple8 a b c d e f g h) where
-  toDataBuilder (Tuple8 a b c d e f g h) = _serialize (Tuple 8 []) a b c d e f g h
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    pure $ Tuple8 a b c d e f g h
+  toDataBuilder = uncurry8 $ _serialize (Tuple 8 [])
+  fromDataParser = Tuple8 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding9 :: (ABIEncoding a,
                           EncodingType a,
@@ -233,18 +194,9 @@ instance abiEncoding9 :: (ABIEncoding a,
                           ABIEncoding i,
                           EncodingType i
                          ) => ABIEncoding (Tuple9 a b c d e f g h i) where
-  toDataBuilder (Tuple9 a b c d e f g h i) = _serialize (Tuple 9 []) a b c d e f g h i
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    pure $ Tuple9 a b c d e f g h i
+  toDataBuilder = uncurry9 $ _serialize (Tuple 9 [])
+  fromDataParser = Tuple9 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                          <*> factorParser
 
 instance abiEncoding10 :: (ABIEncoding a,
                            EncodingType a,
@@ -267,19 +219,9 @@ instance abiEncoding10 :: (ABIEncoding a,
                            ABIEncoding j,
                            EncodingType j
                           ) => ABIEncoding (Tuple10 a b c d e f g h i j) where
-  toDataBuilder (Tuple10 a b c d e f g h i j) = _serialize (Tuple 10 []) a b c d e f g h i j
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    pure $ Tuple10 a b c d e f g h i j
+  toDataBuilder = uncurry10 $ _serialize (Tuple 10 [])
+  fromDataParser = Tuple10 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser
 
 instance abiEncoding11 :: (ABIEncoding a,
                            EncodingType a,
@@ -304,20 +246,10 @@ instance abiEncoding11 :: (ABIEncoding a,
                            ABIEncoding k,
                            EncodingType k
                           ) => ABIEncoding (Tuple11 a b c d e f g h i j k) where
-  toDataBuilder (Tuple11 a b c d e f g h i j k) = _serialize (Tuple 11 []) a b c d e f g h i j k
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    pure $ Tuple11 a b c d e f g h i j k
+  toDataBuilder = uncurry11 $ _serialize (Tuple 11 [])
+  fromDataParser = Tuple11 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser
+
 
 instance abiEncoding12 :: (ABIEncoding a,
                            EncodingType a,
@@ -344,21 +276,9 @@ instance abiEncoding12 :: (ABIEncoding a,
                            ABIEncoding l,
                            EncodingType l
                           ) => ABIEncoding (Tuple12 a b c d e f g h i j k l) where
-  toDataBuilder (Tuple12 a b c d e f g h i j k l) = _serialize (Tuple 12 []) a b c d e f g h i j k l
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    pure $ Tuple12 a b c d e f g h i j k l
+  toDataBuilder = uncurry12 $ _serialize (Tuple 12 [])
+  fromDataParser = Tuple12 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding13 :: (ABIEncoding a,
@@ -388,22 +308,9 @@ instance abiEncoding13 :: (ABIEncoding a,
                            ABIEncoding m,
                            EncodingType m
                           ) => ABIEncoding (Tuple13 a b c d e f g h i j k l m) where
-  toDataBuilder (Tuple13 a b c d e f g h i j k l m) = _serialize (Tuple 13 []) a b c d e f g h i j k l m
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    pure $ Tuple13 a b c d e f g h i j k l m
+  toDataBuilder = uncurry13 $ _serialize (Tuple 13 [])
+  fromDataParser = Tuple13 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding14 :: (ABIEncoding a,
@@ -435,23 +342,9 @@ instance abiEncoding14 :: (ABIEncoding a,
                            ABIEncoding n,
                            EncodingType n
                           ) => ABIEncoding (Tuple14 a b c d e f g h i j k l m n) where
-  toDataBuilder (Tuple14 a b c d e f g h i j k l m n) = _serialize (Tuple 14 []) a b c d e f g h i j k l m n
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    pure $ Tuple14 a b c d e f g h i j k l m n
+  toDataBuilder = uncurry14 $ _serialize (Tuple 14 [])
+  fromDataParser = Tuple14 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 
 instance abiEncoding15 :: (ABIEncoding a,
@@ -485,24 +378,9 @@ instance abiEncoding15 :: (ABIEncoding a,
                            ABIEncoding o,
                            EncodingType o
                           ) => ABIEncoding (Tuple15 a b c d e f g h i j k l m n o) where
-  toDataBuilder (Tuple15 a b c d e f g h i j k l m n o) = _serialize (Tuple 15 []) a b c d e f g h i j k l m n o
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    o <- factorParser
-    pure $ Tuple15 a b c d e f g h i j k l m n o
+  toDataBuilder = uncurry15 $ _serialize (Tuple 15 [])
+  fromDataParser = Tuple15 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 instance abiEncoding16 :: (ABIEncoding a,
                            EncodingType a,
@@ -537,37 +415,23 @@ instance abiEncoding16 :: (ABIEncoding a,
                            ABIEncoding p,
                            EncodingType p
                           ) => ABIEncoding (Tuple16 a b c d e f g h i j k l m n o p) where
-  toDataBuilder (Tuple16 a b c d e f g h i j k l m n o p) = _serialize (Tuple 16 []) a b c d e f g h i j k l m n o p
-  fromDataParser = do
-    a <- factorParser
-    b <- factorParser
-    c <- factorParser
-    d <- factorParser
-    e <- factorParser
-    f <- factorParser
-    g <- factorParser
-    h <- factorParser
-    i <- factorParser
-    j <- factorParser
-    k <- factorParser
-    l <- factorParser
-    m <- factorParser
-    n <- factorParser
-    o <- factorParser
-    p <- factorParser
-    pure $ Tuple16 a b c d e f g h i j k l m n o p
+  toDataBuilder = uncurry16 $ _serialize (Tuple 16 [])
+  fromDataParser = Tuple16 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
+                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
 
 --------------------------------------------------------------------------------
 newtype Singleton a = Singleton a
+
+derive instance genericTuple1 :: Generic (Singleton a) _
 
 unSingleton :: forall a . Singleton a -> a
 unSingleton (Singleton a) = a
 
 instance showSingleton :: Show a => Show (Singleton a) where
-  show (Singleton a) = makeTupleString [show a]
+  show = genericShow
 
 instance eqSingleton :: Eq a => Eq (Singleton a) where
-  eq (Singleton a) (Singleton b) = a == b
+  eq = genericEq
 
 uncurry1 :: forall a b . (a -> b) -> Singleton a -> b
 uncurry1 fun (Singleton a) = fun a
@@ -580,15 +444,13 @@ curry1 fun a = fun (Singleton a)
 
 data Tuple2 a b = Tuple2 a b
 
+derive instance genericTuple2 :: Generic (Tuple2 a b) _
+
 instance showTuple2 :: (Show a, Show b) => Show (Tuple2 a b) where
-  show (Tuple2 a b) = makeTupleString [ show a
-                                      , show b
-                                      ]
+  show = genericShow
 
 instance eqTuple2 :: (Eq a, Eq b) => Eq (Tuple2 a b) where
-  eq (Tuple2 a b) (Tuple2 a' b') = a == a' && b == b'
-
--- * Tuple3
+  eq = genericEq
 
 uncurry2 :: forall a b c . (a -> b -> c) -> Tuple2 a b -> c
 uncurry2 fun (Tuple2 a b) = fun a b
@@ -596,17 +458,18 @@ uncurry2 fun (Tuple2 a b) = fun a b
 curry2 :: forall a b c . (Tuple2 a b -> c) -> a -> b -> c
 curry2 fun a b = fun (Tuple2 a b)
 
+
+-- * Tuple3
+
 data Tuple3 a b c = Tuple3 a b c
 
+derive instance genericTuple3 :: Generic (Tuple3 a b c) _
+
 instance showTuple3 :: (Show a, Show b, Show c) => Show (Tuple3 a b c) where
-  show (Tuple3 a b c) = makeTupleString [ show a
-                                        , show b
-                                        , show c
-                                        ]
+  show = genericShow
 
 instance eqTuple3 :: (Eq a, Eq b, Eq c) => Eq (Tuple3 a b c) where
-  eq (Tuple3 a b c) (Tuple3 a' b' c') =
-    a == a' && b == b' && c == c'
+  eq = genericEq
 
 uncurry3 :: forall a b c d . (a -> b -> c -> d) -> Tuple3 a b c -> d
 uncurry3 fun (Tuple3 a b c) = fun a b c
@@ -618,16 +481,13 @@ curry3 fun a b c = fun (Tuple3 a b c)
 
 data Tuple4 a b c d = Tuple4 a b c d
 
+derive instance genericTuple4 :: Generic (Tuple4 a b c d) _
+
 instance showTuple4 :: (Show a, Show b, Show c, Show d) => Show (Tuple4 a b c d) where
-  show (Tuple4 a b c d) = makeTupleString [ show a
-                                          , show b
-                                          , show c
-                                          , show d
-                                          ]
+  show = genericShow
 
 instance eqTuple4 :: (Eq a, Eq b, Eq c, Eq d) => Eq (Tuple4 a b c d) where
-  eq (Tuple4 a b c d) (Tuple4 a' b' c' d') =
-    a == a' && b == b' && c == c' && d == d'
+  eq = genericEq
 
 uncurry4 :: forall a b c d e . (a -> b -> c -> d -> e) -> Tuple4 a b c d -> e
 uncurry4 fun (Tuple4 a b c d) = fun a b c d
@@ -639,17 +499,13 @@ curry4 fun a b c d = fun (Tuple4 a b c d)
 
 data Tuple5 a b c d e = Tuple5 a b c d e
 
+derive instance genericTuple5 :: Generic (Tuple5 a b c d e) _
+
 instance showTuple5 :: (Show a, Show b, Show c, Show d, Show e) => Show (Tuple5 a b c d e) where
-  show (Tuple5 a b c d e) = makeTupleString [ show a
-                                            , show b
-                                            , show c
-                                            , show d
-                                            , show e
-                                            ]
+  show = genericShow
 
 instance eqTuple5 :: (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (Tuple5 a b c d e) where
-  eq (Tuple5 a b c d e) (Tuple5 a' b' c' d' e') =
-    a == a' && b == b' && c == c' && d == d' && e == e'
+  eq = genericEq
 
 uncurry5 :: forall a b c d e f. (a -> b -> c -> d -> e -> f) -> Tuple5 a b c d e -> f
 uncurry5 fun (Tuple5 a b c d e) = fun a b c d e
@@ -661,18 +517,13 @@ curry5 fun a b c d e = fun (Tuple5 a b c d e)
 
 data Tuple6 a b c d e f = Tuple6 a b c d e f
 
+derive instance genericTuple6 :: Generic (Tuple6 a b c d e f) _
+
 instance showTuple6 :: (Show a, Show b, Show c, Show d, Show e, Show f) => Show (Tuple6 a b c d e f) where
-  show (Tuple6 a b c d e f) = makeTupleString [ show a
-                                              , show b
-                                              , show c
-                                              , show d
-                                              , show e
-                                              , show f
-                                              ]
+  show = genericShow
 
 instance eqTuple6 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (Tuple6 a b c d e f) where
-  eq (Tuple6 a b c d e f) (Tuple6 a' b' c' d' e' f') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
+  eq = genericEq
 
 uncurry6 :: forall a b c d e f g. (a -> b -> c -> d -> e -> f -> g) -> Tuple6 a b c d e f -> g
 uncurry6 fun (Tuple6 a b c d e f) = fun a b c d e f
@@ -684,19 +535,13 @@ curry6 fun a b c d e f = fun (Tuple6 a b c d e f)
 
 data Tuple7 a b c d e f g = Tuple7 a b c d e f g
 
+derive instance genericTuple7 :: Generic (Tuple7 a b c d e f g) _
+
 instance showTuple7 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g) => Show (Tuple7 a b c d e f g) where
-  show (Tuple7 a b c d e f g) = makeTupleString [ show a
-                                                , show b
-                                                , show c
-                                                , show d
-                                                , show e
-                                                , show f
-                                                , show g
-                                                ]
+  show = genericShow
 
 instance eqTuple7 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (Tuple7 a b c d e f g) where
-  eq (Tuple7 a b c d e f g) (Tuple7 a' b' c' d' e' f' g') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
+  eq = genericEq
 
 uncurry7 :: forall a b c d e f g h. (a -> b -> c -> d -> e -> f -> g -> h) -> Tuple7 a b c d e f g -> h
 uncurry7 fun (Tuple7 a b c d e f g) = fun a b c d e f g
@@ -708,20 +553,13 @@ curry7 fun a b c d e f g = fun (Tuple7 a b c d e f g)
 
 data Tuple8 a b c d e f g h = Tuple8 a b c d e f g h
 
+derive instance genericTuple8 :: Generic (Tuple8 a b c d e f g h) _
+
 instance showTuple8 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h) => Show (Tuple8 a b c d e f g h) where
-  show (Tuple8 a b c d e f g h) = makeTupleString [ show a
-                                                  , show b
-                                                  , show c
-                                                  , show d
-                                                  , show e
-                                                  , show f
-                                                  , show g
-                                                  , show h
-                                                  ]
+  show = genericShow
 
 instance eqTuple8 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => Eq (Tuple8 a b c d e f g h) where
-  eq (Tuple8 a b c d e f g h) (Tuple8 a' b' c' d' e' f' g' h') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h'
+  eq = genericEq
 
 uncurry8 :: forall a b c d e f g h i. (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Tuple8 a b c d e f g h -> i
 uncurry8 fun (Tuple8 a b c d e f g h) = fun a b c d e f g h
@@ -733,21 +571,13 @@ curry8 fun a b c d e f g h = fun (Tuple8 a b c d e f g h)
 
 data Tuple9 a b c d e f g h i = Tuple9 a b c d e f g h i
 
+derive instance genericTuple9 :: Generic (Tuple9 a b c d e f g h i) _
+
 instance showTuple9 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i) => Show (Tuple9 a b c d e f g h i) where
-  show (Tuple9 a b c d e f g h i) = makeTupleString [ show a
-                                                    , show b
-                                                    , show c
-                                                    , show d
-                                                    , show e
-                                                    , show f
-                                                    , show g
-                                                    , show h
-                                                    , show i
-                                                    ]
+  show = genericShow
 
 instance eqTuple9 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => Eq (Tuple9 a b c d e f g h i) where
-  eq (Tuple9 a b c d e f g h i) (Tuple9 a' b' c' d' e' f' g' h' i') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i'
+  eq = genericEq
 
 uncurry9 :: forall a b c d e f g h i j. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j) -> Tuple9 a b c d e f g h i -> j
 uncurry9 fun (Tuple9 a b c d e f g h i) = fun a b c d e f g h i
@@ -759,22 +589,13 @@ curry9 fun a b c d e f g h i = fun (Tuple9 a b c d e f g h i)
 
 data Tuple10 a b c d e f g h i j = Tuple10 a b c d e f g h i j
 
+derive instance genericTuple10 :: Generic (Tuple10 a b c d e f g h i j) _
+
 instance showTuple10 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j) => Show (Tuple10 a b c d e f g h i j) where
-  show (Tuple10 a b c d e f g h i j) = makeTupleString [ show a
-                                                       , show b
-                                                       , show c
-                                                       , show d
-                                                       , show e
-                                                       , show f
-                                                       , show g
-                                                       , show h
-                                                       , show i
-                                                       , show j
-                                                       ]
+  show = genericShow
 
 instance eqTuple10 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq (Tuple10 a b c d e f g h i j) where
-  eq (Tuple10 a b c d e f g h i j) (Tuple10 a' b' c' d' e' f' g' h' i' j') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j'
+  eq = genericEq
 
 uncurry10 :: forall a b c d e f g h i j k. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k) -> Tuple10 a b c d e f g h i j -> k
 uncurry10 fun (Tuple10 a b c d e f g h i j) = fun a b c d e f g h i j
@@ -787,23 +608,13 @@ curry10 fun a b c d e f g h i j = fun (Tuple10 a b c d e f g h i j)
 
 data Tuple11 a b c d e f g h i j k = Tuple11 a b c d e f g h i j k
 
+derive instance genericTuple11 :: Generic (Tuple11 a b c d e f g h i j k) _
+
 instance showTuple11 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k) => Show (Tuple11 a b c d e f g h i j k) where
-  show (Tuple11 a b c d e f g h i j k) = makeTupleString [ show a
-                                                         , show b
-                                                         , show c
-                                                         , show d
-                                                         , show e
-                                                         , show f
-                                                         , show g
-                                                         , show h
-                                                         , show i
-                                                         , show j
-                                                         , show k
-                                                         ]
+  show = genericShow
 
 instance eqTuple11 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) => Eq (Tuple11 a b c d e f g h i j k) where
-  eq (Tuple11 a b c d e f g h i j k) (Tuple11 a' b' c' d' e' f' g' h' i' j' k') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k'
+  eq = genericEq
 
 uncurry11 :: forall a b c d e f g h i j k l. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l) -> Tuple11 a b c d e f g h i j k -> l
 uncurry11 fun (Tuple11 a b c d e f g h i j k) = fun a b c d e f g h i j k
@@ -815,153 +626,88 @@ curry11 fun a b c d e f g h i j k = fun (Tuple11 a b c d e f g h i j k)
 
 data Tuple12 a b c d e f g h i j k l = Tuple12 a b c d e f g h i j k l
 
+derive instance genericTuple12 :: Generic (Tuple12 a b c d e f g h i j k l) _
+
 instance showTuple12 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k, Show l) => Show (Tuple12 a b c d e f g h i j k l) where
-  show (Tuple12 a b c d e f g h i j k l) = makeTupleString [ show a
-                                                           , show b
-                                                           , show c
-                                                           , show d
-                                                           , show e
-                                                           , show f
-                                                           , show g
-                                                           , show h
-                                                           , show i
-                                                           , show j
-                                                           , show k
-                                                           , show l
-                                                           ]
+  show = genericShow
 
 instance eqTuple12 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l) => Eq (Tuple12 a b c d e f g h i j k l) where
-  eq (Tuple12 a b c d e f g h i j k l) (Tuple12 a' b' c' d' e' f' g' h' i' j' k' l') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k' && l == l'
+  eq = genericEq
 
 uncurry12 :: forall a b c d e f g h i j k l m. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m) -> Tuple12 a b c d e f g h i j k l -> m
 uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 
 curry12 :: forall a b c d e f g h i j k l m. (Tuple12 a b c d e f g h i j k l -> m) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m
-curry12 fun a b c d e f g h i j k l = fun (Tuple12 a b c d e f g h i j k l) 
+curry12 fun a b c d e f g h i j k l = fun (Tuple12 a b c d e f g h i j k l)
 
 
 -- * Tuple13
 
 data Tuple13 a b c d e f g h i j k l m = Tuple13 a b c d e f g h i j k l m
 
+derive instance genericTuple13 :: Generic (Tuple13 a b c d e f g h i j k l m) _
+
 instance showTuple13 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k, Show l, Show m) => Show (Tuple13 a b c d e f g h i j k l m) where
-  show (Tuple13 a b c d e f g h i j k l m) = makeTupleString [ show a
-                                                             , show b
-                                                             , show c
-                                                             , show d
-                                                             , show e
-                                                             , show f
-                                                             , show g
-                                                             , show h
-                                                             , show i
-                                                             , show j
-                                                             , show k
-                                                             , show l
-                                                             , show m
-                                                             ]
+  show = genericShow
 
 instance eqTuple13 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m) => Eq (Tuple13 a b c d e f g h i j k l m) where
-  eq (Tuple13 a b c d e f g h i j k l m) (Tuple13 a' b' c' d' e' f' g' h' i' j' k' l' m') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k' && l == l' && m == m'
+  eq = genericEq
 
 uncurry13 :: forall a b c d e f g h i j k l m n. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n) -> Tuple13 a b c d e f g h i j k l m -> n
 uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l m
 
 curry13 :: forall a b c d e f g h i j k l m n. (Tuple13 a b c d e f g h i j k l m -> n) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n
-curry13 fun a b c d e f g h i j k l m = fun (Tuple13 a b c d e f g h i j k l m) 
+curry13 fun a b c d e f g h i j k l m = fun (Tuple13 a b c d e f g h i j k l m)
 
 
 -- * Tuple14
 
 data Tuple14 a b c d e f g h i j k l m n = Tuple14 a b c d e f g h i j k l m n
 
+derive instance genericTuple14 :: Generic (Tuple14 a b c d e f g h i j k l m n) _
+
 instance showTuple14 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k, Show l, Show m, Show n) => Show (Tuple14 a b c d e f g h i j k l m n) where
-  show (Tuple14 a b c d e f g h i j k l m n) = makeTupleString [ show a
-                                                               , show b
-                                                               , show c
-                                                               , show d
-                                                               , show e
-                                                               , show f
-                                                               , show g
-                                                               , show h
-                                                               , show i
-                                                               , show j
-                                                               , show k
-                                                               , show l
-                                                               , show m
-                                                               , show n
-                                                               ]
+  show = genericShow
 
 instance eqTuple14 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) => Eq (Tuple14 a b c d e f g h i j k l m n) where
-  eq (Tuple14 a b c d e f g h i j k l m n) (Tuple14 a' b' c' d' e' f' g' h' i' j' k' l' m' n') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k' && l == l' && m == m' && n == n'
+  eq = genericEq
 
 uncurry14 :: forall a b c d e f g h i j k l m n o. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o) -> Tuple14 a b c d e f g h i j k l m n -> o
 uncurry14 fun (Tuple14 a b c d e f g h i j k l m n) = fun a b c d e f g h i j k l m n
 
 curry14 :: forall a b c d e f g h i j k l m n o. (Tuple14 a b c d e f g h i j k l m n -> o) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o
-curry14 fun a b c d e f g h i j k l m n = fun (Tuple14 a b c d e f g h i j k l m n) 
+curry14 fun a b c d e f g h i j k l m n = fun (Tuple14 a b c d e f g h i j k l m n)
 
 -- * Tuple15
 
 data Tuple15 a b c d e f g h i j k l m n o = Tuple15 a b c d e f g h i j k l m n o
-  
+
+derive instance genericTuple15 :: Generic (Tuple15 a b c d e f g h i j k l m n o) _
+
 instance showTuple15 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k, Show l, Show m, Show n, Show o) => Show (Tuple15 a b c d e f g h i j k l m n o) where
-  show (Tuple15 a b c d e f g h i j k l m n o) = makeTupleString [ show a
-                                                                 , show b
-                                                                 , show c
-                                                                 , show d
-                                                                 , show e
-                                                                 , show f
-                                                                 , show g
-                                                                 , show h
-                                                                 , show i
-                                                                 , show j
-                                                                 , show k
-                                                                 , show l
-                                                                 , show m
-                                                                 , show n
-                                                                 , show o
-                                                                 ]
+  show = genericShow
 
 instance eqTuple15 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o) => Eq (Tuple15 a b c d e f g h i j k l m n o) where
-  eq (Tuple15 a b c d e f g h i j k l m n o) (Tuple15 a' b' c' d' e' f' g' h' i' j' k' l' m' n' o') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k' && l == l' && m == m' && n == n' && o == o'
+  eq = genericEq
 
 uncurry15 :: forall a b c d e f g h i j k l m n o p. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p) -> Tuple15 a b c d e f g h i j k l m n o -> p
 uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j k l m n o
 
 curry15 :: forall a b c d e f g h i j k l m n o p. (Tuple15 a b c d e f g h i j k l m n o -> p) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p
-curry15 fun a b c d e f g h i j k l m n o = fun (Tuple15 a b c d e f g h i j k l m n o) 
+curry15 fun a b c d e f g h i j k l m n o = fun (Tuple15 a b c d e f g h i j k l m n o)
 
 
 -- * Tuple16
 
 data Tuple16 a b c d e f g h i j k l m n o p = Tuple16 a b c d e f g h i j k l m n o p
-  
+
+derive instance genericTuple16 :: Generic (Tuple16 a b c d e f g h i j k l m n o p) _
+
 instance showTuple16 :: (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k, Show l, Show m, Show n, Show o, Show p) => Show (Tuple16 a b c d e f g h i j k l m n o p) where
-  show (Tuple16 a b c d e f g h i j k l m n o p) = makeTupleString [ show a
-                                                                   , show b
-                                                                   , show c
-                                                                   , show d
-                                                                   , show e
-                                                                   , show f
-                                                                   , show g
-                                                                   , show h
-                                                                   , show i
-                                                                   , show j
-                                                                   , show k
-                                                                   , show l
-                                                                   , show m
-                                                                   , show n
-                                                                   , show o
-                                                                   , show p
-                                                                   ]
+  show = genericShow
 
 instance eqTuple16 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o, Eq p) => Eq (Tuple16 a b c d e f g h i j k l m n o p) where
-  eq (Tuple16 a b c d e f g h i j k l m n o p) (Tuple16 a' b' c' d' e' f' g' h' i' j' k' l' m' n' o' p') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g' && h == h' && i == i' && j == j' && k == k' && l == l' && m == m' && n == n' && o == o' && p == p'
+  eq = genericEq
 
 uncurry16 :: forall a b c d e f g h i j k l m n o p q. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q) -> Tuple16 a b c d e f g h i j k l m n o p -> q
 uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i j k l m n o p
@@ -972,9 +718,6 @@ curry16 fun a b c d e f g h i j k l m n o p = fun (Tuple16 a b c d e f g h i j k
 
 
 --------------------------------------------------------------------------------
-
-makeTupleString :: Array String -> String
-makeTupleString as = "(" <> joinWith ", " as <> ")"
 
 factorParser :: forall a . ABIEncoding a => EncodingType a => Parser String a
 factorParser
