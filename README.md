@@ -1,7 +1,7 @@
 # purescript-web3
 
-[![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=travis)](https://github.com/f-o-a-m/purescript-web3/releases)
-[![Build status](https://travis-ci.org/f-o-a-m/purescript-web3.svg?branch=travis)](https://travis-ci.org/f-o-a-m/purescript-web3?branch=travis)
+[![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
+[![Build status](https://travis-ci.org/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.org/f-o-a-m/purescript-web3?branch=master)
 
 Purescript bindings for Web3
 
