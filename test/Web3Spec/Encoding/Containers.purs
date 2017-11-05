@@ -110,13 +110,26 @@ tuplesTest =
           bool = true
           int224 = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  221
           bools = true :< false :< nilVector
-          ints = [unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ 1, unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ negate 1, unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  3]
+          ints = [ unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ 1
+                 , unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ negate 1
+                 , unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  3
+                 ]
           string = "hello"
           bytes16 = unsafePartial $ fromJust $ fromByteString =<< flip BS.fromString BS.Hex "12345678123456781234567812345678"
           elem = unsafePartial $ fromJust $ fromByteString =<< flip BS.fromString BS.Hex "1234"
-          bytes2s = [elem :< elem :< elem :< elem :< nilVector, elem :< elem :< elem :< elem :< nilVector]
+          bytes2s = [ elem :< elem :< elem :< elem :< nilVector
+                    , elem :< elem :< elem :< elem :< nilVector
+                    ]
 
-          given = Tuple9 uint int bool int224 bools ints string bytes16 bytes2s :: Tuple9 (UIntN (D2 :& D5 :& D6)) (IntN (D2 :& D5 :& D6)) Boolean (IntN (D2 :& D2 :& D4)) (Vector N2 Boolean) (Array (IntN (D2 :& D5 :& D6))) String (BytesN (D1 :& D6)) (Array (Vector N4 (BytesN D2)))
+          given = Tuple9 uint int bool int224 bools ints string bytes16 bytes2s :: Tuple9 (UIntN (D2 :& D5 :& D6))
+                                                                                          (IntN (D2 :& D5 :& D6))
+                                                                                          Boolean
+                                                                                          (IntN (D2 :& D2 :& D4))
+                                                                                          (Vector N2 Boolean)
+                                                                                          (Array (IntN (D2 :& D5 :& D6)))
+                                                                                          String
+                                                                                          (BytesN (D1 :& D6))
+                                                                                          (Array (Vector N4 (BytesN D2)))
           expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
