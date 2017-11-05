@@ -130,6 +130,7 @@ tuplesTest =
                                                                                           String
                                                                                           (BytesN (D1 :& D6))
                                                                                           (Array (Vector N4 (BytesN D2)))
+
           expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"

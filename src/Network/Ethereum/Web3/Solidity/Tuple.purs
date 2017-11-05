@@ -4,35 +4,19 @@ import Prelude
 
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, (:), uncons)
-import Data.Foldable (fold, foldMap)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
-import Data.Monoid (class Monoid, mempty)
-import Data.Monoid.Additive (Additive(..))
-import Data.Tuple (Tuple(..), snd)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromDataParser, int256HexBuilder, take, toDataBuilder)
+import Data.Monoid (mempty)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (BigNumber, HexString, embed, hexLength, unsafeToInt)
+import Network.Ethereum.Web3.Types (HexString, hexLength, unsafeToInt)
 import Text.Parsing.Parser (Parser, ParseState(..))
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
 
-
--- | Argument offset calculator
-offset :: Int
-       -- ^ Count of arguments
-       -> Array HexString
-       -- ^ Previous dynamic arguments
-       -> Int
-       -- ^ Offset
-offset totalArgs args = headerOffset + dataOffset
-  where
-    headerOffset = totalArgs * 32
-    dataOffset   = let (Additive rawLength) = foldMap (Additive <<< hexLength) args
-                   in rawLength `div` 2
 
 data EncodedValue =
   EncodedValue { order :: Int
@@ -54,21 +38,21 @@ class ABIData a where
     -- data part (for dynamic arguments)
 
 instance abiDataHexString :: ABIData HexString where
-    _serialize es =
-      let sortedEs = adjust headsOffset $ sort es
-          es' = addTailOffsets headsOffset [] sortedEs
+    _serialize encodings =
+      let sortedEs = adjust headsOffset $ sort encodings
+          encodings' = addTailOffsets headsOffset [] sortedEs
       in let heads = foldl (\acc (EncodedValue e) -> case e.offset of
                               Nothing -> acc <> e.encoding
                               Just o -> acc <> toDataBuilder o
-                          ) mempty es'
+                          ) mempty encodings'
              tails = foldl (\acc (EncodedValue e) -> case e.offset of
                               Nothing -> acc
                               Just _ -> acc <> e.encoding
-                          ) mempty es'
+                          ) mempty encodings'
           in heads <> tails
       where
         adjust :: Int -> Array EncodedValue -> Array EncodedValue
-        adjust n es = map (\(EncodedValue e) -> EncodedValue e {offset = add n <$> e.offset}) es
+        adjust n = map (\(EncodedValue e) -> EncodedValue e {offset = add n <$> e.offset})
         addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
         addTailOffsets init acc es = case uncons es of
           Nothing -> reverse acc
@@ -81,7 +65,7 @@ instance abiDataHexString :: ABIData HexString where
         headsOffset = foldl (\acc (EncodedValue e) -> case e.offset of
                                 Nothing -> acc + (hexLength e.encoding `div` 2)
                                 Just _ -> acc + 32
-                            ) 0 es
+                            ) 0 encodings
 
 instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIData (b -> a) where
   _serialize encoded x =
