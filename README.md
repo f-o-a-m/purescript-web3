@@ -17,8 +17,6 @@ Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-gen
 
 ## Build Instructions
 ```
-> git clone
-> cd purescript-web3
 > npm install
 > psc-package build
 > pulp test
