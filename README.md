@@ -3,7 +3,7 @@
 [![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
 [![Build status](https://travis-ci.org/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.org/f-o-a-m/purescript-web3?branch=master)
 
-Purescript bindings for Web3
+# Purescript bindings for Web3
 
 `purescript-web3` is a faithful porting of [hs-web3](https://github.com/airalab/hs-web3) to purescript. At the moment it implements most of the `eth` endpoints of the web3 api, which means it is suitable for sendind transactions, querying blockchain state and metatdata, and monitoring events.
 
@@ -13,7 +13,7 @@ Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-gen
 `purescript-web3` is using [psc-package](https://github.com/purescript/psc-package) to manage dependencies. Follow the instructions to install psc-package before building the project.
 
 
-## Getting Started
+## Build Instructions
 ```
 > git clone
 > cd purescript-web3
