@@ -1,4 +1,6 @@
 # purescript-web3
+<img src=https://github.com/f-o-a-m/purescript-web3/blob/master/purescript-web3-logo.png width="75">
+
 
 [![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
 [![Build status](https://travis-ci.org/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.org/f-o-a-m/purescript-web3?branch=master)
@@ -15,8 +17,6 @@ Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-gen
 
 ## Build Instructions
 ```
-> git clone
-> cd purescript-web3
 > npm install
 > psc-package build
 > pulp test
