@@ -61,7 +61,7 @@ event addr handler = do
   where
     loop :: FilterId -> Web3 p e Unit
     loop fltr = do
-      _ <- liftAff $ delay (Milliseconds 100.0)
+      _ <- liftAff $ delay (Milliseconds 1000.0)
       changes <- eth_getFilterChanges fltr
       acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) -> do
         runReaderT (handler changeEvent) changeWithMeta
