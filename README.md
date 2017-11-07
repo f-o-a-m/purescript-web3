@@ -11,6 +11,10 @@
 
 Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator) it is also possible to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
 
+We do not yet have a build tool similar to truffle, but if you are looking for a template of how to use truffle and write your tests using purescript, check out out the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests)
+
+To see an example project using all of the purescript-web3 tools and with thermite/react ui, check out [purescript-web3-example](https://github.com/f-o-a-m/purescript-web3-example).
+
 ## Prerequisites
 `purescript-web3` is using [psc-package](https://github.com/purescript/psc-package) to manage dependencies. Follow the instructions to install psc-package before building the project.
 
