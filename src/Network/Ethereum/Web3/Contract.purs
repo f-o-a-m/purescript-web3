@@ -17,7 +17,7 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
-import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3, getAsyncProvider)
+import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
 import Network.Ethereum.Web3.Types (class Unit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, convert)
 import Type.Proxy (Proxy(..))
@@ -54,8 +54,7 @@ event :: forall p e a.
        -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 event addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
-    provider <- getAsyncProvider
-    liftAff <<< forkWeb3 $ do
+    forkWeb3' $ do
       loop fid
       _ <- eth_uninstallFilter fid
       pure unit

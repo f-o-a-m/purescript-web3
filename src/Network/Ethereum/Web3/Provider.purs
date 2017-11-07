@@ -30,3 +30,7 @@ runWeb3 (Web3 action) = action
 -- | Fork an asynchronous `ETH` action
 forkWeb3 :: forall p e a . Web3 p e a -> Aff (eth :: ETH | e) (Fiber (eth :: ETH | e) a)
 forkWeb3 (Web3 action) = forkAff action
+
+-- | Fork an asynchronous `ETH` action inside Web3 monad
+forkWeb3' :: forall p e a . Web3 p e a -> Web3 p e (Fiber (eth :: ETH | e) a)
+forkWeb3' (Web3 action) = Web3 $ forkAff action
