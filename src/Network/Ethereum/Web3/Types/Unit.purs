@@ -14,6 +14,7 @@ module Network.Ethereum.Web3.Types.Unit
   , KEther
   , Value
   , mkValue
+  , noPay
   ) where
 
 import Prelude
@@ -127,6 +128,9 @@ data KEther
 instance unitSpecKE :: UnitSpec KEther where
     divider = const $ unsafeConvert $ "1000000000000000000000"
     name    = const "kether"
+
+noPay :: Value Wei
+noPay = Value zero
 
 unsafeConvert :: String -> BigNumber
 unsafeConvert a = unsafePartial $ fromJust <<< parseBigNumber decimal $ a
