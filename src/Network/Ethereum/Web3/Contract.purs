@@ -54,7 +54,7 @@ event :: forall p e a.
        -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 event addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
-    forkWeb3' $ do
+    forkWeb3' (Proxy :: Proxy p) $ do
       loop fid
       _ <- eth_uninstallFilter fid
       pure unit

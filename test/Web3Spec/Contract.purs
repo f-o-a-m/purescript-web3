@@ -6,12 +6,13 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (logShow)
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Web3.Contract (sendTx)
-import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
+import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, metamask, runWeb3)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
 import Network.Ethereum.Web3.Types (HexString(..), Address(..), Web3(..), Ether, Value, unHex)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (fail)
+import Type.Proxy (Proxy(..))
 
 ssAddress :: Address
 ssAddress = Address <<< HexString $ "c29313014a78b440876bac21be369c3047e313e7"
@@ -27,6 +28,9 @@ instance abiEncodingSet :: ABIEncoding Set where
 
 data HttpProvider
 
+http :: Proxy HttpProvider
+http = Proxy
+
 instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = Web3 <<< liftEff <<< httpProvider $ "http://localhost:8545"
 
@@ -37,6 +41,6 @@ simpleStorageSpec :: forall r . Spec _ Unit
 simpleStorageSpec =
   describe "interacting with a SimpleStorage Contract" do
     it "can set the value of simple storage asynchronously" do
-      txHash <- runWeb3 $ setA 200
+      txHash <- runWeb3 http $ setA 200
       _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
