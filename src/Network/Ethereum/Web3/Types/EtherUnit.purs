@@ -1,6 +1,6 @@
-module Network.Ethereum.Web3.Types.Unit
-  ( class Unit, fromWei, toWei
-  , class UnitSpec
+module Network.Ethereum.Web3.Types.EtherUnit
+  ( class EtherUnit, fromWei, toWei
+  , class EtherUnitSpec
   , divider
   , name
   , convert
@@ -41,91 +41,91 @@ unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
 
 -- | Useful for converting to and from the base denomination `Wei`
-class Unit a where
+class EtherUnit a where
     fromWei :: BigNumber -> a
     toWei :: a -> BigNumber
 
 -- | Convert between two denominations
-convert :: forall a b . Unit a => Unit b => a -> b
+convert :: forall a b . EtherUnit a => EtherUnit b => a -> b
 convert = fromWei <<< toWei
 
-class UnitSpec a where
+class EtherUnitSpec a where
     divider :: Proxy a -> BigNumber
     name    :: Proxy a -> String
 
 -- | Convert a big number into value, first using `floor` function to take the integer part
-mkValue :: forall a . UnitSpec a => BigNumber -> Value a
+mkValue :: forall a . EtherUnitSpec a => BigNumber -> Value a
 mkValue = modify res <<< floorBigNumber <<< (mul (divider res))
-  where res :: UnitSpec a => Proxy a
+  where res :: EtherUnitSpec a => Proxy a
         res = Proxy
         modify :: Proxy a -> BigNumber -> Value a
         modify _ = Value
 
-instance unitUnitSpec :: UnitSpec a => Unit (Value a) where
+instance unitEtherUnitSpec :: EtherUnitSpec a => EtherUnit (Value a) where
     fromWei = Value
     toWei = unValue
 
-instance semiringUnitSpec :: UnitSpec a => Semiring (Value a) where
+instance semiringEtherUnitSpec :: EtherUnitSpec a => Semiring (Value a) where
    add a b = Value (unValue a `add` unValue b)
    mul a b = Value (unValue a `mul` unValue b)
    zero = Value zero
    one = Value one
 
-instance ringUnitSpec :: UnitSpec a => Ring (Value a) where
+instance ringEtherUnitSpec :: EtherUnitSpec a => Ring (Value a) where
    sub a b = Value (unValue a `sub` unValue b)
 
 data Wei
 
-instance unitSpecWei :: UnitSpec Wei where
+instance unitSpecWei :: EtherUnitSpec Wei where
     divider = const $ unsafeConvert "1"
     name    = const "wei"
 
 -- | Babbage unit type
 data Babbage
 
-instance unitSpecB :: UnitSpec Babbage where
+instance unitSpecB :: EtherUnitSpec Babbage where
     divider = const $ unsafeConvert "1000"
     name    = const "babbage"
 
 -- | Lovelace unit type
 data Lovelace
 
-instance unitSpecL :: UnitSpec Lovelace where
+instance unitSpecL :: EtherUnitSpec Lovelace where
     divider = const $ unsafeConvert "1000000"
     name    = const "lovelace"
 
 -- | Shannon unit type
 data Shannon
 
-instance unitSpecS :: UnitSpec Shannon where
+instance unitSpecS :: EtherUnitSpec Shannon where
     divider = const $ unsafeConvert "1000000000"
     name    = const "shannon"
 
 -- | Szabo unit type
 data Szabo
 
-instance unitSpecSz :: UnitSpec Szabo where
+instance unitSpecSz :: EtherUnitSpec Szabo where
     divider = const $ unsafeConvert "1000000000000"
     name    = const "szabo"
 
 -- | Finney unit type
 data Finney
 
-instance unitSpecF :: UnitSpec Finney where
+instance unitSpecF :: EtherUnitSpec Finney where
     divider = const $ unsafeConvert "1000000000000000"
     name    = const "finney"
 
 -- | Ether unit type
 data Ether
 
-instance unitSpecE :: UnitSpec Ether where
+instance unitSpecE :: EtherUnitSpec Ether where
     divider = const $ unsafeConvert "1000000000000000000"
     name    = const "ether"
 
 -- | KEther unit type
 data KEther
 
-instance unitSpecKE :: UnitSpec KEther where
+instance unitSpecKE :: EtherUnitSpec KEther where
     divider = const $ unsafeConvert $ "1000000000000000000000"
     name    = const "kether"
 
