@@ -8,11 +8,9 @@ import Partial.Unsafe (unsafePartial)
 import Control.Monad.Aff (Aff)
 import Test.Spec.Assertions (shouldEqual)
 import Data.ByteString as BS
-import Network.Ethereum.Web3.Types (Address(..), HexString(..))
+import Network.Ethereum.Web3.Types (Address(..), HexString(..), embed)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
-import Network.Ethereum.Web3.Solidity.Tuple (Singleton(..), Tuple2(..), Tuple3(..))
-import Network.Ethereum.Web3.Solidity.Bytes(BytesN, fromByteString)
-import Network.Ethereum.Web3.Solidity.Size (N1, N2, N4, D1)
+import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Singleton(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 
 
@@ -90,16 +88,73 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
       roundTrip given expected
 
-    it "can encode 3-tuples with a mix of args -- (String, Boolean, Array Int)" do
-      let given = Tuple3 "dave" true [1,2,3]
-          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000060"
+    it "can encode 4-tuples with a mix of args -- (UInt, String, Boolean, Array Int)" do
+      let given = Tuple4 1 "dave" true [1,2,3]
+          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "0000000000000000000000000000000000000000000000000000000000000080"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
-                              <> "00000000000000000000000000000000000000000000000000000000000000a0"
+                              <> "00000000000000000000000000000000000000000000000000000000000000c0"
                               <> "0000000000000000000000000000000000000000000000000000000000000004"
                               <> "6461766500000000000000000000000000000000000000000000000000000000"
                               <> "0000000000000000000000000000000000000000000000000000000000000003"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000003"
+
+      roundTrip given expected
+
+
+    it "can do something really complicated" do
+      let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber <<< embed $ 1
+          int = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ (negate 1)
+          bool = true
+          int224 = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  221
+          bools = true :< false :< nilVector
+          ints = [ unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ 1
+                 , unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ negate 1
+                 , unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  3
+                 ]
+          string = "hello"
+          bytes16 = unsafePartial $ fromJust $ fromByteString =<< flip BS.fromString BS.Hex "12345678123456781234567812345678"
+          elem = unsafePartial $ fromJust $ fromByteString =<< flip BS.fromString BS.Hex "1234"
+          bytes2s = [ elem :< elem :< elem :< elem :< nilVector
+                    , elem :< elem :< elem :< elem :< nilVector
+                    ]
+
+          given = Tuple9 uint int bool int224 bools ints string bytes16 bytes2s :: Tuple9 (UIntN (D2 :& D5 :& D6))
+                                                                                          (IntN (D2 :& D5 :& D6))
+                                                                                          Boolean
+                                                                                          (IntN (D2 :& D2 :& D4))
+                                                                                          (Vector N2 Boolean)
+                                                                                          (Array (IntN (D2 :& D5 :& D6)))
+                                                                                          String
+                                                                                          (BytesN (D1 :& D6))
+                                                                                          (Array (Vector N4 (BytesN D2)))
+
+          expected = HexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "00000000000000000000000000000000000000000000000000000000000000dd"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "0000000000000000000000000000000000000000000000000000000000000000"
+                              <> "0000000000000000000000000000000000000000000000000000000000000140"
+                              <> "00000000000000000000000000000000000000000000000000000000000001c0"
+                              <> "1234567812345678123456781234567800000000000000000000000000000000"
+                              <> "0000000000000000000000000000000000000000000000000000000000000200"
+                              <> "0000000000000000000000000000000000000000000000000000000000000003"
+                              <> "0000000000000000000000000000000000000000000000000000000000000001"
+                              <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                              <> "0000000000000000000000000000000000000000000000000000000000000003"
+                              <> "0000000000000000000000000000000000000000000000000000000000000005"
+                              <> "68656c6c6f000000000000000000000000000000000000000000000000000000"
+                              <> "0000000000000000000000000000000000000000000000000000000000000002"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
+                              <> "1234000000000000000000000000000000000000000000000000000000000000"
 
       roundTrip given expected

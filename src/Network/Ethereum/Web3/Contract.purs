@@ -17,14 +17,15 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
-import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3, getAsyncProvider)
+import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
-import Network.Ethereum.Web3.Types (Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, Value, Wei, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber)
+import Network.Ethereum.Web3.Types (class Unit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, convert)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
--- | Events
+-- * Events
 --------------------------------------------------------------------------------
 
+-- | Represents a flag to continue or discontinue listening to the filter
 data EventAction = ContinueEvent
                  -- ^ Continue to listen events
                  | TerminateEvent
@@ -43,7 +44,8 @@ class ABIEncoding a <= EventFilter a where
     eventFilter :: Proxy a -> Address -> Filter
 
 
--- | Default implementation for Event class
+-- | Start listening to events eminating from the given address and caught by the filter,
+-- | using the handler to process the data and decide whether to continue
 event :: forall p e a.
           IsAsyncProvider p
        => EventFilter a
@@ -52,15 +54,14 @@ event :: forall p e a.
        -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 event addr handler = do
     fid <- eth_newFilter (eventFilter (Proxy :: Proxy a) addr)
-    provider <- getAsyncProvider
-    liftAff <<< forkWeb3 $ do
+    forkWeb3' (Proxy :: Proxy p) $ do
       loop fid
       _ <- eth_uninstallFilter fid
       pure unit
   where
     loop :: FilterId -> Web3 p e Unit
     loop fltr = do
-      _ <- liftAff $ delay (Milliseconds 100.0)
+      _ <- liftAff $ delay (Milliseconds 1000.0)
       changes <- eth_getFilterChanges fltr
       acts <- for (catMaybes $ map pairChange changes) $ \(Tuple changeWithMeta changeEvent) -> do
         runReaderT (handler changeEvent) changeWithMeta
@@ -71,18 +72,21 @@ event addr handler = do
       pure (Tuple rc change)
 
 --------------------------------------------------------------------------------
--- | Methods
+-- * Methods
 --------------------------------------------------------------------------------
 
+-- | Class paramaterized by values which are ABIEncodable, allowing the templating of
+-- | of a transaction with this value as the payload.
 class ABIEncoding a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall p e .
+    sendTx :: forall p e u.
               IsAsyncProvider p
+           => Unit u
            => Maybe Address
            -- ^ Contract address
            -> Address
            -- ^ from address
-           -> Value Wei
+           -> u
            -- ^ paymentValue
            -> a
            -- ^ Method data
@@ -108,12 +112,13 @@ instance methodAbiEncoding :: ABIEncoding a => Method a where
   sendTx = _sendTransaction
   call = _call
 
-_sendTransaction :: forall p a e .
+_sendTransaction :: forall p a e u .
                     IsAsyncProvider p
                  => ABIEncoding a
+                 => Unit u
                  => Maybe Address
                  -> Address
-                 -> Value Wei
+                 -> u
                  -> a
                  -> Web3 p e HexString
 _sendTransaction mto f val dat =
@@ -124,7 +129,7 @@ _sendTransaction mto f val dat =
       defaultTransactionOptions # _to .~ mto
                                 # _from .~ Just f
                                 # _data .~ Just d
-                                # _value .~ Just val
+                                # _value .~ Just (convert val)
                                 # _gas .~ defaultGas
 
 _call :: forall p a b e .

@@ -3,8 +3,6 @@ var Web3 = require('web3');
 
 exports.metamaskProvider = function () {
     if (typeof web3 !== 'undefined') {
-        // Use Mist/MetaMask's provider
-        console.log("using metamask provider");
         return web3.currentProvider;
     } else {
         return new Error("No Metamask provider found.");

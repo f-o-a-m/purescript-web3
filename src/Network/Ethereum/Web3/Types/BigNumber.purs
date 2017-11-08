@@ -11,7 +11,7 @@ module Network.Ethereum.Web3.Types.BigNumber
   , toString
   , parseBigNumber
   , toTwosComplement
-  , toInt
+  , unsafeToInt
   , floorBigNumber
   , module Int
   ) where
@@ -27,8 +27,10 @@ import Data.Maybe (Maybe(..))
 -- * BigNumber
 --------------------------------------------------------------------------------
 
+-- | Large Integer, needed for handling numbers of up to 32 bytes
 foreign import data BigNumber :: Type
 
+-- | Convert a Big number into a string in the given base
 foreign import toString :: Int.Radix -> BigNumber -> String
 
 instance showBigNumber :: Show BigNumber where
@@ -71,6 +73,10 @@ foreign import _subBigNumber :: BigNumber -> BigNumber -> BigNumber
 instance ringBigNumber :: Ring BigNumber where
   sub = _subBigNumber
 
+-- | Class for embedding one ring inside another. Used mostly for coercing numerical values to `BigNumber` types.
+-- | The emedding ring is refered to as the subalgebra. The embedding is assumed to be a ring homomorphism,
+-- | and `a` is an `r`-bimodule under `lmul` and `rmul`.
+
 class (Ring r, Ring a) <= Algebra r a where
   embed :: r -> a
 
@@ -83,31 +89,40 @@ instance embedNumber :: Algebra Number BigNumber where
 instance embedBigNumber :: Algebra BigNumber BigNumber where
   embed = id
 
+-- | Add a subalgebra value on the right
 radd :: forall r a . Algebra r a => a -> r -> a
 radd a r = a `add` embed r
 
+infixr 6 radd as +<
+
+-- | Add a subalgebra value on the left
 ladd :: forall r a . Algebra r a => r -> a -> a
 ladd r a = embed r `add` a
 
-infixr 6 radd as +<
 infixl 6 ladd as >+
 
+-- | Subtract a subalgebra value on the right
 rsub :: forall r a . Algebra r a => a -> r -> a
 rsub a r = a `sub` embed r
 
+infixr 6 rsub as -<
+
+-- Subtract a subalgebra value on the left
 lsub :: forall r a . Algebra r a => r -> a -> a
 lsub r a = embed r `sub` a
 
-infixr 6 rsub as -<
 infixl 6 lsub as >-
 
+-- | Multiply a subalgebra value on the right
 rmul :: forall r a . Algebra r a => a -> r -> a
 rmul a r = a `mul` embed r
 
+infixr 7 rmul as *<
+
+-- | Multiply a subalgebra value on the left
 lmul :: forall r a . Algebra r a => r -> a -> a
 lmul r a = embed r `mul` a
 
-infixr 7 rmul as *<
 infixl 7 lmul as >*
 
 foreign import reciprical :: BigNumber -> BigNumber
@@ -122,18 +137,24 @@ foreign import fromStringAsImpl
   -> String
   -> Maybe BigNumber
 
+
+-- | Convert a string in the given base to a `BigNumber`
 parseBigNumber :: Int.Radix -> String -> Maybe BigNumber
 parseBigNumber = fromStringAsImpl Just Nothing
 
+-- | Take the twos complement of a `BigNumer`
 foreign import toTwosComplement :: BigNumber -> BigNumber
 
+-- | Exponentiate a `BigNumber`
 foreign import pow :: BigNumber -> Int -> BigNumber
 
 foreign import toNumber :: BigNumber -> Number
 
-toInt :: BigNumber -> Int
-toInt = Int.floor <<< toNumber
+-- | Unsafely coerce a BigNumber to an Int.
+unsafeToInt :: BigNumber -> Int
+unsafeToInt = Int.floor <<< toNumber
 
+-- | Take the integer part of a big number
 foreign import floorBigNumber :: BigNumber -> BigNumber
 
 foreign import toBigNumber :: Foreign -> BigNumber
