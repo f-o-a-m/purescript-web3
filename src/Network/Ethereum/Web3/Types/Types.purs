@@ -60,7 +60,7 @@ import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (Parser, runParser)
+import Text.Parsing.Parser (runParser)
 import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
