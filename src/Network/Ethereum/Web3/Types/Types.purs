@@ -38,6 +38,7 @@ module Network.Ethereum.Web3.Types.Types
 
 import Prelude
 
+import Control.Error.Util (hush)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
@@ -45,6 +46,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow)
+import Data.Array (many)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
@@ -55,9 +57,11 @@ import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Data.String (length) as S
-import Data.String (stripPrefix, Pattern(..))
+import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
+import Text.Parsing.Parser (Parser, runParser)
+import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -121,7 +125,12 @@ unsafeHexString :: String -> HexString
 unsafeHexString = HexString
 
 mkHexString :: String -> Maybe HexString
-mkHexString = Just <<< HexString
+mkHexString str = HexString <$>
+  case stripPrefix (Pattern "0x") str of
+    Nothing -> go str
+    Just res -> go res
+  where
+    go s = hush $ runParser s (fromCharArray <$> many hexDigit)
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
@@ -146,7 +155,7 @@ unAddress :: Address -> HexString
 unAddress (Address a) = a
 
 mkAddress :: HexString -> Maybe Address
-mkAddress = Just <<< Address
+mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 
 unsafeAddress :: HexString -> Address
 unsafeAddress = Address
