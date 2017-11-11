@@ -1,6 +1,7 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
+
 import Control.Error.Util (hush)
 import Data.Array (length) as A
 import Data.ByteString (ByteString)
@@ -9,15 +10,15 @@ import Data.Foldable (foldMap)
 import Data.Maybe (Maybe, maybe, fromJust)
 import Data.String (fromCharArray)
 import Data.Unfoldable (replicateA)
-import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
-import Network.Ethereum.Web3.Solidity.Vector (Vector)
-import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
-import Network.Ethereum.Web3.Types (class Algebra, Address(..), BigNumber, HexString(..), Signed(..), embed, fromHexStringSigned, padLeft, padLeftSigned, fromHexString, getPadLength, padRight, unsafeToInt, toSignedHexString, toTwosComplement, unHex)
+import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, unsafeHexString, unsafeToInt)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser.Token (hexDigit)
 import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
+import Text.Parsing.Parser.Token (hexDigit)
 import Type.Proxy (Proxy(..))
 
 
@@ -43,10 +44,11 @@ instance abiEncodingInt :: ABIEncoding Int where
     fromDataParser = unsafeToInt <$> int256HexParser
 
 instance abiEncodingAddress :: ABIEncoding Address where
-    toDataBuilder (Address addr) = padLeft addr
+    toDataBuilder addr = padLeft <<< unAddress $ addr
     fromDataParser = do
       _ <- take 24
-      Address <$> take 40
+      maddr <- mkAddress <$> take 40
+      maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
 instance abiEncodingBytesD :: ABIEncoding ByteString where
   toDataBuilder bytes =
@@ -104,7 +106,7 @@ instance abiEncodingIntN :: IntSize n => ABIEncoding (IntN n) where
 
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
-bytesBuilder = padRight <<< HexString <<< flip BS.toString BS.Hex
+bytesBuilder = padRight <<< unsafeHexString <<< flip BS.toString BS.Hex
 
 -- | unsafe utfDecode
 bytesDecode :: String -> ByteString
@@ -142,4 +144,4 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
-take n = HexString <<< fromCharArray <$> replicateA n hexDigit
+take n = unsafeHexString <<< fromCharArray <$> replicateA n hexDigit

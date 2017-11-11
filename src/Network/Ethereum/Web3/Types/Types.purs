@@ -1,4 +1,40 @@
-module Network.Ethereum.Web3.Types.Types where
+module Network.Ethereum.Web3.Types.Types
+       ( Sign(..)
+       , Signed(..)
+       , asSigned
+       , HexString
+       , unsafeHexString
+       , mkHexString
+       , unHex
+       , hexLength
+       , Address
+       , unAddress
+       , mkAddress
+       , unsafeAddress
+       , CallMode(..)
+       , Block(..)
+       , Transaction(..)
+       , TransactionOptions(..)
+       , defaultTransactionOptions
+       , _from
+       , _to
+       , _data
+       , _value
+       , _gas
+       , _gasPrice
+       , ETH
+       , _nonce
+       , Web3(..)
+       , unsafeCoerceWeb3
+       , Filter(..)
+       , defaultFilter
+       , _address
+       , _topics
+       , _fromBlock
+       , _toBlock
+       , FilterId(..)
+       , Change(..)
+       ) where
 
 import Prelude
 
@@ -81,6 +117,12 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
+unsafeHexString :: String -> HexString
+unsafeHexString = HexString
+
+mkHexString :: String -> Maybe HexString
+mkHexString = Just <<< HexString
+
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
 hexLength (HexString hx) = S.length hx
@@ -100,6 +142,14 @@ derive newtype instance decodeAddress :: Decode Address
 
 derive newtype instance encodeAddress :: Encode Address
 
+unAddress :: Address -> HexString
+unAddress (Address a) = a
+
+mkAddress :: HexString -> Maybe Address
+mkAddress = Just <<< Address
+
+unsafeAddress :: HexString -> Address
+unsafeAddress = Address
 --------------------------------------------------------------------------------
 -- * Block
 --------------------------------------------------------------------------------
