@@ -4,11 +4,11 @@ import Prelude
 
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (logShow)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Contract (sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
-import Network.Ethereum.Web3.Types (Address, Ether, HexString, Value, Web3(..), unHex, addressFromHex, hexFromString)
+import Network.Ethereum.Web3.Types (Address, Ether, HexString, Value, Web3(..), mkAddress, mkHexString, unHex)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -16,15 +16,15 @@ import Text.Parsing.Parser (fail)
 import Type.Proxy (Proxy(..))
 
 ssAddress :: Address
-ssAddress = unsafePartial addressFromHex <<< unsafePartial hexFromString $ "c29313014a78b440876bac21be369c3047e313e7"
+ssAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "c29313014a78b440876bac21be369c3047e313e7"
 
 adminAddress :: Address
-adminAddress = unsafePartial addressFromHex <<< unsafePartial hexFromString $ "44cba02c089789b3299069c93832b7a8b8723b3e"
+adminAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "44cba02c089789b3299069c93832b7a8b8723b3e"
 
 data Set = Set Int
 
 instance abiEncodingSet :: ABIEncoding Set where
-  toDataBuilder (Set n) = unsafePartial hexFromString "60fe47b1" <> toDataBuilder n
+  toDataBuilder (Set n) = unsafePartial (fromJust <<< mkHexString) "60fe47b1" <> toDataBuilder n
   fromDataParser = fail "No function parser"
 
 data HttpProvider

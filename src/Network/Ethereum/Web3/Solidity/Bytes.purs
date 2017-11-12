@@ -10,9 +10,9 @@ import Prelude
 
 import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
-import Network.Ethereum.Web3.Types (hexFromString)
+import Network.Ethereum.Web3.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
@@ -26,7 +26,7 @@ newtype BytesN n = BytesN ByteString
 derive newtype instance eqBytesN :: Eq (BytesN n)
 
 instance showBytesN :: KnownSize n => Show (BytesN n) where
-    show (BytesN bs) = show <<< unsafePartial hexFromString $ BS.toString bs Hex
+    show (BytesN bs) = show <<< unsafePartial (fromJust <<< mkHexString) $ BS.toString bs Hex
 
 -- | Access the underlying raw bytestring
 unBytesN :: forall n . KnownSize n => BytesN n -> ByteString

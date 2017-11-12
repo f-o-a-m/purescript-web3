@@ -15,7 +15,7 @@ import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
-import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, hexFromString, unsafeToInt)
+import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, mkHexString, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, unsafeToInt)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Text.Parsing.Parser.Token (hexDigit)
@@ -106,7 +106,7 @@ instance abiEncodingIntN :: IntSize n => ABIEncoding (IntN n) where
 
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
-bytesBuilder = padRight <<< unsafePartial hexFromString <<< flip BS.toString BS.Hex
+bytesBuilder = padRight <<< unsafePartial (fromJust <<< mkHexString) <<< flip BS.toString BS.Hex
 
 -- | unsafe utfDecode
 bytesDecode :: String -> ByteString
@@ -144,4 +144,4 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
-take n = unsafePartial hexFromString <<< fromCharArray <$> replicateA n hexDigit
+take n = unsafePartial (fromJust <<< mkHexString) <<< fromCharArray <$> replicateA n hexDigit

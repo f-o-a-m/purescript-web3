@@ -12,7 +12,7 @@ import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (HexString, embed, pow, addressFromHex, hexFromString, (+<), (-<))
+import Network.Ethereum.Web3.Types (HexString, embed, mkAddress, mkHexString, pow, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -39,13 +39,13 @@ stringTests =
 
       it "can encode simple strings" do
          let given = "gavofyork"
-         let expected =  unsafePartial hexFromString $ "0000000000000000000000000000000000000000000000000000000000000009"
+         let expected =  unsafePartial (fromJust <<< mkHexString) $ "0000000000000000000000000000000000000000000000000000000000000009"
                                   <> "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode complicated strings" do
         let given = "welcome to ethereum. welcome to ethereum. welcome to ethereum."
-        let expected = unsafePartial hexFromString $ "000000000000000000000000000000000000000000000000000000000000003e"
+        let expected = unsafePartial (fromJust <<< mkHexString) $ "000000000000000000000000000000000000000000000000000000000000003e"
                                 <> "77656c636f6d6520746f20657468657265756d2e2077656c636f6d6520746f20"
                                 <> "657468657265756d2e2077656c636f6d6520746f20657468657265756d2e0000"
         roundTrip given expected
@@ -53,7 +53,7 @@ stringTests =
 
       it "can encode unicode strings" do
         let given = "Ã¤Ã¤"
-        let expected = unsafePartial hexFromString $ "0000000000000000000000000000000000000000000000000000000000000008"
+        let expected = unsafePartial (fromJust <<< mkHexString) $ "0000000000000000000000000000000000000000000000000000000000000008"
                                 <> "c383c2a4c383c2a4000000000000000000000000000000000000000000000000"
 
         roundTrip given expected
@@ -64,7 +64,7 @@ bytesDTests =
 
       it "can encode short bytesD" do
          let given = unsafePartial $ fromJust $flip BS.fromString BS.Hex $ "c3a40000c3a4"
-         let expected = unsafePartial hexFromString $
+         let expected = unsafePartial (fromJust <<< mkHexString) $
                           "0000000000000000000000000000000000000000000000000000000000000006"
                        <> "c3a40000c3a40000000000000000000000000000000000000000000000000000"
          roundTrip given expected
@@ -76,7 +76,7 @@ bytesDTests =
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1"
-         let expected = unsafePartial hexFromString $
+         let expected = unsafePartial (fromJust <<< mkHexString) $
                             "000000000000000000000000000000000000000000000000000000000000009f"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                          <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -87,7 +87,7 @@ bytesDTests =
 
       it "can encode dave" do
         let given = "dave"
-        let expected = unsafePartial hexFromString $ "0000000000000000000000000000000000000000000000000000000000000004"
+        let expected = unsafePartial (fromJust <<< mkHexString) $ "0000000000000000000000000000000000000000000000000000000000000004"
                                 <> "6461766500000000000000000000000000000000000000000000000000000000"
         roundTrip given expected
 
@@ -98,20 +98,20 @@ bytesNTests =
       it "can encode Bytes1" do
          let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf") :: Maybe (BytesN D1)
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "cf00000000000000000000000000000000000000000000000000000000000000"
+             expected = unsafePartial (fromJust <<< mkHexString) "cf00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode Bytes3" do
          let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf0011") :: Maybe (BytesN D3)
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "cf00110000000000000000000000000000000000000000000000000000000000"
+             expected = unsafePartial (fromJust <<< mkHexString) "cf00110000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
       it "can encode Bytes12" do
          let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: Maybe (BytesN (D1 :& D2))
              given = unsafePartial $ fromJust mgiven
-             expected =  unsafePartial hexFromString "6761766f66796f726b0000000000000000000000000000000000000000000000"
+             expected =  unsafePartial (fromJust <<< mkHexString) "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
@@ -121,18 +121,18 @@ intTests =
 
       it "can encode int" do
          let given = 21
-         let expected = unsafePartial hexFromString "0000000000000000000000000000000000000000000000000000000000000015"
+         let expected = unsafePartial (fromJust <<< mkHexString) "0000000000000000000000000000000000000000000000000000000000000015"
          roundTrip given expected
 
       it "can encode negative numbers" do
          let given = negate 1
-         let expected = unsafePartial hexFromString "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+         let expected = unsafePartial (fromJust <<< mkHexString) "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
 
       it "can encode some big number" do
          let given = 987654321
-         let expected = unsafePartial hexFromString "000000000000000000000000000000000000000000000000000000003ade68b1"
+         let expected = unsafePartial (fromJust <<< mkHexString) "000000000000000000000000000000000000000000000000000000003ade68b1"
          roundTrip given expected
 
 addressTests :: forall r . Spec r Unit
@@ -140,8 +140,8 @@ addressTests =
     describe "addresses tests" do
 
       it "can encode address" do
-         let given = unsafePartial addressFromHex <<< unsafePartial hexFromString $ "407d73d8a49eeb85d32cf465507dd71d507100c1"
-         let expected = unsafePartial hexFromString "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
+         let given = unsafePartial fromJust $ mkAddress =<< mkHexString "407d73d8a49eeb85d32cf465507dd71d507100c1"
+         let expected = unsafePartial (fromJust <<< mkHexString) "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
          roundTrip given expected
 
 uintNTests :: forall r . Spec r Unit
@@ -151,13 +151,13 @@ uintNTests =
       it "can encode uint8" do
          let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 8 -< 1) :: Maybe (UIntN D8)
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "00000000000000000000000000000000000000000000000000000000000000ff"
+             expected = unsafePartial (fromJust <<< mkHexString) "00000000000000000000000000000000000000000000000000000000000000ff"
          roundTrip given expected
 
       it "can encode larger uint256" do
          let mgiven =  (uIntNFromBigNumber $ ((embed $ 2) `pow` 256) -< 1) :: Maybe (UIntN (D2 :& (D5 :& D6)))
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+             expected = unsafePartial (fromJust <<< mkHexString) "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger uin248" do
@@ -171,13 +171,13 @@ intNTests =
       it "can encode int16" do
          let mgiven =  (intNFromBigNumber $ (embed $ negate 1)) :: Maybe (IntN (D1 :& D6))
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+             expected = unsafePartial (fromJust <<< mkHexString) "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can encode larger uint256" do
          let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) -< 1) :: Maybe (IntN (D2 :& D5 :& D6))
              given = unsafePartial $ fromJust mgiven
-             expected = unsafePartial hexFromString "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+             expected = unsafePartial (fromJust <<< mkHexString) "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger int248" do

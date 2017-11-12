@@ -3,14 +3,12 @@ module Network.Ethereum.Web3.Types.Types
        , Signed(..)
        , asSigned
        , HexString
-       , hexFromString
        , mkHexString
        , unHex
        , hexLength
        , Address
        , unAddress
        , mkAddress
-       , addressFromHex
        , CallMode(..)
        , Block(..)
        , Transaction(..)
@@ -121,9 +119,6 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
-hexFromString :: Partial => String -> HexString
-hexFromString = fromJust <<< mkHexString
-
 mkHexString :: String -> Maybe HexString
 mkHexString str = HexString <$>
   case stripPrefix (Pattern "0x") str of
@@ -156,9 +151,6 @@ unAddress (Address a) = a
 
 mkAddress :: HexString -> Maybe Address
 mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
-
-addressFromHex :: Partial => HexString -> Address
-addressFromHex = fromJust <<< mkAddress
 
 --------------------------------------------------------------------------------
 -- * Block
