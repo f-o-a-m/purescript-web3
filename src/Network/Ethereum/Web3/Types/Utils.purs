@@ -23,7 +23,7 @@ import Data.Maybe (fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
 import Data.String as S
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, hexadecimal)
-import Network.Ethereum.Web3.Types.Types (HexString, Sign(..), Signed(..), asSigned, hexLength, unHex, unsafeHexString)
+import Network.Ethereum.Web3.Types.Types (HexString, Sign(..), Signed(..), asSigned, hexLength, unHex, hexFromString)
 import Node.Encoding (Encoding(Hex, UTF8, ASCII))
 import Partial.Unsafe (unsafePartial)
 
@@ -39,7 +39,7 @@ padLeftSigned :: Signed HexString -> HexString
 padLeftSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
-        padding = unsafePartial unsafeHexString <<< fromCharArray $ replicate padLength sgn
+        padding = unsafePartial hexFromString <<< fromCharArray $ replicate padLength sgn
     in padding <> hx
 
 -- | Pad a `Signed HexString` on the right until it has length 0 mod 64.
@@ -47,7 +47,7 @@ padRightSigned :: Signed HexString -> HexString
 padRightSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
-        padding = unsafePartial unsafeHexString <<< fromCharArray $ replicate padLength sgn
+        padding = unsafePartial hexFromString <<< fromCharArray $ replicate padLength sgn
     in hx <> padding
 
 -- | Pad a `HexString` on the left with '0's until it has length == 0 mod 64.
@@ -78,16 +78,16 @@ toAscii hx = flip BS.toString ASCII $ unsafePartial $ fromJust $ BS.fromString (
 fromUtf8 :: String -> HexString
 fromUtf8 s =
   let s' = unsafePartial $ split (Pattern "\0000") s `unsafeIndex` 0
-  in unsafePartial unsafeHexString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString UTF8 $ s'
+  in unsafePartial hexFromString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString UTF8 $ s'
 
 -- | Get the 'HexString' corresponding to the ASCII encoding.
 fromAscii :: String -> HexString
-fromAscii s = unsafePartial unsafeHexString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString ASCII $ s
+fromAscii s = unsafePartial hexFromString <<< flip BS.toString Hex $ unsafePartial $ fromJust $ flip BS.fromString ASCII $ s
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =
   let rawStr = toString hexadecimal $ bn
-      str = unsafePartial unsafeHexString $ if even (S.length rawStr) then rawStr else "0" <> rawStr
+      str = unsafePartial hexFromString $ if even (S.length rawStr) then rawStr else "0" <> rawStr
       sgn = if bn < zero then Neg else Pos
   in Signed sgn str
 

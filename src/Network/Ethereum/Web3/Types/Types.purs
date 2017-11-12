@@ -3,14 +3,14 @@ module Network.Ethereum.Web3.Types.Types
        , Signed(..)
        , asSigned
        , HexString
-       , unsafeHexString
+       , hexFromString
        , mkHexString
        , unHex
        , hexLength
        , Address
        , unAddress
        , mkAddress
-       , unsafeAddress
+       , addressFromHex
        , CallMode(..)
        , Block(..)
        , Transaction(..)
@@ -121,8 +121,8 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
-unsafeHexString :: Partial => String -> HexString
-unsafeHexString = fromJust <<< mkHexString
+hexFromString :: Partial => String -> HexString
+hexFromString = fromJust <<< mkHexString
 
 mkHexString :: String -> Maybe HexString
 mkHexString str = HexString <$>
@@ -157,8 +157,8 @@ unAddress (Address a) = a
 mkAddress :: HexString -> Maybe Address
 mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 
-unsafeAddress :: Partial => HexString -> Address
-unsafeAddress = fromJust <<< mkAddress
+addressFromHex :: Partial => HexString -> Address
+addressFromHex = fromJust <<< mkAddress
 
 --------------------------------------------------------------------------------
 -- * Block
