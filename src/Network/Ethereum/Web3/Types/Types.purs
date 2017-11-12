@@ -21,7 +21,7 @@ import Data.Monoid (class Monoid)
 import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..))
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
-import Network.Ethereum.Web3.Types.Unit (Value, Wei)
+import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
