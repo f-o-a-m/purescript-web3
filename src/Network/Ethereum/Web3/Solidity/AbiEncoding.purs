@@ -106,7 +106,7 @@ instance abiEncodingIntN :: IntSize n => ABIEncoding (IntN n) where
 
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
-bytesBuilder = padRight <<< unsafeHexString <<< flip BS.toString BS.Hex
+bytesBuilder = padRight <<< unsafePartial unsafeHexString <<< flip BS.toString BS.Hex
 
 -- | unsafe utfDecode
 bytesDecode :: String -> ByteString
@@ -144,4 +144,4 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 take :: forall m . Monad m => Int -> ParserT String m HexString
-take n = unsafeHexString <<< fromCharArray <$> replicateA n hexDigit
+take n = unsafePartial unsafeHexString <<< fromCharArray <$> replicateA n hexDigit

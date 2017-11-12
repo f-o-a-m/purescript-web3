@@ -34,16 +34,16 @@ staticArraysTests =
          let mgivenElement = toVector $ [false]
              givenElement = (unsafePartial $ fromJust $ mgivenElement) :: Vector N1 Boolean
              given = (unsafePartial $ fromJust $ toVector [givenElement, givenElement]) :: Vector N2 (Vector N1 Boolean)
-             expected =  unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000000"
+             expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000000"
                                   <> "0000000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode statically sized vectors of statically sized vectors of type bool" do
-         let mgiven = toVector $ map (unsafeAddress <<< unsafeHexString) [ "407d73d8a49eeb85d32cf465507dd71d507100c1"
+         let mgiven = toVector $ map (unsafePartial unsafeAddress <<< unsafePartial unsafeHexString) [ "407d73d8a49eeb85d32cf465507dd71d507100c1"
                                                              , "407d73d8a49eeb85d32cf465507dd71d507100c3"
                                                              ]
              given = (unsafePartial $ fromJust $ mgiven) :: Vector N2 Address
-             expected =  unsafeHexString $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
+             expected = unsafePartial unsafeHexString $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
                                   <> "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c3"
          roundTrip given expected
 
@@ -53,7 +53,7 @@ staticArraysTests =
              elem3 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "4d") :: BytesN D1
              elem4 = unsafePartial $ fromJust (fromByteString =<< flip BS.fromString BS.Hex "fb") :: BytesN D1
              given = unsafePartial $ fromJust (toVector $ [elem1, elem2, elem3, elem4]) :: Vector N4 (BytesN D1)
-             expected =  unsafeHexString $ "cf00000000000000000000000000000000000000000000000000000000000000"
+             expected = unsafePartial unsafeHexString $ "cf00000000000000000000000000000000000000000000000000000000000000"
                                   <> "6800000000000000000000000000000000000000000000000000000000000000"
                                   <> "4d00000000000000000000000000000000000000000000000000000000000000"
                                   <> "fb00000000000000000000000000000000000000000000000000000000000000"
@@ -65,7 +65,7 @@ dynamicArraysTests =
 
       it "can encode dynamically sized lists of bools" do
          let given = [true, true, false]
-             expected =  unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000003"
+             expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000003"
                                   <> "0000000000000000000000000000000000000000000000000000000000000001"
                                   <> "0000000000000000000000000000000000000000000000000000000000000001"
                                   <> "0000000000000000000000000000000000000000000000000000000000000000"
@@ -77,13 +77,13 @@ tuplesTest =
 
     it "can encode 2-tuples with both static args" do
       let given = Tuple2 true false
-          expected = unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+          expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
       roundTrip given expected
 
     it "can encode 1-tuples with dynamic arg" do
       let given = Singleton [true, false]
-          expected = unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000020"
+          expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000020"
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
@@ -91,7 +91,7 @@ tuplesTest =
 
     it "can encode 4-tuples with a mix of args -- (UInt, String, Boolean, Array Int)" do
       let given = Tuple4 1 "dave" true [1,2,3]
-          expected = unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+          expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000080"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "00000000000000000000000000000000000000000000000000000000000000c0"
@@ -132,7 +132,7 @@ tuplesTest =
                                                                                           (BytesN (D1 :& D6))
                                                                                           (Array (Vector N4 (BytesN D2)))
 
-          expected = unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
+          expected = unsafePartial unsafeHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "00000000000000000000000000000000000000000000000000000000000000dd"

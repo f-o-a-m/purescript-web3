@@ -9,21 +9,22 @@ import Network.Ethereum.Web3.Contract (sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder)
 import Network.Ethereum.Web3.Types (Address, Ether, HexString, Value, Web3(..), unHex, unsafeAddress, unsafeHexString)
+import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (fail)
 import Type.Proxy (Proxy(..))
 
 ssAddress :: Address
-ssAddress = unsafeAddress <<< unsafeHexString $ "c29313014a78b440876bac21be369c3047e313e7"
+ssAddress = unsafePartial unsafeAddress <<< unsafePartial unsafeHexString $ "c29313014a78b440876bac21be369c3047e313e7"
 
 adminAddress :: Address
-adminAddress = unsafeAddress <<< unsafeHexString $ "44cba02c089789b3299069c93832b7a8b8723b3e"
+adminAddress = unsafePartial unsafeAddress <<< unsafePartial unsafeHexString $ "44cba02c089789b3299069c93832b7a8b8723b3e"
 
 data Set = Set Int
 
 instance abiEncodingSet :: ABIEncoding Set where
-  toDataBuilder (Set n) = unsafeHexString "60fe47b1" <> toDataBuilder n
+  toDataBuilder (Set n) = unsafePartial unsafeHexString "60fe47b1" <> toDataBuilder n
   fromDataParser = fail "No function parser"
 
 data HttpProvider

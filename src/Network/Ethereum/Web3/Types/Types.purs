@@ -54,7 +54,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Data.Monoid (class Monoid)
 import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
@@ -121,8 +121,8 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
-unsafeHexString :: String -> HexString
-unsafeHexString = HexString
+unsafeHexString :: Partial => String -> HexString
+unsafeHexString = fromJust <<< mkHexString
 
 mkHexString :: String -> Maybe HexString
 mkHexString str = HexString <$>
@@ -157,8 +157,9 @@ unAddress (Address a) = a
 mkAddress :: HexString -> Maybe Address
 mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 
-unsafeAddress :: HexString -> Address
-unsafeAddress = Address
+unsafeAddress :: Partial => HexString -> Address
+unsafeAddress = fromJust <<< mkAddress
+
 --------------------------------------------------------------------------------
 -- * Block
 --------------------------------------------------------------------------------
