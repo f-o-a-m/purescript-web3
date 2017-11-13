@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.Types.Types
        ( Sign(..)
        , Signed(..)
        , asSigned
-       , HexString
+       , HexString(..)
        , mkHexString
        , unHex
        , hexLength
@@ -54,7 +54,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
-import Data.String (length) as S
+import Data.String (length, take) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
@@ -130,6 +130,10 @@ mkHexString str = HexString <$>
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
 hexLength (HexString hx) = S.length hx
+
+-- | Take the first `n` characters of a HexString
+hexTake :: Int -> HexString -> HexString
+hexTake n (HexString hx) = HexString $ S.take n hx
 
 --------------------------------------------------------------------------------
 -- * Addresses
