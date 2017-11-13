@@ -26,7 +26,7 @@ newtype BytesN n = BytesN ByteString
 derive newtype instance eqBytesN :: Eq (BytesN n)
 
 instance showBytesN :: KnownSize n => Show (BytesN n) where
-    show (BytesN bs) = show <<< unsafePartial (fromJust <<< mkHexString) $ BS.toString bs Hex
+    show (BytesN bs) = show <<< unsafePartial fromJust <<< mkHexString $ BS.toString bs Hex
 
 -- | Access the underlying raw bytestring
 unBytesN :: forall n . KnownSize n => BytesN n -> ByteString

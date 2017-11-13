@@ -39,7 +39,7 @@ padLeftSigned :: Signed HexString -> HexString
 padLeftSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
-        padding = unsafePartial (fromJust <<< mkHexString) <<< fromCharArray $ replicate padLength sgn
+        padding = unsafePartial fromJust <<< mkHexString <<< fromCharArray <<< replicate padLength $ sgn
     in padding <> hx
 
 -- | Pad a `Signed HexString` on the right until it has length 0 mod 64.
@@ -47,7 +47,7 @@ padRightSigned :: Signed HexString -> HexString
 padRightSigned (Signed s hx) =
     let padLength = getPadLength $ hexLength hx
         sgn = if s `eq` Pos then '0' else 'f'
-        padding = unsafePartial (fromJust <<< mkHexString) <<< fromCharArray $ replicate padLength sgn
+        padding = unsafePartial fromJust <<< mkHexString <<< fromCharArray <<< replicate padLength $ sgn
     in hx <> padding
 
 -- | Pad a `HexString` on the left with '0's until it has length == 0 mod 64.
@@ -68,7 +68,7 @@ toUtf8 hx =
   in flip BS.toString UTF8 $ bs (unHex hx)
     where
   bs :: String -> BS.ByteString
-  bs hxstr = unsafePartial $ fromJust $ BS.fromString hxstr Hex
+  bs hxstr = unsafePartial  fromJust $ BS.fromString hxstr Hex
 
 -- | Takes a hex string and produces the corresponding ASCII decoded string.
 toAscii :: HexString -> String
@@ -88,7 +88,7 @@ fromAscii s = unsafePartial fromJust $
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =
   let rawStr = toString hexadecimal $ bn
-      str = unsafePartial (fromJust <<< mkHexString) $ if even (S.length rawStr) then rawStr else "0" <> rawStr
+      str = unsafePartial fromJust <<< mkHexString $ if even (S.length rawStr) then rawStr else "0" <> rawStr
       sgn = if bn < zero then Neg else Pos
   in Signed sgn str
 

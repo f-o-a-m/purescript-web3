@@ -52,7 +52,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
-import Data.Maybe (Maybe(..), fromJust)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)

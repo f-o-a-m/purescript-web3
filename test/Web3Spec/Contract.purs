@@ -24,7 +24,7 @@ adminAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "44cba02c08978
 data Set = Set Int
 
 instance abiEncodingSet :: ABIEncoding Set where
-  toDataBuilder (Set n) = unsafePartial (fromJust <<< mkHexString) "60fe47b1" <> toDataBuilder n
+  toDataBuilder (Set n) = (unsafePartial fromJust <<< mkHexString $ "60fe47b1") <> toDataBuilder n
   fromDataParser = fail "No function parser"
 
 data HttpProvider
