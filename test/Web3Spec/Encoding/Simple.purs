@@ -135,19 +135,6 @@ intTests =
          let expected = unsafePartial fromJust <<< mkHexString $ "000000000000000000000000000000000000000000000000000000003ade68b1"
          roundTrip given expected
 
-hexstringTests :: forall r. Spec r Unit
-hexstringTests =
-  describe "hexstring tests" do
-
-    it "can encode hexstring with 0x" do
-      roundTrip true false
-
-    it "can encode hexstring without 0x" do
-      roundTrip true false
-
-    it "can check hexstring for invalid characters" do
-      roundTrip true false
-
 addressTests :: forall r . Spec r Unit
 addressTests =
     describe "addresses tests" do
