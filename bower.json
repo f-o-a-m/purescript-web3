@@ -1,6 +1,6 @@
 {
   "name": "purescript-web3",
-  "description": "",
+  "description": "A purescript implementation of a web3 client",
   "main": "",
   "authors": [
     "Blinky <blinky3713@gmail.com>"
@@ -8,11 +8,8 @@
   "license": "MIT",
   "homepage": "https://github.com/f-o-a-m/purescript-web3",
   "ignore": [
-    "**/.*",
-    "node_modules",
-    "bower_components",
-    "test",
-    "tests"
+    "*",
+    "!src/**/*"
   ],
   "dependencies": {
     "purescript-errors": "v3.0.0",
