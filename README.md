@@ -1,5 +1,5 @@
 # purescript-web3
-<img src=https://github.com/f-o-a-m/purescript-web3/blob/master/purescript-web3-logo.png width="75">
+<img src=https://github.com/f-o-a-m/purescript-web3/blob/master/purescript-web3-logo.svg width="75">
 
 
 [![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
