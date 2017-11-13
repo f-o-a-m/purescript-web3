@@ -133,4 +133,4 @@ noPay :: Value Wei
 noPay = Value zero
 
 unsafeConvert :: String -> BigNumber
-unsafeConvert a = unsafePartial $ fromJust <<< parseBigNumber decimal $ a
+unsafeConvert a = unsafePartial fromJust <<< parseBigNumber decimal $ a

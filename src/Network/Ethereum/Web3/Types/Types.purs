@@ -1,7 +1,42 @@
-module Network.Ethereum.Web3.Types.Types where
+module Network.Ethereum.Web3.Types.Types
+       ( Sign(..)
+       , Signed(..)
+       , asSigned
+       , HexString
+       , mkHexString
+       , unHex
+       , hexLength
+       , Address
+       , unAddress
+       , mkAddress
+       , CallMode(..)
+       , Block(..)
+       , Transaction(..)
+       , TransactionOptions(..)
+       , defaultTransactionOptions
+       , _from
+       , _to
+       , _data
+       , _value
+       , _gas
+       , _gasPrice
+       , ETH
+       , _nonce
+       , Web3(..)
+       , unsafeCoerceWeb3
+       , Filter(..)
+       , defaultFilter
+       , _address
+       , _topics
+       , _fromBlock
+       , _toBlock
+       , FilterId(..)
+       , Change(..)
+       ) where
 
 import Prelude
 
+import Control.Error.Util (hush)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
@@ -9,6 +44,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow)
+import Data.Array (many)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
@@ -19,9 +55,11 @@ import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Data.String (length) as S
-import Data.String (stripPrefix, Pattern(..))
+import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
+import Text.Parsing.Parser (runParser)
+import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -81,6 +119,14 @@ instance encodeHexString :: Encode HexString where
 unHex :: HexString -> String
 unHex (HexString hx) = hx
 
+mkHexString :: String -> Maybe HexString
+mkHexString str = HexString <$>
+  case stripPrefix (Pattern "0x") str of
+    Nothing -> go str
+    Just res -> go res
+  where
+    go s = hush $ runParser s (fromCharArray <$> many hexDigit)
+
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
 hexLength (HexString hx) = S.length hx
@@ -99,6 +145,12 @@ derive newtype instance addressEq :: Eq Address
 derive newtype instance decodeAddress :: Decode Address
 
 derive newtype instance encodeAddress :: Encode Address
+
+unAddress :: Address -> HexString
+unAddress (Address a) = a
+
+mkAddress :: HexString -> Maybe Address
+mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 
 --------------------------------------------------------------------------------
 -- * Block
