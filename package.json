@@ -7,7 +7,7 @@
   },
   "scripts": {
     "postinstall": "./node_modules/.bin/psc-package update",
-    "test": "pulp test"
+    "test": "pulp --psc-package test"
   },
   "dependencies": {
     "big-integer": "^1.6.23",
