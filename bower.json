@@ -7,6 +7,10 @@
   ],
   "license": "MIT",
   "homepage": "https://github.com/f-o-a-m/purescript-web3",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/f-o-a-m/purescript-web3.git" 
+  },
   "ignore": [
     "*",
     "!src/**/*"
