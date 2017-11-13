@@ -1,7 +1,7 @@
 {
   "name": "purescript-web3",
   "namespace": "purescript-ethereum",
-  "version": "0.0.1",
+  "version": "0.9.0",
   "directories": {
     "lib": "./src"
   },
