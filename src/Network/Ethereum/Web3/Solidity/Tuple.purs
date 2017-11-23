@@ -1,142 +1,12 @@
 module Network.Ethereum.Web3.Solidity.Tuple where
 
 import Prelude
-
-import Control.Error.Util (hush)
-import Control.Monad.State.Class (get)
-import Data.Array (foldl, length, reverse, sort, (:), uncons)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), from, to)
+import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(..))
-import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
-import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
-import Text.Parsing.Parser (ParseState(..), Parser, runParser)
-import Text.Parsing.Parser.Combinators (lookAhead)
-import Text.Parsing.Parser.Pos (Position(..))
-import Type.Proxy (Proxy(..))
 
-class GenericABIEncode a where
-  genericToDataBuilder :: a -> HexString
+-- * Tuple 1
 
-class GenericABIDecode a where
-  genericFromDataParser :: Parser String a
-
-data EncodedValue =
-  EncodedValue { order :: Int
-               , offset :: Maybe Int
-               , encoding :: HexString
-               }
-
-instance eqEncodedValue :: Eq EncodedValue where
-  eq (EncodedValue a) (EncodedValue b) = a.order == b.order
-
-instance ordEncodedValue :: Ord EncodedValue where
-  compare (EncodedValue a) (EncodedValue b) = a.order `compare` b.order
-
-combineEncodedValues :: Array EncodedValue -> HexString
-combineEncodedValues encodings =
-  let sortedEs = adjust headsOffset $ sort encodings
-      encodings' = addTailOffsets headsOffset [] sortedEs
-  in let heads = foldl (\acc (EncodedValue e) -> case e.offset of
-                          Nothing -> acc <> e.encoding
-                          Just o -> acc <> toDataBuilder o
-                      ) mempty encodings'
-         tails = foldl (\acc (EncodedValue e) -> case e.offset of
-                          Nothing -> acc
-                          Just _ -> acc <> e.encoding
-                      ) mempty encodings'
-      in heads <> tails
-  where
-    adjust :: Int -> Array EncodedValue -> Array EncodedValue
-    adjust n = map (\(EncodedValue e) -> EncodedValue e {offset = add n <$> e.offset})
-    addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
-    addTailOffsets init acc es = case uncons es of
-      Nothing -> reverse acc
-      Just {head, tail} ->
-        let EncodedValue e = head
-        in case e.offset of
-          Nothing -> addTailOffsets init (head : acc) tail
-          Just _ -> addTailOffsets init (head : acc) (adjust (hexLength e.encoding `div` 2) tail)
-    headsOffset :: Int
-    headsOffset = foldl (\acc (EncodedValue e) -> case e.offset of
-                                Nothing -> acc + (hexLength e.encoding `div` 2)
-                                Just _ -> acc + 32
-                            ) 0 encodings
-
--- | ABI data multiparam internal serializer
-class ABIData a where
-    _serialize :: Array EncodedValue -> a -> Array EncodedValue
-
-instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
-  _serialize encoded (Argument b) =
-    if isDynamic (Proxy :: Proxy b)
-       then dynEncoding  : encoded
-       else staticEncoding : encoded
-    where
-      currentLength = hexLength $ combineEncodedValues encoded
-      staticEncoding = EncodedValue { encoding : toDataBuilder b
-                                    , offset : Nothing
-                                    , order : 1 + length encoded
-                                    }
-      dynEncoding = EncodedValue { encoding : toDataBuilder b
-                                 , offset : Just 0
-                                 , order : 1 + length encoded
-                                 }
-
-instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData (Product (Argument b) a) where
-  _serialize encoded (Product (Argument b) a) =
-    if isDynamic (Proxy :: Proxy b)
-       then _serialize (dynEncoding  : encoded) a
-       else _serialize (staticEncoding : encoded) a
-    where
-      currentLength = hexLength $ combineEncodedValues encoded
-      staticEncoding = EncodedValue { encoding : toDataBuilder b
-                                    , offset : Nothing
-                                    , order : 1 + length encoded
-                                    }
-      dynEncoding = EncodedValue { encoding : toDataBuilder b
-                                 , offset : Just 0
-                                 , order : 1 + length encoded
-                                 }
-
-instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name a) where
-  genericToDataBuilder (Constructor a) = combineEncodedValues $ _serialize [] a
-
-genericAbiEncode :: forall a rep.
-                    Generic a rep
-                 => GenericABIEncode rep
-                 => a
-                 -> HexString
-genericAbiEncode = genericToDataBuilder <<< from
-
--- generic decoding
-
-instance baseAbiDecode :: (EncodingType a, ABIDecode a) => GenericABIDecode (Argument a) where
-  genericFromDataParser = Argument <$> factorParser
-
-instance inductiveAbiDecode :: (EncodingType b, ABIDecode b, GenericABIDecode a) => GenericABIDecode (Product (Argument b) a) where
-  genericFromDataParser = Product <$> (Argument <$> factorParser) <*> genericFromDataParser
-
-instance abiDecodeConstructor :: GenericABIDecode a => GenericABIDecode (Constructor name a) where
-  genericFromDataParser = Constructor <$> genericFromDataParser
-
-genericAbiDecode :: forall a rep.
-                    Generic a rep
-                 => GenericABIDecode rep
-                 => Parser String a
-genericAbiDecode = to <$> genericFromDataParser
-
-genericFromData :: forall a rep.
-                   Generic a rep
-                => GenericABIDecode rep
-                => HexString
-                -> Maybe a
-genericFromData = hush <<< flip runParser genericAbiDecode <<< unHex
-
---------------------------------------------------------------------------------
 newtype Singleton a = Singleton a
 
 derive instance genericTuple1 :: Generic (Singleton a) _
@@ -156,7 +26,6 @@ uncurry1 fun (Singleton a) = fun a
 curry1 :: forall a b . (Singleton a -> b) -> a -> b
 curry1 fun a = fun (Singleton a)
 
-
 -- * Tuple2
 
 data Tuple2 a b = Tuple2 a b
@@ -174,7 +43,6 @@ uncurry2 fun (Tuple2 a b) = fun a b
 
 curry2 :: forall a b c . (Tuple2 a b -> c) -> a -> b -> c
 curry2 fun a b = fun (Tuple2 a b)
-
 
 -- * Tuple3
 
@@ -320,7 +188,6 @@ uncurry10 fun (Tuple10 a b c d e f g h i j) = fun a b c d e f g h i j
 curry10 :: forall a b c d e f g h i j k. (Tuple10 a b c d e f g h i j -> k) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k
 curry10 fun a b c d e f g h i j = fun (Tuple10 a b c d e f g h i j)
 
-
 -- * Tuple11
 
 data Tuple11 a b c d e f g h i j k = Tuple11 a b c d e f g h i j k
@@ -337,7 +204,7 @@ uncurry11 :: forall a b c d e f g h i j k l. (a -> b -> c -> d -> e -> f -> g ->
 uncurry11 fun (Tuple11 a b c d e f g h i j k) = fun a b c d e f g h i j k
 
 curry11 :: forall a b c d e f g h i j k l. (Tuple11 a b c d e f g h i j k -> l) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l
-curry11 fun a b c d e f g h i j k = fun (Tuple11 a b c d e f g h i j k) 
+curry11 fun a b c d e f g h i j k = fun (Tuple11 a b c d e f g h i j k)
 
 -- * Tuple12
 
@@ -357,7 +224,6 @@ uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 curry12 :: forall a b c d e f g h i j k l m. (Tuple12 a b c d e f g h i j k l -> m) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m
 curry12 fun a b c d e f g h i j k l = fun (Tuple12 a b c d e f g h i j k l)
 
-
 -- * Tuple13
 
 data Tuple13 a b c d e f g h i j k l m = Tuple13 a b c d e f g h i j k l m
@@ -375,7 +241,6 @@ uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l 
 
 curry13 :: forall a b c d e f g h i j k l m n. (Tuple13 a b c d e f g h i j k l m -> n) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n
 curry13 fun a b c d e f g h i j k l m = fun (Tuple13 a b c d e f g h i j k l m)
-
 
 -- * Tuple14
 
@@ -413,7 +278,6 @@ uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j 
 curry15 :: forall a b c d e f g h i j k l m n o p. (Tuple15 a b c d e f g h i j k l m n o -> p) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p
 curry15 fun a b c d e f g h i j k l m n o = fun (Tuple15 a b c d e f g h i j k l m n o)
 
-
 -- * Tuple16
 
 data Tuple16 a b c d e f g h i j k l m n o p = Tuple16 a b c d e f g h i j k l m n o p
@@ -431,31 +295,3 @@ uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i 
 
 curry16 :: forall a b c d e f g h i j k l m n o p q. (Tuple16 a b c d e f g h i j k l m n o p -> q) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q
 curry16 fun a b c d e f g h i j k l m n o p = fun (Tuple16 a b c d e f g h i j k l m n o p)
-
-
-
---------------------------------------------------------------------------------
-
-factorParser :: forall a . ABIDecode a => EncodingType a => Parser String a
-factorParser
-  | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
-  | otherwise = dParser
-
-dParser :: forall a . ABIDecode a => Parser String a
-dParser = do
-  dataOffset <- unsafeToInt <$> fromDataParser
-  lookAhead $ do
-    (ParseState _ (Position p) _) <- get
-    _ <- take (dataOffset * 2 - (p.column - 1))
-    fromDataParser
-
-
-{-
-
-Encodings :: [(order :: Int , Maybe (offset :: Int) , encoding :: HexString)]
-
-\a -> if isStatic a
-   then let enc = encode a
-            map (\(_, offset, _) -> (_, (+) (hexLength enc) <*> offset, _)
-
--}

@@ -10,7 +10,7 @@ import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Singleton(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
-import Network.Ethereum.Web3.Solidity.Tuple (genericFromData, genericAbiEncode, class GenericABIDecode, class GenericABIEncode)
+import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -38,7 +38,7 @@ roundTripGeneric :: forall r a rep.
                  -> HexString
                  -> Aff r Unit
 roundTripGeneric decoded encoded = do
-  encoded `shouldEqual` genericAbiEncode decoded
+  encoded `shouldEqual` genericABIEncode decoded
   genericFromData encoded `shouldEqual` Just decoded
 
 staticArraysTests :: forall r . Spec r Unit
@@ -117,8 +117,7 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000003"
 
-      expected `shouldEqual` genericAbiEncode given
-      genericFromData expected `shouldEqual` Just given
+      roundTripGeneric given expected
 
     it "can do something really complicated" do
       let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber <<< embed $ 1

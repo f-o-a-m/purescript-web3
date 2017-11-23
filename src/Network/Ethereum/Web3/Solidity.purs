@@ -33,6 +33,7 @@ import Network.Ethereum.Web3.Solidity.Tuple ( Singleton(..), unSingleton, uncurr
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromDataParser)
+import Network.Ethereum.Web3.Solidity.Generic (genericABIEncode, genericABIDecode, genericFromData)
 import Network.Ethereum.Web3.Types (BigNumber, Address)
 import Data.ByteString (ByteString)
 
