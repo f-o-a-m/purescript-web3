@@ -5,10 +5,12 @@ import Prelude
 
 import Control.Monad.Aff (Aff)
 import Data.ByteString as BS
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Singleton(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
+import Network.Ethereum.Web3.Solidity.Tuple (genericFromData, genericAbiEncode, class GenericABIDecode, class GenericABIEncode)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -25,6 +27,19 @@ roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> H
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Just decoded
+
+roundTripGeneric :: forall r a rep.
+                    Show a
+                 => Eq a
+                 => Generic a rep
+                 => GenericABIEncode rep
+                 => GenericABIDecode rep
+                 => a
+                 -> HexString
+                 -> Aff r Unit
+roundTripGeneric decoded encoded = do
+  encoded `shouldEqual` genericAbiEncode decoded
+  genericFromData encoded `shouldEqual` Just decoded
 
 staticArraysTests :: forall r . Spec r Unit
 staticArraysTests =
@@ -79,7 +94,7 @@ tuplesTest =
       let given = Tuple2 true false
           expected = unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
-      roundTrip given expected
+      roundTripGeneric given expected
 
     it "can encode 1-tuples with dynamic arg" do
       let given = Singleton [true, false]
@@ -87,7 +102,7 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "0000000000000000000000000000000000000000000000000000000000000000"
-      roundTrip given expected
+      roundTripGeneric given expected
 
     it "can encode 4-tuples with a mix of args -- (UInt, String, Boolean, Array Int)" do
       let given = Tuple4 1 "dave" true [1,2,3]
@@ -102,9 +117,10 @@ tuplesTest =
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000003"
 
-      roundTrip given expected
+      expected `shouldEqual` genericAbiEncode given
+      genericFromData expected `shouldEqual` Just given
 
-
+{-
     it "can do something really complicated" do
       let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber <<< embed $ 1
           int = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ (negate 1)
@@ -158,4 +174,5 @@ tuplesTest =
                               <> "1234000000000000000000000000000000000000000000000000000000000000"
                               <> "1234000000000000000000000000000000000000000000000000000000000000"
 
-      roundTrip given expected
+      roundTripGeneric given expected
+-}
