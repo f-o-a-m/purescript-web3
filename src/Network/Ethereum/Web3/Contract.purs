@@ -18,7 +18,7 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromData, toDataBuilder)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, fromData, toDataBuilder)
 import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, convert)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ instance showEventAction :: Show EventAction where
 instance eqEventAction :: Eq EventAction where
   eq = genericEq
 
-class ABIEncoding a <= EventFilter a where
+class ABIDecode a <= EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
@@ -77,7 +77,7 @@ event addr handler = do
 
 -- | Class paramaterized by values which are ABIEncodable, allowing the templating of
 -- | of a transaction with this value as the payload.
-class ABIEncoding a <= Method a where
+class ABIEncode a <= Method a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall p e u.
               IsAsyncProvider p
@@ -96,7 +96,7 @@ class ABIEncoding a <= Method a where
     -- | Constant call given contract 'Address' in mode and given input data
     call :: forall p e b .
             IsAsyncProvider p
-         => ABIEncoding b
+         => ABIDecode b
          => Address
          -- ^ Contract address
          -> Maybe Address
@@ -108,13 +108,13 @@ class ABIEncoding a <= Method a where
          -> Web3 p e b
          -- ^ 'Web3' wrapped result
 
-instance methodAbiEncoding :: ABIEncoding a => Method a where
+instance methodAbiEncode :: ABIEncode a => Method a where
   sendTx = _sendTransaction
   call = _call
 
 _sendTransaction :: forall p a e u .
                     IsAsyncProvider p
-                 => ABIEncoding a
+                 => ABIEncode a
                  => EtherUnit u
                  => Maybe Address
                  -> Address
@@ -134,8 +134,8 @@ _sendTransaction mto f val dat =
 
 _call :: forall p a b e .
          IsAsyncProvider p
-      => ABIEncoding a
-      => ABIEncoding b
+      => ABIEncode a
+      => ABIDecode b
       => Address
       -> Maybe Address
       -> CallMode

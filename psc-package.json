@@ -17,6 +17,7 @@
         "aff",
         "debug",
         "spec",
+        "typelevel-prelude",
         "psci-support"
     ]
 }

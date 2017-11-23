@@ -7,7 +7,7 @@ import Control.Monad.Aff (Aff)
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Singleton(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
@@ -21,7 +21,7 @@ encodingContainersSpec = describe "encoding-spec" do
   dynamicArraysTests
   tuplesTest
 
-roundTrip :: forall r a . Show a => Eq a => ABIEncoding a => a -> HexString -> Aff r Unit
+roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Just decoded
