@@ -120,7 +120,6 @@ tuplesTest =
       expected `shouldEqual` genericAbiEncode given
       genericFromData expected `shouldEqual` Just given
 
-{-
     it "can do something really complicated" do
       let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber <<< embed $ 1
           int = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ (negate 1)
@@ -175,4 +174,3 @@ tuplesTest =
                               <> "1234000000000000000000000000000000000000000000000000000000000000"
 
       roundTripGeneric given expected
--}
