@@ -117,7 +117,6 @@ instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData
 instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name a) where
   genericToDataBuilder (Constructor a) = combineEncodedValues $ _serialize [] a
 
-
 -- | Encode a generic type into its abi encoding, works only for types of the form
 -- | `Constructor name (Product (Argument a1) (Product ... (Argument an)))`
 genericABIEncode :: forall a rep.

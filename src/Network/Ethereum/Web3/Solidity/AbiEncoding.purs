@@ -1,5 +1,8 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
+import Data.Functor.Tagged
+import Data.Generic.Rep
+import Network.Ethereum.Web3.Solidity.Tuple
 import Prelude
 
 import Control.Error.Util (hush)
@@ -20,7 +23,6 @@ import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Text.Parsing.Parser.Token (hexDigit)
 import Type.Proxy (Proxy(..))
-
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
@@ -124,6 +126,10 @@ instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
               in "Couldn't parse as int" <> show size <> " : " <> show n
 
 --------------------------------------------------------------------------------
+
+instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged name a) where
+  fromDataParser = Tagged <$> fromDataParser
+
 
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers
