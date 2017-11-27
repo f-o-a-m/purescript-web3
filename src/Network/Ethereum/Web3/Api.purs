@@ -4,8 +4,8 @@ import Prelude
 
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
-import Network.Ethereum.Web3.Types (Web3, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions, Change, FilterId, Filter)
-import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3, defaultTransactionOptions)
+import Network.Ethereum.Web3.Types (Web3, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions, Change, FilterId, Filter, SyncStatus)
+import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3, defaultTransactionOptions, FalseOrObject)
 
 -- | Returns current node version string.
 web3_clientVersion :: forall p e . IsAsyncProvider p => Web3 p e String
@@ -55,3 +55,7 @@ eth_uninstallFilter fid = unsafeCoerceWeb3 $ remote "eth_uninstallFilter" fid ::
 -- | Get the network id that the node is listening to.
 net_version :: forall p e . IsAsyncProvider p => Web3 p e BigNumber
 net_version = unsafeCoerceWeb3 $ remote "net_version" :: Web3 p () BigNumber
+
+-- | Get the sync status of the node.
+eth_getSyncing :: forall p e. IsAsyncProvider p => Web3 p e (FalseOrObject SyncStatus)
+eth_getSyncing = unsafeCoerceWeb3 $ remote "eth_syncing" :: Web3 p () (FalseOrObject SyncStatus)
