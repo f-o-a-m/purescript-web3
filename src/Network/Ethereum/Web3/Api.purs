@@ -59,3 +59,9 @@ net_version = unsafeCoerceWeb3 $ remote "net_version" :: Web3 p () BigNumber
 -- | Get the sync status of the node.
 eth_getSyncing :: forall p e. IsAsyncProvider p => Web3 p e (FalseOrObject SyncStatus)
 eth_getSyncing = unsafeCoerceWeb3 $ remote "eth_syncing" :: Web3 p () (FalseOrObject SyncStatus)
+
+-- | Get the number of currently connected peers.
+net_getPeerCount :: forall p e. IsAsyncProvider p => Web3 p e (BigNumber)
+net_getPeerCount = unsafeCoerceWeb3 $ remote "net_peerCount" :: Web3 p () (BigNumber)
+
+
