@@ -1,8 +1,5 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
-import Data.Functor.Tagged
-import Data.Generic.Rep
-import Network.Ethereum.Web3.Solidity.Tuple
 import Prelude
 
 import Control.Error.Util (hush)
@@ -124,12 +121,6 @@ instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
     where
       msg n = let size = sizeVal (Proxy :: Proxy n)
               in "Couldn't parse as int" <> show size <> " : " <> show n
-
---------------------------------------------------------------------------------
-
-instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged name a) where
-  fromDataParser = Tagged <$> fromDataParser
-
 
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers

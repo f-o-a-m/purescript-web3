@@ -11,17 +11,20 @@ module Network.Ethereum.Web3.Solidity.Generic
  , genericFromData
  ) where
 
+import Data.Record.Builder
 import Prelude
+import Type.Row
 
 import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
-import Data.Array (foldl, length, reverse, sort, (:), uncons)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), from, to)
+import Data.Array (foldl, insert, length, reverse, sort, uncons, (:))
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Field(..), Product(..), Rec(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
+import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
+import Network.Ethereum.Web3.Types (HexString, asSigned, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
@@ -150,7 +153,7 @@ genericFromData :: forall a rep.
                 -> Maybe a
 genericFromData = hush <<< flip runParser genericABIDecode <<< unHex
 
---------------------------------------------------------------------------------
+-- helpers
 
 factorParser :: forall a . ABIDecode a => EncodingType a => Parser String a
 factorParser
@@ -164,3 +167,81 @@ dParser = do
     (ParseState _ (Position p) _) <- get
     _ <- take (dataOffset * 2 - (p.column - 1))
     fromDataParser
+
+--------------------------------------------------------------------------------
+-- * Generator Helpers
+--------------------------------------------------------------------------------
+
+class ToRecordFields args fields | args -> fields, fields -> args where
+  toRecordFields :: args -> fields
+
+instance toRecordBase :: ToRecordFields (Argument (Field s a)) (Field s a) where
+  toRecordFields (Argument a) = a
+
+instance toRecordInductive :: ToRecordFields as fields => ToRecordFields (Product (Argument (Field s a)) as) (Product (Field s a) fields) where
+  toRecordFields (Product (Argument a) as) = Product a (toRecordFields as)
+
+-- Tuple (Field na a) (Field nb b) (Field nc c) -> {na :: a, nb :: b , nc :: c}
+instance toRecordConstructor :: ToRecordFields as fields => ToRecordFields (Constructor name as) (Rec fields) where
+  toRecordFields (Constructor as) = Rec $ toRecordFields as
+
+-- | MergeRecs (A {a :: Int}) (B {b :: String}) (C {a :: Int, b :: String})
+class MergeRecs as bs cs | as bs -> cs, as cs -> bs, bs cs -> as where
+  mergeRecs :: as -> bs -> cs
+
+instance mergeRecsBase :: MergeRecs (Field s a) (Field t b) (Product (Field s a) (Field t b)) where
+  mergeRecs a b = Product a b
+
+instance mergeRecsInductive :: MergeRecs (Field s a) b (Product (Field s a) b) where
+  mergeRecs a b = Product a b
+
+instance mergeRecsInductive' :: MergeRecs as bs cs =>  MergeRecs (Product (Field s a) as) bs (Product (Field s a) cs) where
+  mergeRecs (Product a as) bs = Product a $ mergeRecs as bs
+
+
+class BuildCombined as bs where
+  buildCombined :: as -> bs
+
+instance buildCombinedBase :: (RowLacks s r1, RowCons s r1 a r2, IsSymbol s) => BuildCombined (Field s a) (Builder (Record r1) (Record r2)) where
+  buildCombined (Field a) = insert (SProxy :: SProxy s) a
+
+--instance buildCombinedInductive :: (BuildCombined as (Record r1), RowCons s a r1 r2, RowLacks s r1) => BuildCombined (Product (Field s a) as) (Builder (Record r1) (Record r2)) where
+--  buildCombined (Product (Field a) as) = insert (SProxy :: SProxy s) a >>> buildCombined
+
+
+{-
+class GenericToRowList fields (as :: RowList) | fields -> as, as -> fields
+
+instance genericToRowListBase :: GenericToRowList (Field s a) (Cons s a Nil)
+
+instance genericToRowListInductive :: GenericToRowList fields as => GenericToRowList (Product (Field s a) fields) (Cons s a as)
+-}
+
+
+data Event as bs = Event as bs
+
+-- Event (Tuple2 (Field "to" Address) (Field "from" Address)) (Tuple1 "amount" UInt256) -> Transfer {to :: Address, from :: Address, amount :: UInt256}
+
+--productToRow :: forall a b as bs fas fbs ras rbs r.
+--                Generic a as
+--             => Generic b bs
+--             => Generic b bs
+--             => ToRecordFields as fas
+--             => ToRecordFields bs fbs
+--             => GenericToRowList fas las
+--             => GenericToRowList fbs lbs
+--             => ListToRow las ras
+--             => ListToRow lbs rbs
+--             => Union ras rbs r
+--             -> Event a b
+--             -> r
+--productToRow (Event a b) = (toRecordFields <<< to $ a) (toRecordFields <<< to $ b)
+
+--
+--buildEvent :: forall as bs fas fbs r.
+--              ToRecordFields as fas
+--           => ToRecordFields bs fbs
+--           => Union fas fbs r
+--           -> Event as bs
+--           -> Record r
+--buildEvent (Event as bs) = build (to <<< toRecordFields $ as) (to <<< toRecordFields $ bs) {}
