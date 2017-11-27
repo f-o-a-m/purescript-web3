@@ -33,6 +33,7 @@ module Network.Ethereum.Web3.Types.Types
        , FilterId(..)
        , Change(..)
        , FalseOrObject(..)
+       , unFalseOrObject
        , SyncStatus(..)
        ) where
 
