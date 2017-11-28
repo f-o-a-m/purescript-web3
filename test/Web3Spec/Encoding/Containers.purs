@@ -18,7 +18,7 @@ import Test.Spec.Assertions (shouldEqual)
 
 
 encodingContainersSpec :: forall r . Spec r Unit
-encodingContainersSpec = describe "encoding-spec" do
+encodingContainersSpec = describe "encoding-spec for containers" do
   staticArraysTests
   dynamicArraysTests
   tuplesTest
