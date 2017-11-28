@@ -164,7 +164,7 @@ eth_newFilter f = unsafeCoerceWeb3 $ remote "eth_newFilter" f :: Web3 p () Filte
 
 -- | Creates a filter in the node, to notify when a new block arrives. 
 -- | To check if the state has changed, call `eth_getFilterChanges`.
-eth_newBlockFilter :: forall p e. IsAsyncProvider p => Web3 p () FilterId
+eth_newBlockFilter :: forall p e. IsAsyncProvider p => Web3 p e FilterId
 eth_newBlockFilter = unsafeCoerceWeb3 $ remote "eth_newBlockFilter" :: Web3 p () FilterId
 
 -- | Polling method for a filter, which returns an array of logs which occurred since last poll.

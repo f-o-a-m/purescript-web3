@@ -207,10 +207,6 @@ falseOrObjectTests =
       decodedFalse `shouldEqual` (Right $ FalseOrObject Nothing)
 
     it "can decode FalseOrObject instances that are objects" do
-      let decodedObj = runExceptT $ decodeJSON "{ \"startingBlock\": 0, \"currentBlock\": 1, \"highestBlock\": 2 }"
-      decodedObj `shouldEqual` (Identity $ Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: intToBN 0, currentBlock: intToBN 1, highestBlock: intToBN 2})
-
-  where 
-    intToBN i = unsafePartial $ fromJust $ parseBigNumber decimal $ toStringAs decimal i
-    runIdentity (Identity x) = x
+      let decodedObj = runExcept $ decodeJSON "{ \"startingBlock\": 0, \"currentBlock\": 1, \"highestBlock\": 2 }"
+      decodedObj `shouldEqual` (Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: embed 0, currentBlock: embed 1, highestBlock: embed 2})
       
