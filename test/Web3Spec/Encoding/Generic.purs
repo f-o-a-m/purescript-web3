@@ -39,8 +39,8 @@ toRecordFieldsSpec =
             as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (SProxy "_2") Int) (Tagged (SProxy "_3") String)
             WeirdTuple fs = genericToRecordFields as
             OtherTuple fs' = genericToRecordFields as'
-            c = Combined $ build (merge fs) fs'
-        c `shouldEqual` Combined {_1:1, _2: 2, _3: "bye", _4: "hello", _5: 'c'}
+            c = CombinedTuple $ build (merge fs) fs'
+        genericFromRecordFields c `shouldEqual` Combined 1 2 "bye" "hello" 'c'
 
 
 newtype WeirdTuple = WeirdTuple {_1 :: Int, _4 :: String, _5 :: Char}
@@ -63,7 +63,17 @@ instance showOtherTuple :: Show OtherTuple where
 instance eqOtherTuple :: Eq OtherTuple where
   eq = genericEq
 
-data Combined = Combined {_1 :: Int, _2 :: Int, _3 :: String, _4 :: String, _5 :: Char}
+data CombinedTuple = CombinedTuple {_1 :: Int, _2 :: Int, _3 :: String, _4 :: String, _5 :: Char}
+
+derive instance genericCombinedTuple :: Generic CombinedTuple _
+
+instance showCombinedTuple :: Show CombinedTuple where
+  show = genericShow
+
+instance eqCombinedTuple :: Eq CombinedTuple where
+  eq = genericEq
+
+data Combined = Combined Int Int String String Char
 
 derive instance genericCombined :: Generic Combined _
 
