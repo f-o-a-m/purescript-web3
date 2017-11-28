@@ -7,9 +7,10 @@ import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3.Solidity (Tuple4(..))
-import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
+import Network.Ethereum.Web3.Solidity (Tuple3(..), Tuple2(..))
+import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields, genericFromRecordFields)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -23,14 +24,26 @@ toRecordFieldsSpec =
     describe "test ToRecordFields class" do
 
       it "pass toRecordFields basic test" do
-        let as = Tuple4 (tagged 1) (tagged "hello") (tagged 'c') (tagged true) :: Tuple4 (Tagged (SProxy "a") Int) (Tagged (SProxy "b") String) (Tagged (SProxy "c") Char) (Tagged (SProxy "d") Boolean)
-        genericToRecordFields as  `shouldEqual` WeirdTuple { a : 1
-                                                           , b : "hello"
-                                                           , c : 'c'
-                                                           , d : true
-                                                           }
+        let as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (SProxy "_1") Int) (Tagged (SProxy "_4") String) (Tagged (SProxy "_5") Char)
+        genericToRecordFields as `shouldEqual` WeirdTuple { _1 : 1
+                                                          , _4 : "hello"
+                                                          , _5 : 'c'
+                                                          }
 
-data WeirdTuple = WeirdTuple {a :: Int, b :: String, c :: Char, d :: Boolean}
+      it "pass fromRecordFields basic test" do
+        let as = Tuple2 2 "bye" :: Tuple2 Int String
+        genericFromRecordFields (OtherTuple { _2 : 2, _3 : "bye"}) `shouldEqual` as
+
+      it "passes the merging test" do
+        let as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (SProxy "_1") Int) (Tagged (SProxy "_4") String) (Tagged (SProxy "_5") Char)
+            as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (SProxy "_2") Int) (Tagged (SProxy "_3") String)
+            WeirdTuple fs = genericToRecordFields as
+            OtherTuple fs' = genericToRecordFields as'
+            c = Combined $ build (merge fs) fs'
+        c `shouldEqual` Combined {_1:1, _2: 2, _3: "bye", _4: "hello", _5: 'c'}
+
+
+newtype WeirdTuple = WeirdTuple {_1 :: Int, _4 :: String, _5 :: Char}
 
 derive instance genericWeirdTuple :: Generic WeirdTuple _
 
@@ -38,4 +51,24 @@ instance showWeirdTuple :: Show WeirdTuple where
   show = genericShow
 
 instance eqWeirdTuple :: Eq WeirdTuple where
+  eq = genericEq
+
+newtype OtherTuple = OtherTuple {_2 :: Int, _3 :: String}
+
+derive instance genericOtherTuple :: Generic OtherTuple _
+
+instance showOtherTuple :: Show OtherTuple where
+  show = genericShow
+
+instance eqOtherTuple :: Eq OtherTuple where
+  eq = genericEq
+
+data Combined = Combined {_1 :: Int, _2 :: Int, _3 :: String, _4 :: String, _5 :: Char}
+
+derive instance genericCombined :: Generic Combined _
+
+instance showCombined :: Show Combined where
+  show = genericShow
+
+instance eqCombined :: Eq Combined where
   eq = genericEq
