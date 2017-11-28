@@ -5,14 +5,21 @@ import Prelude
 
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Except (runExcept, runExceptT)
 import Data.ByteString as BS
+import Data.Either (Either(..))
+import Data.Foreign (ForeignError(..))
+import Data.Foreign.Generic (decodeJSON, defaultOptions, genericDecodeJSON)
+import Data.Identity (Identity(..))
+import Data.Int (toStringAs)
+import Data.List.Types (NonEmptyList(..))
 import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (HexString, embed, mkAddress, mkHexString, pow, (+<), (-<))
+import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -27,6 +34,7 @@ encodingSimpleSpec = describe "encoding-spec" do
   uintNTests
   intNTests
   addressTests
+  falseOrObjectTests
 
 roundTrip :: forall r a . Show a => Eq a => ABIEncoding a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
@@ -187,3 +195,22 @@ intNTests =
       it "can fail to encode larger negative int248" do
          let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 +< 1) :: Maybe (UIntN (D2 :& D4 :& D8))
          mgiven `shouldEqual` Nothing
+
+
+falseOrObjectTests :: forall r. Spec r Unit
+falseOrObjectTests = 
+  describe "FalseOrObject tests" do
+    let opts = defaultOptions { unwrapSingleConstructors = true }
+
+    it "can decode FalseOrObject instances that are false" do
+      let decodedFalse = (runExcept $ decodeJSON "false") :: (Either (NonEmptyList ForeignError) (FalseOrObject SyncStatus))
+      decodedFalse `shouldEqual` (Right $ FalseOrObject Nothing)
+
+    it "can decode FalseOrObject instances that are objects" do
+      let decodedObj = runExceptT $ decodeJSON "{ \"startingBlock\": 0, \"currentBlock\": 1, \"highestBlock\": 2 }"
+      decodedObj `shouldEqual` (Identity $ Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: intToBN 0, currentBlock: intToBN 1, highestBlock: intToBN 2})
+
+  where 
+    intToBN i = unsafePartial $ fromJust $ parseBigNumber decimal $ toStringAs decimal i
+    runIdentity (Identity x) = x
+      
