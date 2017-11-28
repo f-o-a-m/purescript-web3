@@ -32,6 +32,9 @@ module Network.Ethereum.Web3.Types.Types
        , _toBlock
        , FilterId(..)
        , Change(..)
+       , FalseOrObject(..)
+       , unFalseOrObject
+       , SyncStatus(..)
        ) where
 
 import Prelude
@@ -43,8 +46,9 @@ import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
-import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Error.Class (class MonadThrow, catchError)
 import Data.Array (many)
+import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
@@ -54,6 +58,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
+import Data.Newtype (class Newtype, unwrap)
 import Data.String (length) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
@@ -290,6 +295,24 @@ _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
            (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
 
 --------------------------------------------------------------------------------
+-- * Node Synchronisation
+--------------------------------------------------------------------------------
+
+newtype SyncStatus = SyncStatus
+    { startingBlock :: BigNumber
+    , currentBlock :: BigNumber
+    , highestBlock :: BigNumber
+    }
+
+derive instance genericSyncStatus :: Generic SyncStatus _
+
+instance decodeSyncStatus :: Decode SyncStatus where
+    decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
+
+instance showSyncStatus :: Show SyncStatus where
+    show = genericShow
+
+--------------------------------------------------------------------------------
 -- * Web3M
 --------------------------------------------------------------------------------
 
@@ -409,3 +432,33 @@ instance eqChange :: Eq Change where
 
 instance decodeChange :: Decode Change where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+
+--------------------------------------------------------------------------------
+-- * Json Decode Types
+--------------------------------------------------------------------------------
+
+-- | Newtype wrapper around `Maybe` to handle cases where Web3 passes back
+-- | either `false` or some data type
+newtype FalseOrObject a = FalseOrObject (Maybe a)
+
+derive instance newtypeFalseOrObj :: Newtype (FalseOrObject a) _
+derive instance eqFalseOrObj :: Eq a => Eq (FalseOrObject a)
+derive instance ordFalseOrObj :: Ord a => Ord (FalseOrObject a)
+
+instance showFalseOrObj :: Show a => Show (FalseOrObject a) where
+    show x = "(FalseOrObject " <> show (unwrap x) <> ")"
+
+unFalseOrObject :: forall a. FalseOrObject a -> Maybe a
+unFalseOrObject (FalseOrObject a) = a
+
+readFalseOrObject :: forall a. (Foreign -> F a) -> Foreign -> F (FalseOrObject a)
+readFalseOrObject f value = do
+    isBool <- catchError ((\_ -> true) <$> readBoolean value) (\_ -> pure false) 
+    if isBool then
+        pure $ FalseOrObject Nothing
+      else 
+        FalseOrObject <<< Just <$> f value
+
+instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
+    decode x = readFalseOrObject decode x
