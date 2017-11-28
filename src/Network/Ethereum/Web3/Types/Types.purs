@@ -200,6 +200,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
   show = genericShow
@@ -226,6 +227,7 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow
