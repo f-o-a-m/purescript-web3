@@ -7,24 +7,24 @@ import Data.Generic.Rep.Show (genericShow)
 
 -- * Tuple 1
 
-newtype Singleton a = Singleton a
+newtype Tuple1 a = Tuple1 a
 
-derive instance genericTuple1 :: Generic (Singleton a) _
+derive instance genericTuple1 :: Generic (Tuple1 a) _
 
-unSingleton :: forall a . Singleton a -> a
-unSingleton (Singleton a) = a
+unTuple1 :: forall a . Tuple1 a -> a
+unTuple1 (Tuple1 a) = a
 
-instance showSingleton :: Show a => Show (Singleton a) where
+instance showTuple1 :: Show a => Show (Tuple1 a) where
   show = genericShow
 
-instance eqSingleton :: Eq a => Eq (Singleton a) where
+instance eqTuple1 :: Eq a => Eq (Tuple1 a) where
   eq = genericEq
 
-uncurry1 :: forall a b . (a -> b) -> Singleton a -> b
-uncurry1 fun (Singleton a) = fun a
+uncurry1 :: forall a b . (a -> b) -> Tuple1 a -> b
+uncurry1 fun (Tuple1 a) = fun a
 
-curry1 :: forall a b . (Singleton a -> b) -> a -> b
-curry1 fun a = fun (Singleton a)
+curry1 :: forall a b . (Tuple1 a -> b) -> a -> b
+curry1 fun a = fun (Tuple1 a)
 
 -- * Tuple2
 

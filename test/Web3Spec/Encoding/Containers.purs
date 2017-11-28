@@ -7,7 +7,7 @@ import Control.Monad.Aff (Aff)
 import Data.ByteString as BS
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromJust)
-import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Singleton(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
+import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
@@ -97,7 +97,7 @@ tuplesTest =
       roundTripGeneric given expected
 
     it "can encode 1-tuples with dynamic arg" do
-      let given = Singleton [true, false]
+      let given = Tuple1 [true, false]
           expected = unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000020"
                               <> "0000000000000000000000000000000000000000000000000000000000000002"
                               <> "0000000000000000000000000000000000000000000000000000000000000001"
