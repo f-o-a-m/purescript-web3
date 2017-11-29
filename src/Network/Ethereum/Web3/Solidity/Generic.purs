@@ -33,9 +33,8 @@ import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
-import Type.Data.Boolean (BProxy(..), False, True, kind Boolean)
 import Type.Proxy (Proxy(..))
-import Type.Row (class ListToRow, class RowLacks, Cons, Nil, RLProxy(..), RProxy(..), kind RowList)
+import Type.Row (class ListToRow, class RowLacks, Cons, Nil, RLProxy(..), kind RowList)
 
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
