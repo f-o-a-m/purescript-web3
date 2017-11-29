@@ -207,7 +207,8 @@ genericToRecordFields :: forall args fields l a name .
                       => Generic a (Constructor name args)
                       => ArgsToRowListProxy args l
                       => ListToRow l fields
-                      => a -> Record fields
+                      => a
+                      -> Record fields
 genericToRecordFields a =
   let Constructor row = from a
   in toRecordFields (RLProxy :: RLProxy l) row

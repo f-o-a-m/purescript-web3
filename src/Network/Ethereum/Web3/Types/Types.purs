@@ -12,6 +12,7 @@ module Network.Ethereum.Web3.Types.Types
        , CallMode(..)
        , Block(..)
        , Transaction(..)
+       , TransactionReceipt(..)
        , TransactionOptions(..)
        , defaultTransactionOptions
        , _from
@@ -199,6 +200,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
   show = genericShow
@@ -225,12 +227,37 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow
 
 instance decodeTransaction :: Decode Transaction where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+--------------------------------------------------------------------------------
+-- * TransactionReceipt
+--------------------------------------------------------------------------------
+
+newtype TransactionReceipt = 
+  TransactionReceipt { transactionHash :: HexString
+                     , transactionIndex :: BigNumber
+                     , blockHash :: HexString
+                     , blockNumber :: BigNumber
+                     , cumulativeGasUsed :: BigNumber
+                     , gasUsed :: BigNumber
+                     , contractAddress :: NullOrUndefined Address
+                     , logs :: Array Change
+                     }
+
+derive instance genericTxReceipt :: Generic TransactionReceipt _
+derive instance eqTxReceipt :: Eq TransactionReceipt
+
+instance showTxReceipt :: Show TransactionReceipt where
+  show = genericShow
+
+instance decodeTxReceipt :: Decode TransactionReceipt where
+  decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
 
 --------------------------------------------------------------------------------
 -- * TransactionOptions
@@ -305,6 +332,7 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
+derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
     decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
@@ -445,6 +473,7 @@ newtype FalseOrObject a = FalseOrObject (Maybe a)
 derive instance newtypeFalseOrObj :: Newtype (FalseOrObject a) _
 derive instance eqFalseOrObj :: Eq a => Eq (FalseOrObject a)
 derive instance ordFalseOrObj :: Ord a => Ord (FalseOrObject a)
+derive instance genericFalseOrObj :: Generic (FalseOrObject a) _ 
 
 instance showFalseOrObj :: Show a => Show (FalseOrObject a) where
     show x = "(FalseOrObject " <> show (unwrap x) <> ")"
