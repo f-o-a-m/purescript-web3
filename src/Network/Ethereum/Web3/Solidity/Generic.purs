@@ -15,10 +15,11 @@ module Network.Ethereum.Web3.Solidity.Generic
  , class FromRecordFields
  , fromRecordFields
  , genericFromRecordFields
--- , class Merged
  ) where
 
+import Data.Record.Builder
 import Prelude
+import Type.Row
 
 import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
@@ -27,7 +28,7 @@ import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Field(..), Product(..), Rec(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Data.Symbol (SProxy)
+import Data.Symbol (class IsSymbol, SProxy)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
@@ -197,6 +198,17 @@ genericToRecordFields a =
   let Constructor args = from a
   in to <<< Constructor <<< Rec <<< toRecordFields $ args
 
+genericParseRecordFields :: forall a n args b m fields .
+                            Generic a (Constructor n args)
+                         => Generic b (Constructor m (Rec fields))
+                         => ToRecordFields args fields
+                         => ABIDecode a
+                         => Proxy a
+                         -> Parser String b
+genericParseRecordFields (Proxy :: Proxy a) = do
+  (a :: a) <- fromDataParser
+  pure $ genericToRecordFields a
+
 class FromRecordFields fields args | args -> fields, fields -> args where
   fromRecordFields :: fields -> args
 
@@ -207,8 +219,8 @@ instance fromRecordFieldsInductive :: FromRecordFields fields args => FromRecord
   fromRecordFields (Product (Field a) fields) = Product (Argument a) (fromRecordFields fields)
 
 genericFromRecordFields :: forall a n args b m fields .
-                           Generic a (Constructor n args)
-                        => Generic b (Constructor m (Rec fields))
+                           Generic b (Constructor m (Rec fields))
+                        => Generic a (Constructor n args)
                         => FromRecordFields fields args
                         => b
                         -> a
@@ -216,3 +228,29 @@ genericFromRecordFields b =
   let (Constructor (Rec a)) = from b
   in to <<< Constructor <<< fromRecordFields $ a
 
+
+class GenericFieldsRow fields (row :: # Type) | fields -> row
+
+instance genericFieldsRowBase :: (RowCons s a () r) => GenericFieldsRow (Field s a) r
+
+instance genericFieldsRowInductive :: (RowLacks s r, GenericFieldsRow fs r, RowCons s a r r') => GenericFieldsRow (Product (Field s a) fs) r'
+
+class GenericMerge fs gs hs | fs gs -> hs, hs fs -> gs, gs fs -> hs
+
+genericMerge :: forall a b c fs gs hs j l k.
+                Generic a (Constructor (Rec fs))
+             => Generic b (Constructor (Rec gs))
+             => Generic c (Constructor (Rec hs))
+             => GenericFieldsRow fs j
+             => GenericFieldsRow gs k
+             => GenericFieldsRow hs l
+             => Union j k l
+             -> a
+             -> b
+             -> c
+genericMerge a b c =
+  let Constructor fs = from a
+      Constructor gs = from b
+      j = to fs
+      k = to gs
+ in Constructor $ build (merge j) k
