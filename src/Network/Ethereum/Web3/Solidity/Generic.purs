@@ -12,30 +12,30 @@ module Network.Ethereum.Web3.Solidity.Generic
  , class ToRecordFields
  , toRecordFields
  , genericToRecordFields
- , class FromRecordFields
- , fromRecordFields
- , genericFromRecordFields
+ , class ArgsToRowListProxy
+ , argsToRowListProxy
  ) where
 
-import Data.Record.Builder
 import Prelude
-import Type.Row
 
 import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
 import Data.Functor.Tagged (Tagged, untagged)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Field(..), Product(..), Rec(..), from, to)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Data.Symbol (class IsSymbol, SProxy)
+import Data.Record (insert)
+import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
+import Type.Data.Boolean (BProxy(..), False, True, kind Boolean)
 import Type.Proxy (Proxy(..))
+import Type.Row (class ListToRow, class RowLacks, Cons, Nil, RLProxy(..), RProxy(..), kind RowList)
 
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
@@ -179,78 +179,36 @@ dParser = do
 -- * Generator Helpers
 --------------------------------------------------------------------------------
 
-class ToRecordFields args fields | args -> fields, fields -> args where
-  toRecordFields :: args -> fields
+class RLProxyEquality (a :: RowList) (b :: RowList)
 
-instance toRecordBase :: ToRecordFields (Argument (Tagged (SProxy s) a)) (Field s a) where
-  toRecordFields (Argument a) = Field $ untagged a
+instance rlproxyEqualityBase :: RLProxyEquality Nil Nil
+instance rlproxyEqualityInductive :: RLProxyEquality l1 l2 => RLProxyEquality (Cons s a l1) (Cons s a l2)
 
-instance toRecordInductive :: ToRecordFields as fields => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) (Product (Field s a) fields) where
-  toRecordFields (Product (Argument a) as) = Product (Field $ untagged a) (toRecordFields as)
+class ArgsToRowListProxy args (l :: RowList) | args -> l, l -> args where
+  argsToRowListProxy :: Proxy args -> RLProxy l
 
-genericToRecordFields :: forall a n args b m fields .
-                         Generic a (Constructor n args)
-                      => Generic b (Constructor m (Rec fields))
-                      => ToRecordFields args fields
-                      => a
-                      -> b
+instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy s) a)) (Cons s a Nil) where
+  argsToRowListProxy _ = RLProxy
+
+instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
+  argsToRowListProxy _ = RLProxy
+
+class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args, rowList -> fields where
+  toRecordFields :: RLProxy rowList -> args -> Record fields
+
+instance toRecordBase :: (IsSymbol s, RowCons s a () r, RowLacks s ()) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
+  toRecordFields _ (Argument a) = insert (SProxy :: SProxy s) (untagged a) {}
+
+instance toRecordInductive :: (ToRecordFields as r1 l, RowCons s a r1 r2, RowLacks s r1, IsSymbol s, ListToRow l r1) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a l) where
+  toRecordFields _ (Product (Argument a) as) = insert (SProxy :: SProxy s) (untagged a) rest
+    where rest = (toRecordFields (RLProxy :: RLProxy l) as :: Record r1)
+
+genericToRecordFields :: forall args fields l a name .
+                         ToRecordFields args fields l
+                      => Generic a (Constructor name args)
+                      => ArgsToRowListProxy args l
+                      => ListToRow l fields
+                      => a -> Record fields
 genericToRecordFields a =
-  let Constructor args = from a
-  in to <<< Constructor <<< Rec <<< toRecordFields $ args
-
-genericParseRecordFields :: forall a n args b m fields .
-                            Generic a (Constructor n args)
-                         => Generic b (Constructor m (Rec fields))
-                         => ToRecordFields args fields
-                         => ABIDecode a
-                         => Proxy a
-                         -> Parser String b
-genericParseRecordFields (Proxy :: Proxy a) = do
-  (a :: a) <- fromDataParser
-  pure $ genericToRecordFields a
-
-class FromRecordFields fields args | args -> fields, fields -> args where
-  fromRecordFields :: fields -> args
-
-instance fromRecordFieldsBase :: FromRecordFields (Field s a) (Argument a) where
-  fromRecordFields (Field a) = Argument a
-
-instance fromRecordFieldsInductive :: FromRecordFields fields args => FromRecordFields (Product (Field s a) fields) (Product (Argument a) args) where
-  fromRecordFields (Product (Field a) fields) = Product (Argument a) (fromRecordFields fields)
-
-genericFromRecordFields :: forall a n args b m fields .
-                           Generic b (Constructor m (Rec fields))
-                        => Generic a (Constructor n args)
-                        => FromRecordFields fields args
-                        => b
-                        -> a
-genericFromRecordFields b =
-  let (Constructor (Rec a)) = from b
-  in to <<< Constructor <<< fromRecordFields $ a
-
-
-class GenericFieldsRow fields (row :: # Type) | fields -> row
-
-instance genericFieldsRowBase :: (RowCons s a () r) => GenericFieldsRow (Field s a) r
-
-instance genericFieldsRowInductive :: (RowLacks s r, GenericFieldsRow fs r, RowCons s a r r') => GenericFieldsRow (Product (Field s a) fs) r'
-
-class GenericMerge fs gs hs | fs gs -> hs, hs fs -> gs, gs fs -> hs
-
-genericMerge :: forall a b c fs gs hs j l k.
-                Generic a (Constructor (Rec fs))
-             => Generic b (Constructor (Rec gs))
-             => Generic c (Constructor (Rec hs))
-             => GenericFieldsRow fs j
-             => GenericFieldsRow gs k
-             => GenericFieldsRow hs l
-             => Union j k l
-             -> a
-             -> b
-             -> c
-genericMerge a b c =
-  let Constructor fs = from a
-      Constructor gs = from b
-      j = to fs
-      k = to gs
- in Constructor $ build (merge j) k
+  let Constructor row = from a
+  in toRecordFields (RLProxy :: RLProxy l) row
