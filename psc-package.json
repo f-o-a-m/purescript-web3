@@ -1,6 +1,6 @@
 {
-    "name": "purescript-web3",
-    "set": "web3-0.9.0",
+    "name": "master",
+    "set": "master",
     "source": "https://github.com/f-o-a-m/package-sets.git",
     "depends": [
         "prelude",
@@ -17,6 +17,8 @@
         "aff",
         "debug",
         "spec",
-        "psci-support"
+        "typelevel-prelude",
+        "psci-support",
+        "tagged"
     ]
 }

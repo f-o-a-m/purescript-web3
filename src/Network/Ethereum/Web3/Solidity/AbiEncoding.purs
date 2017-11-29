@@ -21,49 +21,63 @@ import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
 import Text.Parsing.Parser.Token (hexDigit)
 import Type.Proxy (Proxy(..))
 
-
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
-class ABIEncoding a where
+class ABIEncode a where
   toDataBuilder :: a -> HexString
+
+class ABIDecode a where
   fromDataParser :: Parser String a
 
-instance abiEncodingAlgebra :: ABIEncoding BigNumber where
+instance abiEncodeAlgebra :: ABIEncode BigNumber where
   toDataBuilder = int256HexBuilder
+
+instance abiDecodeAlgebra :: ABIDecode BigNumber where
   fromDataParser = int256HexParser
 
 -- | Parse encoded value, droping the leading `0x`
-fromData :: forall a . ABIEncoding a => HexString -> Maybe a
+fromData :: forall a . ABIDecode a => HexString -> Maybe a
 fromData = hush <<< flip runParser fromDataParser <<< unHex
 
-instance abiEncodingBool :: ABIEncoding Boolean where
+instance abiEncodeBool :: ABIEncode Boolean where
     toDataBuilder  = uInt256HexBuilder <<< fromBool
+
+instance abiDecodeBool :: ABIDecode Boolean where
     fromDataParser = toBool <$> uInt256HexParser
 
-instance abiEncodingInt :: ABIEncoding Int where
+instance abiEncodeInt :: ABIEncode Int where
     toDataBuilder  = int256HexBuilder
+
+instance abiDecodeInt :: ABIDecode Int where
     fromDataParser = unsafeToInt <$> int256HexParser
 
-instance abiEncodingAddress :: ABIEncoding Address where
+instance abiEncodeAddress :: ABIEncode Address where
     toDataBuilder addr = padLeft <<< unAddress $ addr
+
+instance abiDecodeAddress :: ABIDecode Address where
     fromDataParser = do
       _ <- take 24
       maddr <- mkAddress <$> take 40
       maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
-instance abiEncodingBytesD :: ABIEncoding ByteString where
+instance abiEncodeBytesD :: ABIEncode ByteString where
   toDataBuilder bytes =
     uInt256HexBuilder (BS.length bytes) <> bytesBuilder bytes
 
+instance abiDecodeBytesD :: ABIDecode ByteString where
   fromDataParser = do
     len <- unsafeToInt <$> fromDataParser
     bytesDecode <<< unHex <$> take (len * 2)
 
-instance abiEncodingString :: ABIEncoding String where
+instance abiEncodeString :: ABIEncode String where
     toDataBuilder = toDataBuilder <<< BS.toUTF8
+
+instance abiDecodeString :: ABIDecode String where
     fromDataParser = BS.fromUTF8 <$> fromDataParser
 
-instance abiEncodingBytesN :: ByteSize n => ABIEncoding (BytesN n) where
+instance abiEncodeBytesN :: ByteSize n => ABIEncode (BytesN n) where
   toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
+
+instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
   fromDataParser = do
     let len = sizeVal (Proxy :: Proxy n)
         zeroBytes = getPadLength (len * 2)
@@ -71,19 +85,25 @@ instance abiEncodingBytesN :: ByteSize n => ABIEncoding (BytesN n) where
     _ <- take $ zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
-instance abiEncodingVector :: (ABIEncoding a, KnownNat n) => ABIEncoding (Vector n a) where
+instance abiEncodeVector :: (ABIEncode a, KnownNat n) => ABIEncode (Vector n a) where
     toDataBuilder as = foldMap toDataBuilder as
+
+instance abiDecodeVector :: (ABIDecode a, KnownNat n) => ABIDecode (Vector n a) where
     fromDataParser = let len = natVal (Proxy :: Proxy n)
                      in replicateA len fromDataParser
 
-instance abiEncodingArray :: ABIEncoding a => ABIEncoding (Array a) where
+instance abiEncodeArray :: ABIEncode a => ABIEncode (Array a) where
     toDataBuilder as = uInt256HexBuilder (A.length as) <> foldMap toDataBuilder as
+
+instance abiDecodeArray :: ABIDecode a => ABIDecode (Array a) where
     fromDataParser = do
       len <- unsafeToInt <$> uInt256HexParser
       replicateA len fromDataParser
 
-instance abiEncodingUint :: IntSize n => ABIEncoding (UIntN n) where
+instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
   toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
+
+instance abiDecodeUint :: IntSize n => ABIDecode (UIntN n) where
   fromDataParser = do
     a <- uInt256HexParser
     maybe (fail $ msg a) pure <<< uIntNFromBigNumber $ a
@@ -91,8 +111,10 @@ instance abiEncodingUint :: IntSize n => ABIEncoding (UIntN n) where
       msg n = let size = sizeVal (Proxy :: Proxy n)
               in "Couldn't parse as uint" <> show size <> " : " <> show n
 
-instance abiEncodingIntN :: IntSize n => ABIEncoding (IntN n) where
+instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
   toDataBuilder a = int256HexBuilder <<< unIntN $ a
+
+instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
   fromDataParser = do
     a <- int256HexParser
     maybe (fail $ msg a) pure <<< intNFromBigNumber $ a

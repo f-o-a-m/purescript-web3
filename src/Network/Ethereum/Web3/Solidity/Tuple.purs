@@ -1,456 +1,30 @@
 module Network.Ethereum.Web3.Solidity.Tuple where
 
 import Prelude
-
-import Control.Monad.State.Class (get)
-import Data.Array (foldl, length, reverse, sort, (:), uncons)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(..))
-import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncoding, fromDataParser, take, toDataBuilder)
-import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (HexString, hexLength, unsafeToInt)
-import Text.Parsing.Parser (Parser, ParseState(..))
-import Text.Parsing.Parser.Combinators (lookAhead)
-import Text.Parsing.Parser.Pos (Position(..))
-import Type.Proxy (Proxy(..))
 
+-- * Tuple 1
 
-data EncodedValue =
-  EncodedValue { order :: Int
-               , offset :: Maybe Int
-               , encoding :: HexString
-               }
+newtype Tuple1 a = Tuple1 a
 
-instance eqEncodedValue :: Eq EncodedValue where
-  eq (EncodedValue a) (EncodedValue b) = a.order == b.order
+derive instance genericTuple1 :: Generic (Tuple1 a) _
 
-instance ordEncodedValue :: Ord EncodedValue where
-  compare (EncodedValue a) (EncodedValue b) = a.order `compare` b.order
+unTuple1 :: forall a . Tuple1 a -> a
+unTuple1 (Tuple1 a) = a
 
--- | ABI data multiparam internal serializer
-class ABIData a where
-    _serialize :: Array EncodedValue -> a
-    -- ^ Serialize with accumulator:
-    -- pair of argument count and list of pair header and
-    -- data part (for dynamic arguments)
-
-instance abiDataHexString :: ABIData HexString where
-    _serialize encodings =
-      let sortedEs = adjust headsOffset $ sort encodings
-          encodings' = addTailOffsets headsOffset [] sortedEs
-      in let heads = foldl (\acc (EncodedValue e) -> case e.offset of
-                              Nothing -> acc <> e.encoding
-                              Just o -> acc <> toDataBuilder o
-                          ) mempty encodings'
-             tails = foldl (\acc (EncodedValue e) -> case e.offset of
-                              Nothing -> acc
-                              Just _ -> acc <> e.encoding
-                          ) mempty encodings'
-          in heads <> tails
-      where
-        adjust :: Int -> Array EncodedValue -> Array EncodedValue
-        adjust n = map (\(EncodedValue e) -> EncodedValue e {offset = add n <$> e.offset})
-        addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
-        addTailOffsets init acc es = case uncons es of
-          Nothing -> reverse acc
-          Just {head, tail} ->
-            let EncodedValue e = head
-            in case e.offset of
-              Nothing -> addTailOffsets init (head : acc) tail
-              Just _ -> addTailOffsets init (head : acc) (adjust (hexLength e.encoding `div` 2) tail)
-        headsOffset :: Int
-        headsOffset = foldl (\acc (EncodedValue e) -> case e.offset of
-                                Nothing -> acc + (hexLength e.encoding `div` 2)
-                                Just _ -> acc + 32
-                            ) 0 encodings
-
-instance abiDataInductive :: (EncodingType b, ABIEncoding b, ABIData a) => ABIData (b -> a) where
-  _serialize encoded x =
-    if isDynamic (Proxy :: Proxy b)
-       then _serialize (dynEncoding  : encoded)
-       else _serialize (staticEncoding : encoded)
-    where
-      currentLength = hexLength $ _serialize encoded
-      staticEncoding = EncodedValue { encoding : toDataBuilder x
-                                    , offset : Nothing
-                                    , order : 1 + length encoded
-                                    }
-      dynEncoding = EncodedValue { encoding : toDataBuilder x
-                                 , offset : Just 0
-                                 , order : 1 + length encoded
-                                 }
-
-instance abiEncoding1 :: (ABIEncoding a,
-                          EncodingType a
-                         ) => ABIEncoding (Singleton a) where
-  toDataBuilder = uncurry1 $ _serialize []
-  fromDataParser = Singleton <$> factorParser
-
-instance abiEncoding2 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b
-                         ) => ABIEncoding (Tuple2 a b) where
-  toDataBuilder = uncurry2 $ _serialize []
-  fromDataParser = Tuple2 <$> factorParser <*> factorParser
-
-instance abiEncoding3 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c
-                         ) => ABIEncoding (Tuple3 a b c) where
-  toDataBuilder = uncurry3 $ _serialize []
-  fromDataParser = Tuple3 <$> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding4 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d
-                         ) => ABIEncoding (Tuple4 a b c d) where
-  toDataBuilder = uncurry4 $ _serialize []
-  fromDataParser = Tuple4 <$> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding5 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d,
-                          ABIEncoding e,
-                          EncodingType e
-                         ) => ABIEncoding (Tuple5 a b c d e) where
-  toDataBuilder = uncurry5 $ _serialize []
-  fromDataParser = Tuple5 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding6 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d,
-                          ABIEncoding e,
-                          EncodingType e,
-                          ABIEncoding f,
-                          EncodingType f
-                         ) => ABIEncoding (Tuple6 a b c d e f) where
-  toDataBuilder = uncurry6 $ _serialize []
-  fromDataParser = Tuple6 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding7 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d,
-                          ABIEncoding e,
-                          EncodingType e,
-                          ABIEncoding f,
-                          EncodingType f,
-                          ABIEncoding g,
-                          EncodingType g
-                         ) => ABIEncoding (Tuple7 a b c d e f g) where
-  toDataBuilder = uncurry7 $ _serialize []
-  fromDataParser = Tuple7 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding8 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d,
-                          ABIEncoding e,
-                          EncodingType e,
-                          ABIEncoding f,
-                          EncodingType f,
-                          ABIEncoding g,
-                          EncodingType g,
-                          ABIEncoding h,
-                          EncodingType h
-                         ) => ABIEncoding (Tuple8 a b c d e f g h) where
-  toDataBuilder = uncurry8 $ _serialize []
-  fromDataParser = Tuple8 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding9 :: (ABIEncoding a,
-                          EncodingType a,
-                          ABIEncoding b,
-                          EncodingType b,
-                          ABIEncoding c,
-                          EncodingType c,
-                          ABIEncoding d,
-                          EncodingType d,
-                          ABIEncoding e,
-                          EncodingType e,
-                          ABIEncoding f,
-                          EncodingType f,
-                          ABIEncoding g,
-                          EncodingType g,
-                          ABIEncoding h,
-                          EncodingType h,
-                          ABIEncoding i,
-                          EncodingType i
-                         ) => ABIEncoding (Tuple9 a b c d e f g h i) where
-  toDataBuilder = uncurry9 $ _serialize []
-  fromDataParser = Tuple9 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                          <*> factorParser
-
-instance abiEncoding10 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j
-                          ) => ABIEncoding (Tuple10 a b c d e f g h i j) where
-  toDataBuilder = uncurry10 $ _serialize []
-  fromDataParser = Tuple10 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser
-
-instance abiEncoding11 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k
-                          ) => ABIEncoding (Tuple11 a b c d e f g h i j k) where
-  toDataBuilder = uncurry11 $ _serialize []
-  fromDataParser = Tuple11 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser
-
-
-instance abiEncoding12 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k,
-                           ABIEncoding l,
-                           EncodingType l
-                          ) => ABIEncoding (Tuple12 a b c d e f g h i j k l) where
-  toDataBuilder = uncurry12 $ _serialize []
-  fromDataParser = Tuple12 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-
-instance abiEncoding13 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k,
-                           ABIEncoding l,
-                           EncodingType l,
-                           ABIEncoding m,
-                           EncodingType m
-                          ) => ABIEncoding (Tuple13 a b c d e f g h i j k l m) where
-  toDataBuilder = uncurry13 $ _serialize []
-  fromDataParser = Tuple13 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-
-instance abiEncoding14 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k,
-                           ABIEncoding l,
-                           EncodingType l,
-                           ABIEncoding m,
-                           EncodingType m,
-                           ABIEncoding n,
-                           EncodingType n
-                          ) => ABIEncoding (Tuple14 a b c d e f g h i j k l m n) where
-  toDataBuilder = uncurry14 $ _serialize []
-  fromDataParser = Tuple14 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-
-instance abiEncoding15 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k,
-                           ABIEncoding l,
-                           EncodingType l,
-                           ABIEncoding m,
-                           EncodingType m,
-                           ABIEncoding n,
-                           EncodingType n,
-                           ABIEncoding o,
-                           EncodingType o
-                          ) => ABIEncoding (Tuple15 a b c d e f g h i j k l m n o) where
-  toDataBuilder = uncurry15 $ _serialize []
-  fromDataParser = Tuple15 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
-instance abiEncoding16 :: (ABIEncoding a,
-                           EncodingType a,
-                           ABIEncoding b,
-                           EncodingType b,
-                           ABIEncoding c,
-                           EncodingType c,
-                           ABIEncoding d,
-                           EncodingType d,
-                           ABIEncoding e,
-                           EncodingType e,
-                           ABIEncoding f,
-                           EncodingType f,
-                           ABIEncoding g,
-                           EncodingType g,
-                           ABIEncoding h,
-                           EncodingType h,
-                           ABIEncoding i,
-                           EncodingType i,
-                           ABIEncoding j,
-                           EncodingType j,
-                           ABIEncoding k,
-                           EncodingType k,
-                           ABIEncoding l,
-                           EncodingType l,
-                           ABIEncoding m,
-                           EncodingType m,
-                           ABIEncoding n,
-                           EncodingType n,
-                           ABIEncoding o,
-                           EncodingType o,
-                           ABIEncoding p,
-                           EncodingType p
-                          ) => ABIEncoding (Tuple16 a b c d e f g h i j k l m n o p) where
-  toDataBuilder = uncurry16 $ _serialize []
-  fromDataParser = Tuple16 <$> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-                           <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser <*> factorParser
-
---------------------------------------------------------------------------------
-newtype Singleton a = Singleton a
-
-derive instance genericTuple1 :: Generic (Singleton a) _
-
-unSingleton :: forall a . Singleton a -> a
-unSingleton (Singleton a) = a
-
-instance showSingleton :: Show a => Show (Singleton a) where
+instance showTuple1 :: Show a => Show (Tuple1 a) where
   show = genericShow
 
-instance eqSingleton :: Eq a => Eq (Singleton a) where
+instance eqTuple1 :: Eq a => Eq (Tuple1 a) where
   eq = genericEq
 
-uncurry1 :: forall a b . (a -> b) -> Singleton a -> b
-uncurry1 fun (Singleton a) = fun a
+uncurry1 :: forall a b . (a -> b) -> Tuple1 a -> b
+uncurry1 fun (Tuple1 a) = fun a
 
-curry1 :: forall a b . (Singleton a -> b) -> a -> b
-curry1 fun a = fun (Singleton a)
-
+curry1 :: forall a b . (Tuple1 a -> b) -> a -> b
+curry1 fun a = fun (Tuple1 a)
 
 -- * Tuple2
 
@@ -469,7 +43,6 @@ uncurry2 fun (Tuple2 a b) = fun a b
 
 curry2 :: forall a b c . (Tuple2 a b -> c) -> a -> b -> c
 curry2 fun a b = fun (Tuple2 a b)
-
 
 -- * Tuple3
 
@@ -615,7 +188,6 @@ uncurry10 fun (Tuple10 a b c d e f g h i j) = fun a b c d e f g h i j
 curry10 :: forall a b c d e f g h i j k. (Tuple10 a b c d e f g h i j -> k) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k
 curry10 fun a b c d e f g h i j = fun (Tuple10 a b c d e f g h i j)
 
-
 -- * Tuple11
 
 data Tuple11 a b c d e f g h i j k = Tuple11 a b c d e f g h i j k
@@ -632,7 +204,7 @@ uncurry11 :: forall a b c d e f g h i j k l. (a -> b -> c -> d -> e -> f -> g ->
 uncurry11 fun (Tuple11 a b c d e f g h i j k) = fun a b c d e f g h i j k
 
 curry11 :: forall a b c d e f g h i j k l. (Tuple11 a b c d e f g h i j k -> l) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l
-curry11 fun a b c d e f g h i j k = fun (Tuple11 a b c d e f g h i j k) 
+curry11 fun a b c d e f g h i j k = fun (Tuple11 a b c d e f g h i j k)
 
 -- * Tuple12
 
@@ -652,7 +224,6 @@ uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 curry12 :: forall a b c d e f g h i j k l m. (Tuple12 a b c d e f g h i j k l -> m) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m
 curry12 fun a b c d e f g h i j k l = fun (Tuple12 a b c d e f g h i j k l)
 
-
 -- * Tuple13
 
 data Tuple13 a b c d e f g h i j k l m = Tuple13 a b c d e f g h i j k l m
@@ -670,7 +241,6 @@ uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l 
 
 curry13 :: forall a b c d e f g h i j k l m n. (Tuple13 a b c d e f g h i j k l m -> n) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n
 curry13 fun a b c d e f g h i j k l m = fun (Tuple13 a b c d e f g h i j k l m)
-
 
 -- * Tuple14
 
@@ -708,7 +278,6 @@ uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j 
 curry15 :: forall a b c d e f g h i j k l m n o p. (Tuple15 a b c d e f g h i j k l m n o -> p) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p
 curry15 fun a b c d e f g h i j k l m n o = fun (Tuple15 a b c d e f g h i j k l m n o)
 
-
 -- * Tuple16
 
 data Tuple16 a b c d e f g h i j k l m n o p = Tuple16 a b c d e f g h i j k l m n o p
@@ -726,31 +295,3 @@ uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i 
 
 curry16 :: forall a b c d e f g h i j k l m n o p q. (Tuple16 a b c d e f g h i j k l m n o p -> q) -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q
 curry16 fun a b c d e f g h i j k l m n o p = fun (Tuple16 a b c d e f g h i j k l m n o p)
-
-
-
---------------------------------------------------------------------------------
-
-factorParser :: forall a . ABIEncoding a => EncodingType a => Parser String a
-factorParser
-  | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
-  | otherwise = dParser
-
-dParser :: forall a . ABIEncoding a => Parser String a
-dParser = do
-  dataOffset <- unsafeToInt <$> fromDataParser
-  lookAhead $ do
-    (ParseState _ (Position p) _) <- get
-    _ <- take (dataOffset * 2 - (p.column - 1))
-    fromDataParser
-
-
-{-
-
-Encodings :: [(order :: Int , Maybe (offset :: Int) , encoding :: HexString)]
-
-\a -> if isStatic a
-   then let enc = encode a
-            map (\(_, offset, _) -> (_, (+) (hexLength enc) <*> offset, _)
-
--}
