@@ -8,7 +8,7 @@
 
 # Purescript bindings for Web3
 
-`purescript-web3` is a faithful porting of [hs-web3](https://github.com/airalab/hs-web3) to purescript. At the moment it implements most of the `eth` endpoints of the web3 api, which means it is suitable for sendind transactions, querying blockchain state and metatdata, and monitoring events.
+`purescript-web3` is a faithful porting of [hs-web3](https://github.com/airalab/hs-web3) to purescript. At the moment it implements most of the `eth` endpoints of the web3 api, which means it is suitable for sending transactions, querying blockchain state and metadata, and monitoring events.
 
 Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator) it is also possible to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
 
