@@ -3,7 +3,7 @@ module Web3Spec.Encoding.Generic (encodingGenericSpec) where
 
 import Prelude
 
-import Data.Array (unsafeIndex)
+import Data.Array (unsafeIndex, uncons)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -12,10 +12,9 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
 import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
-import Debug.Trace (traceA)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
-import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Solidity.Generic (class ArrayParser, genericToRecordFields, arrayParser, genericParseArray)
+import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, genericArrayParser)
+import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..), HexString, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -45,8 +44,8 @@ toRecordFieldsSpec =
       it "can parse a change an address array" do
         let (Transfer t) = transfer
             expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)
-        fromData (unsafePartial $ unsafeIndex addressArray 0) `shouldEqual` Just t.to
-        genericParseArray addressArray `shouldEqual` Just expected
+        fromData (unsafePartial $ unsafeIndex addressArray 1) `shouldEqual` Just t.to
+        genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
 
       it "can combine events" do
         decodeEvent change `shouldEqual` Just transfer
@@ -92,7 +91,8 @@ instance newtypeTransfer :: Newtype Transfer (Record (to :: Address, from :: Add
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance decodeTransfer :: DecodeEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))) Transfer
+instance decodeTransfer :: DecodeEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))) Transfer where
+  isAnonymous _ = false
 
 instance showTranfer :: Show Transfer where
   show = genericShow
@@ -114,7 +114,8 @@ addressArray :: Array HexString
 addressArray =
   let to = unsafePartial fromJust $ mkHexString "0x000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
       from = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
-  in [to, from]
+      topic = unsafePartial fromJust $ mkHexString "0x"
+  in [topic, to, from]
 
 amount :: HexString
 amount = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"

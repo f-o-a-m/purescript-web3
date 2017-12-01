@@ -1,29 +1,69 @@
-module Network.Ethereum.Web3.Solidity.Event where
+module Network.Ethereum.Web3.Solidity.Event
+  ( class DecodeEvent
+  , isAnonymous
+  , decodeEvent
+  , class ArrayParser
+  , arrayParser
+  , genericArrayParser
+  ) where
 
 import Prelude
-import Type.Equality
 
-import Data.Generic.Rep (class Generic, Constructor)
-import Data.Maybe (Maybe)
+import Data.Array (uncons)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), to)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, fromData)
-import Network.Ethereum.Web3.Solidity.Generic (class ArgsToRowListProxy, class ArrayParser, class GenericABIDecode, class ToRecordFields, arrayParser, genericFromData, genericParseArray, genericToRecordFields)
-import Network.Ethereum.Web3.Types (Change(..))
+import Network.Ethereum.Web3.Solidity.Generic (class ArgsToRowListProxy, class GenericABIDecode, class ToRecordFields, genericFromData, genericToRecordFields)
+import Network.Ethereum.Web3.Types (Change(..), HexString)
+import Type.Proxy (Proxy(..))
 import Type.Row (class ListToRow)
 
+--------------------------------------------------------------------------------
+-- Array Parsers
+--------------------------------------------------------------------------------
+
+class ArrayParser a where
+  arrayParser :: Array HexString -> Maybe a
+
+instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
+  arrayParser hxs = case uncons hxs of
+    Nothing -> Nothing
+    Just {head} -> Argument <$> fromData head
+
+instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (Product (Argument a) as) where
+  arrayParser hxs = case uncons hxs of
+    Nothing -> Nothing
+    Just {head, tail} -> Product <$> (Argument <$> fromData head) <*> arrayParser tail
+
+instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
+  arrayParser = map Constructor <<< arrayParser
+
+genericArrayParser :: forall a rep .
+                      Generic a rep
+                   => ArrayParser rep
+                   => Array HexString
+                   -> Maybe a
+genericArrayParser = map to <<< arrayParser
+
+--------------------------------------------------------------------------------
+-- | Event Parsers
+--------------------------------------------------------------------------------
 
 data Event i ni = Event i ni
 
-parseChange' :: forall a b arep brep.
-                Generic a arep
-             => ArrayParser arep
-             => Generic b brep
-             => GenericABIDecode brep
-             => Change
-             -> Maybe (Event a b)
-parseChange' (Change change) = do
-  a <- genericParseArray change.topics
+parseChange :: forall a b arep brep.
+               Generic a arep
+            => ArrayParser arep
+            => Generic b brep
+            => GenericABIDecode brep
+            => Change
+            -> Boolean -- is anonymous
+            -> Maybe (Event a b)
+parseChange (Change change) anonymous = do
+  topics <- if anonymous then pure change.topics else  _.tail <$> uncons change.topics
+  a <- genericArrayParser topics
   b <- genericFromData change.data
   pure $ Event a b
 
@@ -43,8 +83,8 @@ combineChange :: forall aargs afields al a aname bargs bfields bl b bname c cfie
               -> c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
-
-class DecodeEvent a b c | c -> a b
+class DecodeEvent a b c | c -> a b where
+  isAnonymous :: Proxy c -> Boolean
 
 decodeEvent :: forall aargs afields al a aname bargs bfields bl b bname c cfields.
                ArrayParser aargs
@@ -63,5 +103,6 @@ decodeEvent :: forall aargs afields al a aname bargs bfields bl b bname c cfield
             => Change
             -> Maybe c
 decodeEvent change = do
-  (e :: Event a b) <- parseChange' change
-  pure $ (combineChange :: Event a b -> c) e
+  let anonymous = isAnonymous (Proxy :: Proxy c)
+  (e :: Event a b) <- parseChange change anonymous
+  pure $ combineChange e

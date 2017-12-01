@@ -14,9 +14,6 @@ module Network.Ethereum.Web3.Solidity.Generic
  , genericToRecordFields
  , class ArgsToRowListProxy
  , argsToRowListProxy
- , class ArrayParser
- , arrayParser
- , genericParseArray
  ) where
 
 import Prelude
@@ -30,7 +27,7 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Record (insert)
 import Data.Symbol (class IsSymbol, SProxy(..))
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromData, fromDataParser, take, toDataBuilder)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
@@ -216,30 +213,3 @@ genericToRecordFields a =
   let Constructor row = from a
   in toRecordFields (RLProxy :: RLProxy l) row
 
---------------------------------------------------------------------------------
--- Array Parsers
---------------------------------------------------------------------------------
-
-class ArrayParser a where
-  arrayParser :: Array HexString -> Maybe a
-
-instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
-  arrayParser hxs = case uncons hxs of
-    Nothing -> Nothing
-    Just {head} -> Argument <$> fromData head
-
-instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (Product (Argument a) as) where
-  arrayParser hxs = case uncons hxs of
-    Nothing -> Nothing
-    Just {head, tail} -> Product <$> (Argument <$> fromData head) <*> arrayParser tail
-
-instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
-  arrayParser = map Constructor <<< arrayParser
-
-
-genericParseArray :: forall a rep .
-                     Generic a rep
-                  => ArrayParser rep
-                  => Array HexString
-                  -> Maybe a
-genericParseArray = map to <<< arrayParser
