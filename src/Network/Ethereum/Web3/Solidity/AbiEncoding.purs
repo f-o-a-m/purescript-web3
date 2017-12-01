@@ -7,6 +7,7 @@ import Data.Array (length) as A
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Data.Foldable (foldMap)
+import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (Maybe, maybe, fromJust)
 import Data.String (fromCharArray)
 import Data.Unfoldable (replicateA)
@@ -121,6 +122,12 @@ instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
     where
       msg n = let size = sizeVal (Proxy :: Proxy n)
               in "Couldn't parse as int" <> show size <> " : " <> show n
+
+instance abiEncodeTagged :: ABIEncode a => ABIEncode (Tagged s a) where
+  toDataBuilder = toDataBuilder <<< untagged
+
+instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged s a) where
+  fromDataParser = tagged <$> fromDataParser
 
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers

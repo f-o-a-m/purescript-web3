@@ -3,15 +3,16 @@ module Network.Ethereum.Web3.Solidity.EncodingType
   ) where
 
 import Prelude
-import Type.Proxy (Proxy(..))
-import Data.ByteString (ByteString)
 
-import Network.Ethereum.Web3.Types (Address, BigNumber)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
-import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Data.ByteString (ByteString)
+import Data.Functor.Tagged (Tagged, untagged)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Types (Address, BigNumber)
+import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
 
@@ -68,3 +69,7 @@ instance encodingTypeVector :: (KnownNat n, EncodingType a) => EncodingType (Vec
 instance encodingTypeBytesD :: EncodingType ByteString where
   typeName  = const "bytes[]"
   isDynamic = const true
+
+instance encodingTypeTagged :: EncodingType a => EncodingType (Tagged s a) where
+  typeName _ = typeName (Proxy :: Proxy a)
+  isDynamic _ = isDynamic (Proxy :: Proxy a)
