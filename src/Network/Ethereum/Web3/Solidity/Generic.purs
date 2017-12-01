@@ -22,7 +22,7 @@ import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
 import Data.Functor.Tagged (Tagged, untagged)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), from, to)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments, Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Record (insert)
@@ -197,6 +197,9 @@ class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList
 
 instance toRecordBase :: (IsSymbol s, RowCons s a () r, RowLacks s ()) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
   toRecordFields _ (Argument a) = insert (SProxy :: SProxy s) (untagged a) {}
+
+instance toRecordBaseNull :: ToRecordFields NoArguments () Nil where
+  toRecordFields _ _ = {}
 
 instance toRecordInductive :: (ToRecordFields as r1 l, RowCons s a r1 r2, RowLacks s r1, IsSymbol s, ListToRow l r1) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a l) where
   toRecordFields _ (Product (Argument a) as) = insert (SProxy :: SProxy s) (untagged a) rest

@@ -11,7 +11,7 @@ module Network.Ethereum.Web3.Solidity.Event
 import Prelude
 
 import Data.Array (uncons)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Product(..), to)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
@@ -27,6 +27,9 @@ import Type.Row (class ListToRow)
 
 class ArrayParser a where
   arrayParser :: Array HexString -> Maybe a
+
+instance arrayParserNoArgs :: ArrayParser NoArguments where
+  arrayParser hxs = Just NoArguments
 
 instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of

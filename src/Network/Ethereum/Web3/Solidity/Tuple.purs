@@ -5,6 +5,16 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 
+-- * Tuple0
+
+data Tuple0 = Tuple0
+
+instance showTupleO :: Show Tuple0 where
+  show _ = "Tuple0"
+
+instance eqTuple0 :: Eq Tuple0 where
+  eq _ _ = true
+
 -- * Tuple 1
 
 newtype Tuple1 a = Tuple1 a
