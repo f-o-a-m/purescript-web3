@@ -18,7 +18,7 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, fromData, toDataBuilder)
+import Network.Ethereum.Web3.Solidity (class ABIDecode, class GenericABIDecode, class GenericABIEncode, fromData, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, defaultTransactionOptions, hexadecimal, parseBigNumber, convert)
 import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ event addr handler = do
 
 -- | Class paramaterized by values which are ABIEncodable, allowing the templating of
 -- | of a transaction with this value as the payload.
-class ABIEncode a <= Method a where
+class TxMethod a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall p e u.
               IsAsyncProvider p
@@ -93,10 +93,10 @@ class ABIEncode a <= Method a where
            -> Web3 p e HexString
            -- ^ 'Web3' wrapped tx hash
 
+class CallMethod a b where
     -- | Constant call given contract 'Address' in mode and given input data
-    call :: forall p e b .
+    call :: forall p e.
             IsAsyncProvider p
-         => ABIDecode b
          => Address
          -- ^ Contract address
          -> Maybe Address
@@ -108,13 +108,16 @@ class ABIEncode a <= Method a where
          -> Web3 p e b
          -- ^ 'Web3' wrapped result
 
-instance methodAbiEncode :: ABIEncode a => Method a where
+instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod a where
   sendTx = _sendTransaction
+
+instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod a b where
   call = _call
 
-_sendTransaction :: forall p a e u .
+_sendTransaction :: forall p a rep e u .
                     IsAsyncProvider p
-                 => ABIEncode a
+                 => Generic a rep
+                 => GenericABIEncode rep
                  => EtherUnit u
                  => Maybe Address
                  -> Address
@@ -122,7 +125,7 @@ _sendTransaction :: forall p a e u .
                  -> a
                  -> Web3 p e HexString
 _sendTransaction mto f val dat =
-    eth_sendTransaction (txdata $ toDataBuilder dat)
+    eth_sendTransaction (txdata <<< genericABIEncode $ dat)
   where
     defaultGas = parseBigNumber hexadecimal "0x2dc2dc"
     txdata d =
@@ -132,18 +135,20 @@ _sendTransaction mto f val dat =
                                 # _value .~ Just (convert val)
                                 # _gas .~ defaultGas
 
-_call :: forall p a b e .
+_call :: forall p a arep b brep e .
          IsAsyncProvider p
-      => ABIEncode a
-      => ABIDecode b
+      => Generic a arep
+      => GenericABIEncode arep
+      => Generic b brep
+      => GenericABIDecode brep
       => Address
       -> Maybe Address
       -> CallMode
       -> a
       -> Web3 p e b
 _call t mf cm dat = do
-    res <- eth_call (txdata <<< toDataBuilder $ dat) cm
-    case fromData res of
+    res <- eth_call (txdata <<< genericABIEncode $ dat) cm
+    case genericFromData res of
         Nothing -> throwError <<< error $ "Unable to parse result"
         Just x -> pure x
   where
