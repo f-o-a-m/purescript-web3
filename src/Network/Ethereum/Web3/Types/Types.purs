@@ -6,6 +6,7 @@ module Network.Ethereum.Web3.Types.Types
        , mkHexString
        , unHex
        , hexLength
+       , takeHex
        , Address
        , unAddress
        , mkAddress
@@ -60,7 +61,7 @@ import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
-import Data.String (length) as S
+import Data.String (length, take) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
@@ -136,6 +137,9 @@ mkHexString str = HexString <$>
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
 hexLength (HexString hx) = S.length hx
+
+takeHex :: Int -> HexString -> HexString
+takeHex n (HexString hx) = HexString $ S.take n hx
 
 --------------------------------------------------------------------------------
 -- * Addresses

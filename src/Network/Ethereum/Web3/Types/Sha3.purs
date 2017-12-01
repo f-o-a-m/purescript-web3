@@ -1,9 +1,11 @@
 module Network.Ethereum.Web3.Types.Sha3
   ( class SHA3
   , sha3
+  , toSelector
   ) where
 
-import Network.Ethereum.Web3.Types.Types (HexString)
+import Prelude
+import Network.Ethereum.Web3.Types.Types (HexString, takeHex)
 
 --------------------------------------------------------------------------------
 
@@ -20,3 +22,7 @@ instance hexStringSha3 :: SHA3 HexString where
 
 foreign import sha3StringImpl :: String -> HexString
 foreign import sha3HexImpl :: HexString -> HexString
+
+-- | convert a string representing a type signature into a selector
+toSelector :: String -> HexString
+toSelector s = takeHex 8 $ sha3 s

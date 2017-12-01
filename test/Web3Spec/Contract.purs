@@ -4,12 +4,13 @@ import Prelude
 
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
-import Data.Generic.Rep (class Generic)
+import Data.Functor.Tagged (Tagged, tagged)
 import Data.Maybe (Maybe(..), fromJust)
+import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Contract (sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, toDataBuilder)
-import Network.Ethereum.Web3.Types (Address, ETH, Ether, HexString, Value, Web3(..), mkAddress, mkHexString, unHex)
+import Network.Ethereum.Web3.Solidity (type (:&), D2, D5, D6, IntN, Tuple1(..), intNFromBigNumber)
+import Network.Ethereum.Web3.Types (Address, ETH, Ether, HexString, Value, Web3(..), embed, mkAddress, mkHexString, unHex)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -21,12 +22,7 @@ ssAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "c29313014a78b440
 adminAddress :: Address
 adminAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "44cba02c089789b3299069c93832b7a8b8723b3e"
 
-data Set = Set Int
-
-derive instance genericSet :: Generic Set _
-
-instance abiEncodingSet :: ABIEncode Set where
-  toDataBuilder (Set n) = (unsafePartial fromJust <<< mkHexString $ "60fe47b1") <> toDataBuilder n
+type FnSet = Tagged (SProxy "(int256)") (Tuple1 (IntN (D2 :& D5 :& D6)))
 
 data HttpProvider
 
@@ -36,13 +32,14 @@ http = Proxy
 instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = Web3 <<< liftEff <<< httpProvider $ "http://localhost:8545"
 
-setA :: forall e . Int -> Web3 HttpProvider e HexString
-setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) (Set n)
+setA :: forall e . IntN (D2 :& D5 :& D6) -> Web3 HttpProvider e HexString
+setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) ((tagged <<< Tuple1 $ n) :: FnSet)
 
 simpleStorageSpec :: forall r. Spec (eth :: ETH, console :: CONSOLE | r) Unit
 simpleStorageSpec =
   describe "interacting with a SimpleStorage Contract" do
     it "can set the value of simple storage asynchronously" do
-      txHash <- runWeb3 http $ setA 200
+      let n = unsafePartial fromJust <<< intNFromBigNumber <<< embed $ 200
+      txHash <- runWeb3 http $ setA n
       _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
       true `shouldEqual` true
