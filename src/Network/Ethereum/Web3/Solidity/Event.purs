@@ -1,10 +1,11 @@
 module Network.Ethereum.Web3.Solidity.Event
   ( class DecodeEvent
-  , isAnonymous
   , decodeEvent
   , class ArrayParser
   , arrayParser
   , genericArrayParser
+  , class IndexedEvent
+  , isAnonymous
   ) where
 
 import Prelude
@@ -83,10 +84,10 @@ combineChange :: forall aargs afields al a aname bargs bfields bl b bname c cfie
               -> c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
-class DecodeEvent a b c | c -> a b where
+class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
-decodeEvent :: forall aargs afields al a aname bargs bfields bl b bname c cfields.
+decodeEventDef :: forall aargs afields al a aname bargs bfields bl b bname c cfields.
                ArrayParser aargs
             => ToRecordFields aargs afields al
             => Generic a (Constructor aname aargs)
@@ -99,10 +100,29 @@ decodeEvent :: forall aargs afields al a aname bargs bfields bl b bname c cfield
             => ListToRow bl bfields
             => Union bfields afields cfields
             => Newtype c (Record cfields)
-            => DecodeEvent a b c
+            => IndexedEvent a b c
             => Change
             -> Maybe c
-decodeEvent change = do
+decodeEventDef change = do
   let anonymous = isAnonymous (Proxy :: Proxy c)
   (e :: Event a b) <- parseChange change anonymous
   pure $ combineChange e
+
+class DecodeEvent a b c | c -> a b where
+  decodeEvent :: Change -> Maybe c
+
+instance defaultInstance :: ( ArrayParser aargs
+                            , ToRecordFields aargs afields al
+                            , Generic a (Constructor aname aargs)
+                            , ArgsToRowListProxy aargs al
+                            , ListToRow al afields
+                            , ToRecordFields bargs bfields bl
+                            , Generic b (Constructor bname bargs)
+                            , GenericABIDecode bargs
+                            , ArgsToRowListProxy bargs bl
+                            , ListToRow bl bfields
+                            , Union bfields afields cfields
+                            , Newtype c (Record cfields)
+                            , IndexedEvent a b c
+                            ) => DecodeEvent a b c where
+  decodeEvent = decodeEventDef

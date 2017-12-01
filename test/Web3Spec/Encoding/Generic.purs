@@ -13,7 +13,7 @@ import Data.Newtype (class Newtype)
 import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
-import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, genericArrayParser)
+import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..), HexString, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
@@ -91,7 +91,7 @@ instance newtypeTransfer :: Newtype Transfer (Record (to :: Address, from :: Add
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance decodeTransfer :: DecodeEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))) Transfer where
   isAnonymous _ = false
 
 instance showTranfer :: Show Transfer where

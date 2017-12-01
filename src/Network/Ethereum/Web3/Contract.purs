@@ -20,9 +20,10 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
-import Network.Ethereum.Web3.Solidity (class ABIDecode, class GenericABIDecode, class GenericABIEncode, fromData, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallMode, Change(..), ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData, class DecodeEvent, decodeEvent)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallMode, Change, ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy(..))
+
 --------------------------------------------------------------------------------
 -- * Events
 --------------------------------------------------------------------------------
@@ -41,15 +42,16 @@ instance showEventAction :: Show EventAction where
 instance eqEventAction :: Eq EventAction where
   eq = genericEq
 
-class ABIDecode a <= EventFilter a where
+class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
 
 -- | Start listening to events eminating from the given address and caught by the filter,
 -- | using the handler to process the data and decide whether to continue
-event :: forall p e a.
+event :: forall p e a i ni.
           IsAsyncProvider p
+       => DecodeEvent i ni a
        => EventFilter a
        => Address
        -> (a -> ReaderT Change (Web3 p e) EventAction)
@@ -69,9 +71,9 @@ event addr handler = do
         runReaderT (handler changeEvent) changeWithMeta
       when (TerminateEvent `notElem` acts) $ loop fltr
     pairChange :: Change -> Maybe (Tuple Change a)
-    pairChange rc@(Change rawChange) = do
-      change <- fromData rawChange.data
-      pure (Tuple rc change)
+    pairChange rawChange = do
+      change <- decodeEvent rawChange
+      pure (Tuple rawChange change)
 
 --------------------------------------------------------------------------------
 -- * Methods

@@ -7,6 +7,7 @@ module Network.Ethereum.Web3.Solidity
   , module Network.Ethereum.Web3.Solidity.Int
   , module Network.Ethereum.Web3.Solidity.UInt
   , module Network.Ethereum.Web3.Solidity.AbiEncoding
+  , module Network.Ethereum.Web3.Solidity.Event
   , module Network.Ethereum.Web3.Types
   , module Data.ByteString
   ) where
@@ -32,9 +33,10 @@ import Network.Ethereum.Web3.Solidity.Tuple ( Tuple1(..), unTuple1, uncurry1, cu
                                             , Tuple16(..), uncurry16, curry16
                                             )
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, class IndexedEvent, isAnonymous)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromDataParser, fromData)
-import Network.Ethereum.Web3.Solidity.Generic (class GenericABIEncode, class GenericABIDecode, genericABIEncode, genericABIDecode, genericFromData, class ToRecordFields, toRecordFields)
+import Network.Ethereum.Web3.Solidity.Generic (class GenericABIEncode, class GenericABIDecode, class ArgsToRowListProxy, genericABIEncode, genericABIDecode, genericFromData, class ToRecordFields, toRecordFields)
 import Network.Ethereum.Web3.Types (BigNumber, Address)
 import Data.ByteString (ByteString)
 
