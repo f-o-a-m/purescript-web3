@@ -3,6 +3,7 @@ module Web3Spec.Encoding.Generic (encodingGenericSpec) where
 
 import Prelude
 
+import Data.Array (unsafeIndex)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -10,12 +11,11 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
 import Data.Record.Builder (build, merge)
-import Data.Symbol (SProxy(..))
+import Data.Symbol (SProxy)
 import Debug.Trace (traceA)
-import Network.Ethereum.Web3.Solidity (class ABIDecode, fromData)
-import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1(..), Tuple2(..), Tuple3(..), UIntN)
+import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Solidity.Generic (class ArrayParser, genericToRecordFields, arrayParser)
+import Network.Ethereum.Web3.Solidity.Generic (class ArrayParser, genericToRecordFields, arrayParser, genericParseArray)
 import Network.Ethereum.Web3.Types (Change(..), HexString, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -42,9 +42,15 @@ toRecordFieldsSpec =
             c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
         c `shouldEqual` CombinedTuple {a: 1, b: 2, c: "bye", d: "hello", e: 'c'}
 
+      it "can parse a change an address array" do
+        let (Transfer t) = transfer
+            expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)
+        fromData (unsafePartial $ unsafeIndex addressArray 0) `shouldEqual` Just t.to
+        genericParseArray addressArray `shouldEqual` Just expected
 
-      it "can parse a change event" do
+      it "can combine events" do
         decodeEvent change `shouldEqual` Just transfer
+
 
 newtype WeirdTuple = WeirdTuple {a :: Int, d :: String, e :: Char}
 
@@ -78,10 +84,6 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 
-type TransferIndexed = Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)
-
-type TransferNonIndexed = Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))
-
 newtype Transfer = Transfer {to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& D6)}
 
 instance newtypeTransfer :: Newtype Transfer (Record (to :: Address, from :: Address, amount ::UIntN (D2 :& D5 :& D6) )) where
@@ -100,9 +102,9 @@ instance eqTransfer :: Eq Transfer where
 
 transfer :: Transfer
 transfer =
-  let t = unsafePartial fromJust $ mkAddress =<< mkHexString "407d73d8a49eeb85d32cf465507dd71d507100c1"
-      f = unsafePartial fromJust $ mkAddress =<< mkHexString "0000000000000000000000000000000000000000"
-      a = unsafePartial fromJust $ fromData =<< mkHexString "0000000000000000000000000000000000000000000000000000000000000001"
+  let t = unsafePartial fromJust $ mkAddress =<< mkHexString "0x407d73d8a49eeb85d32cf465507dd71d507100c1"
+      f = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000001"
+      a = unsafePartial fromJust $ fromData =<< mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
   in Transfer { to: t
               , from: f
               , amount: a
@@ -110,12 +112,12 @@ transfer =
 
 addressArray :: Array HexString
 addressArray =
-  let to = unsafePartial fromJust $ mkHexString "407d73d8a49eeb85d32cf465507dd71d507100c1"
-      from = unsafePartial fromJust $ mkHexString "0000000000000000000000000000000000000000"
+  let to = unsafePartial fromJust $ mkHexString "0x000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
+      from = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
   in [to, from]
 
 amount :: HexString
-amount = unsafePartial fromJust $ mkHexString "0000000000000000000000000000000000000000000000000000000000000001"
+amount = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
 
 change :: Change
 change = Change { data: amount
@@ -133,4 +135,4 @@ change = Change { data: amount
     tx = unsafePartial fromJust $ mkHexString "0"
     txi = unsafePartial fromJust $ mkHexString "0"
     bn = unsafePartial fromJust $ mkHexString "0"
-    a = unsafePartial fromJust $ mkAddress =<< mkHexString "0000000000000000000000000000000000000000"
+    a = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000000"
