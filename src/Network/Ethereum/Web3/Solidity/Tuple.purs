@@ -9,11 +9,14 @@ import Data.Generic.Rep.Show (genericShow)
 
 data Tuple0 = Tuple0
 
+derive instance genericTuple0 :: Generic Tuple0 _
+
 instance showTupleO :: Show Tuple0 where
   show _ = "Tuple0"
 
 instance eqTuple0 :: Eq Tuple0 where
   eq _ _ = true
+
 
 -- * Tuple 1
 
