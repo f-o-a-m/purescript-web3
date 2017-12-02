@@ -91,6 +91,9 @@ combineEncodedValues encodings =
 class ABIData a where
     _serialize :: Array EncodedValue -> a -> Array EncodedValue
 
+instance abiDataBaseNull :: ABIData NoArguments where
+    _serialize encoded _ = encoded
+
 instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
   _serialize encoded (Argument b) =
     if isDynamic (Proxy :: Proxy b)
