@@ -189,6 +189,10 @@ instance rlproxyEqualityInductive :: RLProxyEquality l1 l2 => RLProxyEquality (C
 class ArgsToRowListProxy args (l :: RowList) | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l
 
+
+instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where
+  argsToRowListProxy _ = RLProxy
+
 instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy s) a)) (Cons s a Nil) where
   argsToRowListProxy _ = RLProxy
 

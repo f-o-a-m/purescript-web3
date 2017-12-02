@@ -111,7 +111,7 @@ decodeEventDef change = do
   (e :: Event a b) <- parseChange change anonymous
   pure $ combineChange e
 
-class DecodeEvent a b c | c -> a b where
+class IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
   decodeEvent :: Change -> Maybe c
 
 instance defaultInstance :: ( ArrayParser aargs
