@@ -22,7 +22,7 @@ import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
 import Data.Functor.Tagged (Tagged, untagged)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments, Product(..), from, to)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Record (insert)
@@ -140,6 +140,9 @@ genericABIEncode = genericToDataBuilder <<< from
 
 instance baseAbiDecode :: (EncodingType a, ABIDecode a) => GenericABIDecode (Argument a) where
   genericFromDataParser = Argument <$> factorParser
+
+instance baseNullAbiDecode :: GenericABIDecode NoArguments where
+  genericFromDataParser = pure NoArguments
 
 instance inductiveAbiDecode :: (EncodingType b, ABIDecode b, GenericABIDecode a) => GenericABIDecode (Product (Argument b) a) where
   genericFromDataParser = Product <$> (Argument <$> factorParser) <*> genericFromDataParser
