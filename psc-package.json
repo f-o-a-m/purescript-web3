@@ -1,6 +1,6 @@
 {
     "name": "master",
-    "set": "master",
+    "set": "web3-0.10.0",
     "source": "https://github.com/f-o-a-m/package-sets.git",
     "depends": [
         "prelude",
