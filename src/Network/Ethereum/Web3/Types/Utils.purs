@@ -8,6 +8,7 @@ module Network.Ethereum.Web3.Types.Utils
   , fromUtf8
   , toAscii
   , fromAscii
+  , toInt
   , toSignedHexString
   , toHexString
   , fromHexString
@@ -18,8 +19,8 @@ import Prelude
 
 import Data.Array (unsafeIndex, replicate)
 import Data.ByteString (ByteString, toString, fromString) as BS
-import Data.Int (even)
-import Data.Maybe (fromJust)
+import Data.Int (even, fromStringAs, hexadecimal)
+import Data.Maybe (Maybe, fromJust)
 import Data.String (Pattern(..), split, fromCharArray)
 import Data.String as S
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, toString, hexadecimal)
@@ -84,6 +85,10 @@ fromUtf8 s = unsafePartial fromJust $
 fromAscii :: String -> HexString
 fromAscii s = unsafePartial fromJust $
   BS.fromString s ASCII >>= (pure <<< flip BS.toString Hex) >>= mkHexString
+
+-- | Takes a hex string and produces corresponding Int value as long as it's safe.
+toInt :: HexString -> Maybe Int
+toInt hx = fromStringAs hexadecimal (unHex hx)
 
 toSignedHexString :: BigNumber -> Signed HexString
 toSignedHexString bn =

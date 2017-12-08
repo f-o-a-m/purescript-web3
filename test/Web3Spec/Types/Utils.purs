@@ -2,11 +2,11 @@ module Web3Spec.Types.Utils (utilsSpec) where
 
 import Prelude
 
-import Data.Maybe (Maybe(Just), fromJust)
+import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Types.BigNumber (decimal, embed, parseBigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (convert, Value, mkValue, toWei, Ether, Wei)
 import Network.Ethereum.Web3.Types.Types (mkHexString)
-import Network.Ethereum.Web3.Types.Utils (toUtf8, toAscii, fromUtf8, fromAscii)
+import Network.Ethereum.Web3.Types.Utils (toUtf8, toAscii, fromUtf8, fromAscii, toInt)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -40,6 +40,18 @@ utilsSpec = describe "utils-spec" do
         fromAscii "myString" `shouldEqual` unsafePartial (fromJust <<< mkHexString) "6d79537472696e67"
         fromAscii "myString\00" `shouldEqual` unsafePartial (fromJust <<< mkHexString) "6d79537472696e6700"
 
+    describe "int tests" do
+
+      it "can convert hex to maybe ints" do
+        toInt (unsafePartial (fromJust <<< mkHexString) "ff") `shouldEqual` (Just 255)
+        toInt (unsafePartial (fromJust <<< mkHexString) "0xff") `shouldEqual` (Just 255)
+        toInt (unsafePartial (fromJust <<< mkHexString) "0x1f1f1f1") `shouldEqual` (Just 32633329)
+        toInt (unsafePartial (fromJust <<< mkHexString) "1f1f1f1") `shouldEqual` (Just 32633329)
+        toInt (unsafePartial (fromJust <<< mkHexString) "0x000000000000") `shouldEqual` (Just 0)
+        toInt (unsafePartial (fromJust <<< mkHexString) "000000000000000000000000000") `shouldEqual` (Just 0)
+        toInt (unsafePartial (fromJust <<< mkHexString) "0xffffffffffffffff") `shouldEqual` Nothing
+        toInt (unsafePartial (fromJust <<< mkHexString) "ffffffffffffffffffffffffffffffff") `shouldEqual` Nothing
+
     describe "ether conversion tests" do
 
       it "can convert units of ether" do
@@ -66,11 +78,3 @@ utilsSpec = describe "utils-spec" do
 --
 --setCount :: Int -> Web3A Bool
 --setCount n = call simpleStorage Latest (SetCount n)
-
-
-
-
-
-
-
-
