@@ -8,7 +8,7 @@ import Web3Spec.Types.BigNumber (bigNumberSpec)
 import Web3Spec.Encoding.Simple (encodingSimpleSpec)
 import Web3Spec.Encoding.Generic (encodingGenericSpec)
 import Web3Spec.Encoding.Containers (encodingContainersSpec)
--- import Web3Spec.Contract (simpleStorageSpec)
+import Web3Spec.Contract (simpleStorageSpec)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
 import Network.Ethereum.Web3.Types (ETH)
@@ -21,5 +21,5 @@ main = run [consoleReporter] $ do
   encodingContainersSpec
   encodingSimpleSpec
   encodingGenericSpec
- --  simpleStorageSpec
+  simpleStorageSpec
 

@@ -27,7 +27,8 @@
     "purescript-transformers": "v3.4.0",
     "purescript-identity": "v3.1.0",
     "purescript-aff": "v4.0.0",
-    "purescript-tagged": "^1.0.0"
+    "purescript-tagged": "^1.0.0",
+    "purescript-machines": "^4.0.0"
   },
   "devDependencies": {
     "purescript-debug": "v3.0.0",

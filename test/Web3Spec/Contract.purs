@@ -5,12 +5,17 @@ import Prelude
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
 import Data.Functor.Tagged (Tagged, tagged)
+import Data.Lens ((.~))
+import Data.Machine.Mealy (runMealy, runMealyT, sink)
 import Data.Maybe (Maybe(..), fromJust)
+import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3.Contract (sendTx)
+import Network.Ethereum.Web3 (_fromBlock, _toBlock, _topics)
+import Network.Ethereum.Web3.Contract (class EventFilter, boundedFilterStream, sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
-import Network.Ethereum.Web3.Solidity (type (:&), D2, D5, D6, IntN, Tuple1(..), intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity (type (:&), D2, D5, D6, IntN, Tuple1(..), UIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Types (Address, ETH, Ether, HexString, Value, Web3(..), embed, mkAddress, mkHexString, unHex)
+import Network.Ethereum.Web3.Types.Types (HexString(..), _address, defaultFilter)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -29,6 +34,21 @@ data HttpProvider
 http :: Proxy HttpProvider
 http = Proxy
 
+--------------------------------------------------------------------------------
+-- | CountSet
+--------------------------------------------------------------------------------
+
+newtype CountSet = CountSet {_count :: (UIntN (D2 :& D5 :& D6))}
+
+derive instance newtypeCountSet :: Newtype CountSet _
+
+instance eventFilterCountSet :: EventFilter CountSet where
+        eventFilter _ addr = defaultFilter
+                # _address .~ Just addr
+                # _topics .~ Just [Just (HexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
+                # _fromBlock .~ Nothing
+                # _toBlock .~ Nothing
+
 instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = Web3 <<< liftEff <<< httpProvider $ "http://localhost:8545"
 
@@ -37,9 +57,8 @@ setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) ((tagged <<<
 
 simpleStorageSpec :: forall r. Spec (eth :: ETH, console :: CONSOLE | r) Unit
 simpleStorageSpec =
-  describe "interacting with a SimpleStorage Contract" do
-    it "can set the value of simple storage asynchronously" do
-      let n = unsafePartial fromJust <<< intNFromBigNumber <<< embed $ 200
-      txHash <- runWeb3 http $ setA n
-      _ <-  liftEff $ logShow $ "txHash: " <> unHex txHash
+  describe "Bounded event handlers" do
+    it "can print the lifespan of a filter producing machine" do
+      let filterSource = boundedFilterStream (Proxy :: Proxy CountSet) ssAddress (wrap $ embed 0) (wrap $ embed 10) 2
+      liftEff $ runMealy (filterSource >>= liftEff <<< logShow)
       true `shouldEqual` true

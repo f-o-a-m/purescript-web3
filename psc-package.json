@@ -19,6 +19,7 @@
         "spec",
         "typelevel-prelude",
         "psci-support",
-        "tagged"
+        "tagged",
+        "machines"
     ]
 }

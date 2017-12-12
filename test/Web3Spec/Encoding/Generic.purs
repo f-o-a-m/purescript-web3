@@ -9,13 +9,13 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromJust)
-import Data.Newtype (class Newtype)
+import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
-import Network.Ethereum.Web3.Types (Change(..), HexString, mkAddress, mkHexString)
+import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -126,7 +126,7 @@ change = Change { data: amount
                 , logIndex: li
                 , transactionHash: tx
                 , transactionIndex: txi
-                , blockNumber: bn
+                , blockNumber: wrap $ embed 0
                 , blockHash: bh
                 , address: a
                 }
@@ -135,5 +135,4 @@ change = Change { data: amount
     bh = unsafePartial fromJust $ mkHexString "0"
     tx = unsafePartial fromJust $ mkHexString "0"
     txi = unsafePartial fromJust $ mkHexString "0"
-    bn = unsafePartial fromJust $ mkHexString "0"
     a = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000000"

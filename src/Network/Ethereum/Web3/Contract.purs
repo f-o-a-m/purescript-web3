@@ -7,21 +7,23 @@ import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ReaderT, runReaderT)
-import Data.Array (notElem, catMaybes)
+import Data.Array (catMaybes, notElem, singleton)
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens ((.~))
+import Data.Machine.Mealy (MealyT, Step(..), halt, mealy, source)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
-import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData, class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockMode, Change, ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, decodeEvent, genericABIEncode, genericFromData)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockMode(..), BlockNumber, Change, ETH, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -75,15 +77,31 @@ event addr handler = do
       change <- decodeEvent rawChange
       pure (Tuple rawChange change)
 
-{-
-streamEvents :: forall p e a i ni.
-                IsAsyncProvider p
-             => DecodeEvent i ni a
-             => EventFilter a
-             -> Address
-             -> BlockNumber
-             -> BlockMode
--}
+type FilterStreamState =
+  { currentBlock :: BlockNumber
+  , endingBlock :: BlockNumber
+  , windowSize :: Int
+  }
+
+boundedFilterStream
+  :: forall f a .
+     Monad f
+  => EventFilter a
+  => Address
+  -> MealyT f FilterStreamState Filter
+boundedFilterStream addr =
+    mealy $ pure <<< boundedFilterStream' (Proxy :: Proxy a) addr
+  where
+    newTo :: FilterStreamState -> BlockNumber
+    newTo s = min s.endingBlock ((wrap $ (unwrap s.currentBlock) + embed s.windowSize))
+    succ :: BlockNumber -> BlockNumber
+    succ bn = wrap $ (unwrap bn) + one
+    boundedFilterStream' pa addr' = \s ->
+      let to' = newTo s
+          fltr = eventFilter pa addr'
+                   # _fromBlock .~ (Just <<< BN $ s.currentBlock)
+                   # _toBlock .~ (Just $ BN to')
+      in Emit fltr (mealy $ \s -> pure $ boundedFilterStream' pa addr' s{currentBlock = succ to'})
 
 --------------------------------------------------------------------------------
 -- * Methods

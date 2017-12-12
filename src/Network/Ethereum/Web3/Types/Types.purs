@@ -175,13 +175,14 @@ derive newtype instance eqBlockNumber :: Eq BlockNumber
 derive newtype instance ordBlockNumber :: Ord BlockNumber
 derive newtype instance decodeBlockNumber :: Decode BlockNumber
 derive newtype instance encodeBlockNumber :: Encode BlockNumber
+derive instance newtypeBlockNumber :: Newtype BlockNumber _
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data BlockMode =
     Latest
   | Pending
   | Earliest
-  | BN BigNumber
+  | BN BlockNumber
 
 derive instance genericBlockMode :: Generic BlockMode _
 
