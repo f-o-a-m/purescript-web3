@@ -166,19 +166,26 @@ mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 -- * Block
 --------------------------------------------------------------------------------
 
+newtype BlockNumber = BlockNumber BigNumber
+
+derive newtype instance showBlockNumber :: Show BlockNumber
+derive newtype instance eqBlockNumber :: Eq BlockNumber
+derive newtype instance decodeBlockNumber :: Decode BlockNumber
+derive newtype instance encodeBlockNumber :: Encode BlockNumber
+
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data CallMode =
     Latest
   | Pending
   | Earliest
-  | BlockNumber BigNumber
+  | BN BigNumber
 
 instance encodeCallMode :: Encode CallMode where
   encode cm = case cm of
     Latest -> encode "latest"
     Pending -> encode "pending"
     Earliest -> encode "earliest"
-    BlockNumber n -> encode n
+    BN n -> encode n
 
 newtype Block
   = Block { difficulty :: BigNumber
@@ -220,7 +227,7 @@ newtype Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
               , blockHash :: HexString
-              , blockNumber :: BigNumber
+              , blockNumber :: BlockNumber
               , transactionIndex :: BigNumber
               , from :: Address
               , to :: NullOrUndefined Address
@@ -243,11 +250,11 @@ instance decodeTransaction :: Decode Transaction where
 -- * TransactionReceipt
 --------------------------------------------------------------------------------
 
-newtype TransactionReceipt = 
+newtype TransactionReceipt =
   TransactionReceipt { transactionHash :: HexString
                      , transactionIndex :: BigNumber
                      , blockHash :: HexString
-                     , blockNumber :: BigNumber
+                     , blockNumber :: BlockNumber
                      , cumulativeGasUsed :: BigNumber
                      , gasUsed :: BigNumber
                      , contractAddress :: NullOrUndefined Address
@@ -381,8 +388,8 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 newtype Filter = Filter
   { address   :: NullOrUndefined Address
   , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
-  , fromBlock :: NullOrUndefined HexString
-  , toBlock   :: NullOrUndefined HexString
+  , fromBlock :: NullOrUndefined BlockNumber
+  , toBlock   :: NullOrUndefined BlockNumber
   }
 
 derive instance genericFilter :: Generic Filter _
@@ -412,13 +419,13 @@ _topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
 _topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
           (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
-_fromBlock :: Lens' Filter (Maybe HexString)
+_fromBlock :: Lens' Filter (Maybe BlockNumber)
 _fromBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
 
-_toBlock :: Lens' Filter (Maybe HexString)
-_toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
-          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
+_toBlock :: Lens' Filter (Maybe BlockNumber)
+_toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.toBlock)
+          (\(Filter f) b -> Filter $ f {toBlock = NullOrUndefined b})
 
 -- | Used by the ethereum client to identify the filter you are querying
 newtype FilterId = FilterId HexString
@@ -448,7 +455,7 @@ newtype Change = Change
   , transactionIndex :: HexString
   , transactionHash  :: HexString
   , blockHash        :: HexString
-  , blockNumber      :: HexString
+  , blockNumber      :: BlockNumber
   , address          :: Address
   , data             :: HexString
   , topics           :: Array HexString
