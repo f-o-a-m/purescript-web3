@@ -10,7 +10,8 @@ module Network.Ethereum.Web3.Types.Types
        , Address
        , unAddress
        , mkAddress
-       , CallMode(..)
+       , BlockNumber
+       , BlockMode(..)
        , Block(..)
        , Transaction(..)
        , TransactionReceipt(..)
@@ -61,6 +62,7 @@ import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
+import Data.Ordering (invert)
 import Data.String (length, take) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
@@ -170,17 +172,37 @@ newtype BlockNumber = BlockNumber BigNumber
 
 derive newtype instance showBlockNumber :: Show BlockNumber
 derive newtype instance eqBlockNumber :: Eq BlockNumber
+derive newtype instance ordBlockNumber :: Ord BlockNumber
 derive newtype instance decodeBlockNumber :: Decode BlockNumber
 derive newtype instance encodeBlockNumber :: Encode BlockNumber
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
-data CallMode =
+data BlockMode =
     Latest
   | Pending
   | Earliest
   | BN BigNumber
 
-instance encodeCallMode :: Encode CallMode where
+derive instance genericBlockMode :: Generic BlockMode _
+
+instance eqBlockMode :: Eq BlockMode where
+  eq = genericEq
+
+instance showBlockMode :: Show BlockMode where
+  show = genericShow
+
+instance ordBlockMode :: Ord BlockMode where
+  compare Pending Pending = EQ
+  compare Latest Latest = EQ
+  compare Earliest Earliest = EQ
+  compare (BN a) (BN b) = compare a b
+  compare _ Pending = LT
+  compare Pending Latest = GT
+  compare _ Latest = LT
+  compare Earliest _ = LT
+  compare a b = invert $ compare b a
+
+instance encodeBlockMode :: Encode BlockMode where
   encode cm = case cm of
     Latest -> encode "latest"
     Pending -> encode "pending"
@@ -388,8 +410,8 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 newtype Filter = Filter
   { address   :: NullOrUndefined Address
   , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
-  , fromBlock :: NullOrUndefined BlockNumber
-  , toBlock   :: NullOrUndefined BlockNumber
+  , fromBlock :: NullOrUndefined BlockMode
+  , toBlock   :: NullOrUndefined BlockMode
   }
 
 derive instance genericFilter :: Generic Filter _
@@ -419,11 +441,11 @@ _topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
 _topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
           (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
-_fromBlock :: Lens' Filter (Maybe BlockNumber)
+_fromBlock :: Lens' Filter (Maybe BlockMode)
 _fromBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
 
-_toBlock :: Lens' Filter (Maybe BlockNumber)
+_toBlock :: Lens' Filter (Maybe BlockMode)
 _toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.toBlock)
           (\(Filter f) b -> Filter $ f {toBlock = NullOrUndefined b})
 

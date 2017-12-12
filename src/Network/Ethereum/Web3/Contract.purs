@@ -21,7 +21,7 @@ import Data.Tuple (Tuple(..))
 import Network.Ethereum.Web3.Api (eth_call, eth_getFilterChanges, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, forkWeb3')
 import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData, class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallMode, Change, ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockMode, Change, ETH, Filter, FilterId, HexString, Web3, _data, _from, _gas, _to, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -75,6 +75,16 @@ event addr handler = do
       change <- decodeEvent rawChange
       pure (Tuple rawChange change)
 
+{-
+streamEvents :: forall p e a i ni.
+                IsAsyncProvider p
+             => DecodeEvent i ni a
+             => EventFilter a
+             -> Address
+             -> BlockNumber
+             -> BlockMode
+-}
+
 --------------------------------------------------------------------------------
 -- * Methods
 --------------------------------------------------------------------------------
@@ -107,7 +117,7 @@ class CallMethod (selector :: Symbol) a b where
          -- ^ Contract address
          -> Maybe Address
          -- from address
-         -> CallMode
+         -> BlockMode
          -- ^ State mode for constant call (latest or pending)
          -> Tagged (SProxy selector) a
          -- ^ Method data
@@ -152,7 +162,7 @@ _call :: forall p a arep b brep e selector .
       => GenericABIDecode brep
       => Address
       -> Maybe Address
-      -> CallMode
+      -> BlockMode
       -> Tagged (SProxy selector) a
       -> Web3 p e b
 _call t mf cm dat = do

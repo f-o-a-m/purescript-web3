@@ -5,7 +5,7 @@ module Network.Ethereum.Web3.Solidity.EncodingType
 import Prelude
 
 import Data.ByteString (ByteString)
-import Data.Functor.Tagged (Tagged, untagged)
+import Data.Functor.Tagged (Tagged)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
