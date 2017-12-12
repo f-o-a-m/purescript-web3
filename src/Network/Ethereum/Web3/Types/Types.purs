@@ -49,6 +49,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Array (many)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
@@ -65,7 +66,7 @@ import Data.String (length, take) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (runParser)
+import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
@@ -132,7 +133,8 @@ mkHexString str = HexString <$>
     Nothing -> go str
     Just res -> go res
   where
-    go s = hush $ runParser s (fromCharArray <$> many hexDigit)
+    go s = hush $ runTrampParser s (fromCharArray <$> many hexDigit)
+    runTrampParser s = runTrampoline <<< runParserT s
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
