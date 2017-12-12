@@ -70,7 +70,7 @@ stringTests =
 
     
       it "can handle VERY long HexStrings" do
-        let given = intercalate "" $ replicate 1024 "0000000000000000000000000000000000000000000000000000000000000000"
+        let given = intercalate "" $ replicate 128 "0000000000000000000000000000000000000000000000000000000000000000"
         let expected = unsafePartial fromJust <<< mkHexString $ given
         given `shouldEqual` unHex expected
 
