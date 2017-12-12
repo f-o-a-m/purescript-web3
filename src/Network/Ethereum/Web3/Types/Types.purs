@@ -204,6 +204,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
@@ -231,6 +232,7 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance newtypeTransaction :: Newtype Transaction _
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
@@ -255,6 +257,7 @@ newtype TransactionReceipt =
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
+derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
 derive instance eqTxReceipt :: Eq TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
@@ -278,6 +281,7 @@ newtype TransactionOptions =
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
+derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
 
 instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
@@ -336,6 +340,7 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
+derive instance newtypeSyncStatus :: Newtype SyncStatus _
 derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
@@ -386,6 +391,7 @@ newtype Filter = Filter
   }
 
 derive instance genericFilter :: Generic Filter _
+derive instance newtypeFilter :: Newtype Filter _
 
 instance showFilter :: Show Filter where
   show = genericShow
@@ -455,6 +461,7 @@ newtype Change = Change
   }
 
 derive instance genericChange :: Generic Change _
+derive instance newtypeChange :: Newtype Change _
 
 instance showChange :: Show Change where
   show = genericShow
