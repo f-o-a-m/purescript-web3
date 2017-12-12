@@ -53,8 +53,8 @@ eth_gasPrice :: forall p e. IsAsyncProvider p => Web3 p e BigNumber
 eth_gasPrice = unsafeCoerceWeb3 $ remote "eth_gasPrice" :: Web3 p () BigNumber
 
 -- | Returns the number of most recent block
-eth_blockNumber :: forall p e. IsAsyncProvider p => Web3 p e BigNumber
-eth_blockNumber = unsafeCoerceWeb3 $ remote "eth_blockNumber" :: Web3 p () BigNumber
+eth_blockNumber :: forall p e. IsAsyncProvider p => Web3 p e BlockNumber
+eth_blockNumber = unsafeCoerceWeb3 $ remote "eth_blockNumber" :: Web3 p () BlockNumber
 
 -- | Returns the balance of the account of given address.
 eth_getBalance :: forall p e . IsAsyncProvider p => Address -> CallMode -> Web3 p e BigNumber
