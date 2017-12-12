@@ -6,8 +6,10 @@ import Prelude
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Except (runExcept, runExceptT)
+import Data.Array (replicate)
 import Data.ByteString as BS
 import Data.Either (Either(..))
+import Data.Foldable (intercalate)
 import Data.Foreign (ForeignError(..))
 import Data.Foreign.Generic (decodeJSON, defaultOptions, genericDecodeJSON)
 import Data.Identity (Identity(..))
@@ -19,7 +21,7 @@ import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, (+<), (-<))
+import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, unHex, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -65,6 +67,13 @@ stringTests =
                                 <> "c383c2a4c383c2a4000000000000000000000000000000000000000000000000"
 
         roundTrip given expected
+
+    
+      it "can handle VERY long HexStrings" do
+        let given = intercalate "" $ replicate 1024 "0000000000000000000000000000000000000000000000000000000000000000"
+        let expected = unsafePartial fromJust <<< mkHexString $ given
+        given `shouldEqual` unHex expected
+
 
 bytesDTests :: forall r . Spec r Unit
 bytesDTests =
