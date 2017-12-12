@@ -2,16 +2,17 @@ module Web3Spec.Contract  where
 
 import Prelude
 
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~))
-import Data.Machine.Mealy (runMealy, runMealyT, sink)
+import Data.Machine.Mealy (MealyT, Step(..), runMealy, runMealyT, sink)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3 (_fromBlock, _toBlock, _topics)
-import Network.Ethereum.Web3.Contract (class EventFilter, boundedFilterStream, sendTx)
+import Network.Ethereum.Web3.Contract (class EventFilter, FilterStreamState, boundedFilterStream, sendTx)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, httpProvider, runWeb3)
 import Network.Ethereum.Web3.Solidity (type (:&), D2, D5, D6, IntN, Tuple1(..), UIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Types (Address, ETH, Ether, HexString, Value, Web3(..), embed, mkAddress, mkHexString, unHex)
@@ -55,10 +56,25 @@ instance isAsyncHttp :: IsAsyncProvider HttpProvider where
 setA :: forall e . IntN (D2 :& D5 :& D6) -> Web3 HttpProvider e HexString
 setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) ((tagged <<< Tuple1 $ n) :: FnSet)
 
+runFilterStream :: forall eff . Eff (console :: CONSOLE | eff) Unit
+runFilterStream =
+    let s = { currentBlock: wrap <<< embed $ 0
+            , endingBlock: wrap <<< embed $ 10
+            , windowSize: 2
+            }
+    in go (boundedFilterStream (Proxy :: Proxy CountSet) ssAddress) s
+  where
+    go machine s = do
+      a <- runMealyT machine s
+      case a of
+        Emit f machine' -> do
+          logShow f
+          go machine' s
+        Halt -> pure unit
+
 simpleStorageSpec :: forall r. Spec (eth :: ETH, console :: CONSOLE | r) Unit
 simpleStorageSpec =
   describe "Bounded event handlers" do
     it "can print the lifespan of a filter producing machine" do
-      let filterSource = boundedFilterStream (Proxy :: Proxy CountSet) ssAddress (wrap $ embed 0) (wrap $ embed 10) 2
-      liftEff $ runMealy (filterSource >>= liftEff <<< logShow)
+      liftEff runFilterStream
       true `shouldEqual` true
