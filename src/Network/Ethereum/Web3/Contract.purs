@@ -2,9 +2,9 @@ module Network.Ethereum.Web3.Contract
  ( class EventFilter
  , eventFilter
  , EventAction(..)
- , event
- , runEventsFromBlock
- , runEventsBounded
+ , events
+ , eventsFromBlock
+ , eventsBounded
  , class CallMethod
  , call
  , class TxMethod
@@ -61,21 +61,21 @@ class EventFilter a where
 
 -- | 'event' creates a new event filter and starts listening for events
 -- | from the chain head until a 'TerminateEvent' result.
-event :: forall p e a i ni.
-         IsAsyncProvider p
-      => DecodeEvent i ni a
-      => EventFilter a
-      => Address
-      -> (a -> ReaderT Change (Web3 p e) EventAction)
-      -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-event addr handler = do
+events :: forall p e a i ni.
+          IsAsyncProvider p
+       => DecodeEvent i ni a
+       => EventFilter a
+       => Address
+       -> (a -> ReaderT Change (Web3 p e) EventAction)
+       -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+events addr handler = do
   filterId <- eth_newFilter $ eventFilter (Proxy :: Proxy a) addr
   forkWeb3' (Proxy :: Proxy p) <<< runMealy $ pollChanges filterId handler
 
--- | 'runEventsFromBlock' will replay events from a lower bound 'BlockNumber'
+-- | 'eventsFromBlock' will replay events from a lower bound 'BlockNumber'
 -- | making batch requests for changes until it catches up with the chain head,
 -- | at which point it will begin polling for changes.
-runEventsFromBlock :: forall p e a i ni.
+eventsFromBlock :: forall p e a i ni.
                       IsAsyncProvider p
                    => DecodeEvent i ni a
                    => EventFilter a
@@ -86,29 +86,28 @@ runEventsFromBlock :: forall p e a i ni.
                    -- ^ window size
                    -> (a -> ReaderT Change (Web3 p e) Unit)
                    -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-runEventsFromBlock addr leftBound window handler = do
-    let pa = Proxy :: Proxy a
-        handler' = \a -> ContinueEvent <$ handler a
+eventsFromBlock addr leftBound window handler = do
+    let handler' = \a -> ContinueEvent <$ handler a
     bn <- catchUpEvents addr leftBound window handler'
     forkWeb3' (Proxy :: Proxy p) $ runMealy (filterChangesStream addr bn handler')
 
 -- | 'runEventsBounded' processes events from a 'BlockNumber' to a 'BlockNumber'
 -- | batching the changes using the window range until it finishes or reaches a
 -- | 'TerminateEvent' result.
-runEventsBounded :: forall p e a i ni.
+eventsBounded :: forall p e a i ni.
                     IsAsyncProvider p
-                 => DecodeEvent i ni a
-                 => EventFilter a
-                 => Address
-                 -> BlockNumber
-                 -- ^ fromBlock
-                 -> BlockNumber
-                 -- ^ toBlock
-                 -> Int
-                 -- ^ window
-                 -> (a -> ReaderT Change (Web3 p e) EventAction)
-                 -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-runEventsBounded addr from to window handler =
+              => DecodeEvent i ni a
+              => EventFilter a
+              => Address
+              -> BlockNumber
+              -- ^ fromBlock
+              -> BlockNumber
+              -- ^ toBlock
+              -> Int
+              -- ^ window
+              -> (a -> ReaderT Change (Web3 p e) EventAction)
+              -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+eventsBounded addr from to window handler =
   forkWeb3' (Proxy :: Proxy p) <<< void $ playEvents addr from (BN to) window handler
 
 -- Internal Event Helpers
@@ -228,8 +227,8 @@ pollChanges filterId handler = mealy $ \s -> do
     changes <- eth_getFilterChanges filterId
     acts <- processChanges handler changes
     if TerminateEvent `notElem` acts
-       then eth_uninstallFilter filterId *> pure Halt
-       else pure $ Emit unit $ pollChanges filterId handler
+       then pure $ Emit unit $ pollChanges filterId handler
+       else eth_uninstallFilter filterId *> pure Halt
 
 processChanges :: forall i ni a f.
                   DecodeEvent i ni a
