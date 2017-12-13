@@ -1,4 +1,15 @@
-module Network.Ethereum.Web3.Contract where
+module Network.Ethereum.Web3.Contract
+ ( class EventFilter
+ , eventFilter
+ , EventAction(..)
+ , event
+ , runEventsFromBlock
+ , runEventsBounded
+ , class CallMethod
+ , call
+ , class TxMethod
+ , sendTx
+ ) where
 
 import Prelude
 
@@ -48,6 +59,8 @@ class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
+-- | 'event' creates a new event filter and starts listening for events
+-- | from the chain head until a 'TerminateEvent' result.
 event :: forall p e a i ni.
          IsAsyncProvider p
       => DecodeEvent i ni a
@@ -59,10 +72,10 @@ event addr handler = do
   filterId <- eth_newFilter $ eventFilter (Proxy :: Proxy a) addr
   forkWeb3' (Proxy :: Proxy p) <<< runMealy $ pollChanges filterId handler
 
--- | 'runEventsFromBound' will replay events from a lower bound 'BlockNumber'
+-- | 'runEventsFromBlock' will replay events from a lower bound 'BlockNumber'
 -- | making batch requests for changes until it catches up with the chain head,
 -- | at which point it will begin polling for changes.
-runEventsFromBound :: forall p e a i ni.
+runEventsFromBlock :: forall p e a i ni.
                       IsAsyncProvider p
                    => DecodeEvent i ni a
                    => EventFilter a
@@ -71,16 +84,44 @@ runEventsFromBound :: forall p e a i ni.
                    -- ^ lower bound block number
                    -> Int
                    -- ^ window size
-                   -> (a -> ReaderT Change (Web3 p e) EventAction)
+                   -> (a -> ReaderT Change (Web3 p e) Unit)
                    -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-runEventsFromBound addr leftBound window handler = do
+runEventsFromBlock addr leftBound window handler = do
     let pa = Proxy :: Proxy a
-    bn <- catchUpEvents addr leftBound window (\a -> ContinueEvent <$ handler a)
-    forkWeb3' (Proxy :: Proxy p) $ runMealy (filterChangesStream addr bn handler)
+        handler' = \a -> ContinueEvent <$ handler a
+    bn <- catchUpEvents addr leftBound window handler'
+    forkWeb3' (Proxy :: Proxy p) $ runMealy (filterChangesStream addr bn handler')
 
--- | 'catchUpEvents' starts playing the event logs from a starting 'BlockNumber'
--- | until it has caught up to the latest. It then returns the most recent 'BlockNumber'
--- | that has not been processed.
+-- | 'runEventsBounded' processes events from a 'BlockNumber' to a 'BlockNumber'
+-- | batching the changes using the window range until it finishes or reaches a
+-- | 'TerminateEvent' result.
+runEventsBounded :: forall p e a i ni.
+                    IsAsyncProvider p
+                 => DecodeEvent i ni a
+                 => EventFilter a
+                 => Address
+                 -> BlockNumber
+                 -- ^ fromBlock
+                 -> BlockNumber
+                 -- ^ toBlock
+                 -> Int
+                 -- ^ window
+                 -> (a -> ReaderT Change (Web3 p e) EventAction)
+                 -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+runEventsBounded addr from to window handler =
+  forkWeb3' (Proxy :: Proxy p) <<< void $ playEvents addr from (BN to) window handler
+
+-- Internal Event Helpers
+
+type FilterStreamState =
+  { currentBlock :: BlockNumber
+  , endingBlock :: BlockMode
+  , windowSize :: Int
+  }
+
+-- | 'catchUpEvents' proceeses events from a lower bound with a handler until
+-- | the chain head is reached or until a 'TerminateEvent' result. The 'BlockNumber'
+-- | returned is the latest block that was not processed.
 catchUpEvents :: forall p e a i ni.
                  IsAsyncProvider p
               => DecodeEvent i ni a
@@ -92,9 +133,27 @@ catchUpEvents :: forall p e a i ni.
               -- ^ window size
               -> (a -> ReaderT Change (Web3 p e) EventAction)
               -> Web3 p e BlockNumber
-catchUpEvents addr bn w handler =
+catchUpEvents addr bn window handler = playEvents addr bn Latest window handler
+
+-- | 'playEvents' starts playing the event logs from a starting 'BlockNumber'
+-- | until it has caught up to the latest. It then returns the most recent 'BlockNumber'
+-- | that has not been processed.
+playEvents :: forall p e a i ni.
+              IsAsyncProvider p
+           => DecodeEvent i ni a
+           => EventFilter a
+           => Address
+           -> BlockNumber
+           -- ^ lower bound block number
+           -> BlockMode
+           -- ^ stopping block mode
+           -> Int
+           -- ^ window size
+           -> (a -> ReaderT Change (Web3 p e) EventAction)
+           -> Web3 p e BlockNumber
+playEvents addr bn bm w handler =
     let s = { currentBlock: bn
-            , endingBlock: Latest
+            , endingBlock: bm
             , windowSize: w
             }
         pa = Proxy :: Proxy a
@@ -112,8 +171,6 @@ catchUpEvents addr bn w handler =
             then go continue state
             else go halt state {currentBlock = wrap $ unwrap state.currentBlock + one}
 
--- * Events Streams
-
 -- | 'filterChangesStream' creates a filter from a  lower bound 'BlockNumber' to latest
 -- | then polls the node for changes once per second.
 filterChangesStream :: forall p e a s i ni.
@@ -128,15 +185,6 @@ filterChangesStream addr from handler = do
     let pa = Proxy :: Proxy a
     filterId <- wrapEffect <<< eth_newFilter $ eventFilter pa addr # _fromBlock .~ Just (BN from)
     pollChanges filterId handler
-
-
--- Internal Event Helpers
-
-type FilterStreamState =
-  { currentBlock :: BlockNumber
-  , endingBlock :: BlockMode
-  , windowSize :: Int
-  }
 
 -- | 'leftBoundedFilterStream' creates filters for batch fetching event logs.
 -- | It will play until 'endingBlock' is reached, or the chain head depending on
