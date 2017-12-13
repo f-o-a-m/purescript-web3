@@ -59,6 +59,12 @@ class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
+type EventHandler a = forall p e i ni.
+     EventFilter a
+  => DecodeEvent i ni a
+  => a
+  -> ReaderT Change (Web3 p e) EventAction
+
 -- | 'event' creates a new event filter and starts listening for events
 -- | from the chain head until a 'TerminateEvent' result.
 events :: forall p e a i ni.
@@ -66,7 +72,7 @@ events :: forall p e a i ni.
        => DecodeEvent i ni a
        => EventFilter a
        => Address
-       -> (a -> ReaderT Change (Web3 p e) EventAction)
+       -> EventHandler a
        -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 events addr handler = forkWeb3' (Proxy :: Proxy p) $ do
   filterId <- eth_newFilter $ eventFilter (Proxy :: Proxy a) addr
@@ -84,7 +90,7 @@ eventsFromBlock :: forall p e a i ni.
                    -- ^ lower bound block number
                    -> Int
                    -- ^ window size
-                   -> (a -> ReaderT Change (Web3 p e) EventAction)
+                   -> EventHandler a
                    -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 eventsFromBlock addr leftBound window handler = forkWeb3' (Proxy :: Proxy p) $ do
     mbn <- catchUpEvents addr leftBound window handler
@@ -106,7 +112,7 @@ eventsBounded :: forall p e a i ni.
               -- ^ toBlock
               -> Int
               -- ^ window
-              -> (a -> ReaderT Change (Web3 p e) EventAction)
+              -> EventHandler a
               -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 eventsBounded addr from to window handler =
   forkWeb3' (Proxy :: Proxy p) <<< void $ playEvents addr from (BN to) window handler
@@ -131,7 +137,7 @@ catchUpEvents :: forall p e a i ni.
               -- ^ lower bound block number
               -> Int
               -- ^ window size
-              -> (a -> ReaderT Change (Web3 p e) EventAction)
+              -> EventHandler a 
               -> Web3 p e (Maybe BlockNumber)
 catchUpEvents addr bn window handler = playEvents addr bn Latest window handler
 
@@ -149,7 +155,7 @@ playEvents :: forall p e a i ni.
            -- ^ stopping block mode
            -> Int
            -- ^ window size
-           -> (a -> ReaderT Change (Web3 p e) EventAction)
+           -> EventHandler a 
            -> Web3 p e (Maybe BlockNumber)
 playEvents addr bn bm w handler =
     let s = { currentBlock: bn
@@ -179,7 +185,7 @@ filterChangesStream :: forall p e a s i ni.
                     => EventFilter a
                     => Address
                     -> BlockNumber
-                    -> (a -> ReaderT Change (Web3 p e) EventAction)
+                    -> EventHandler a 
                     -> MealyT (Web3 p e) s Unit
 filterChangesStream addr from handler = do
     let pa = Proxy :: Proxy a
@@ -219,9 +225,10 @@ leftBoundedFilterStream pa addr =
 
 pollChanges :: forall p e a i ni s.
                IsAsyncProvider p
+            => EventFilter a
             => DecodeEvent i ni a
             => FilterId
-            -> (a -> ReaderT Change (Web3 p e) EventAction)
+            -> EventHandler a 
             -> MealyT (Web3 p e) s Unit
 pollChanges filterId handler = mealy $ \s -> do
     liftAff $ delay (Milliseconds 1000.0)
@@ -234,7 +241,7 @@ pollChanges filterId handler = mealy $ \s -> do
 processChanges :: forall i ni a f.
                   DecodeEvent i ni a
                => Monad f
-               => (a -> ReaderT Change f EventAction)
+               => (a -> ReaderT Change f EventAction) 
                -> Array Change
                -> f (Array EventAction)
 processChanges handler changes = for (catMaybes $ map pairChange changes) \(Tuple changeWithMeta changeEvent) ->
