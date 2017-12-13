@@ -24,7 +24,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens ((.~))
-import Data.Machine.Mealy (MealyT, Step(..), halt, mealy, runMealy, runMealyT, wrapEffect)
+import Data.Machine.Mealy (MealyT, Step(..), mealy, runMealy, runMealyT, wrapEffect)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
@@ -68,9 +68,9 @@ events :: forall p e a i ni.
        => Address
        -> (a -> ReaderT Change (Web3 p e) EventAction)
        -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-events addr handler = do
+events addr handler = forkWeb3' (Proxy :: Proxy p) $ do
   filterId <- eth_newFilter $ eventFilter (Proxy :: Proxy a) addr
-  forkWeb3' (Proxy :: Proxy p) <<< runMealy $ pollChanges filterId handler
+  runMealy $ pollChanges filterId handler
 
 -- | 'eventsFromBlock' will replay events from a lower bound 'BlockNumber'
 -- | making batch requests for changes until it catches up with the chain head,
@@ -84,12 +84,13 @@ eventsFromBlock :: forall p e a i ni.
                    -- ^ lower bound block number
                    -> Int
                    -- ^ window size
-                   -> (a -> ReaderT Change (Web3 p e) Unit)
+                   -> (a -> ReaderT Change (Web3 p e) EventAction)
                    -> Web3 p e (Fiber (eth :: ETH | e) Unit)
-eventsFromBlock addr leftBound window handler = do
-    let handler' = \a -> ContinueEvent <$ handler a
-    bn <- catchUpEvents addr leftBound window handler'
-    forkWeb3' (Proxy :: Proxy p) $ runMealy (filterChangesStream addr bn handler')
+eventsFromBlock addr leftBound window handler = forkWeb3' (Proxy :: Proxy p) $ do
+    mbn <- catchUpEvents addr leftBound window handler
+    case mbn of
+      Nothing -> pure unit
+      Just bn -> runMealy $ filterChangesStream addr bn handler
 
 -- | 'runEventsBounded' processes events from a 'BlockNumber' to a 'BlockNumber'
 -- | batching the changes using the window range until it finishes or reaches a
@@ -131,7 +132,7 @@ catchUpEvents :: forall p e a i ni.
               -> Int
               -- ^ window size
               -> (a -> ReaderT Change (Web3 p e) EventAction)
-              -> Web3 p e BlockNumber
+              -> Web3 p e (Maybe BlockNumber)
 catchUpEvents addr bn window handler = playEvents addr bn Latest window handler
 
 -- | 'playEvents' starts playing the event logs from a starting 'BlockNumber'
@@ -149,7 +150,7 @@ playEvents :: forall p e a i ni.
            -> Int
            -- ^ window size
            -> (a -> ReaderT Change (Web3 p e) EventAction)
-           -> Web3 p e BlockNumber
+           -> Web3 p e (Maybe BlockNumber)
 playEvents addr bn bm w handler =
     let s = { currentBlock: bn
             , endingBlock: bm
@@ -162,13 +163,13 @@ playEvents addr bn bm w handler =
     go machine state = do
       a <- runMealyT machine state
       case a of
-        Halt -> pure state.currentBlock
+        Halt -> pure $ Just state.currentBlock
         Emit filter continue -> do
           changes <- eth_getLogs filter
           acts <- processChanges handler changes
           if (TerminateEvent `notElem` acts)
             then go continue state
-            else go halt state {currentBlock = wrap $ unwrap state.currentBlock + one}
+            else pure Nothing
 
 -- | 'filterChangesStream' creates a filter from a  lower bound 'BlockNumber' to latest
 -- | then polls the node for changes once per second.
