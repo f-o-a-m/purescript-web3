@@ -67,13 +67,14 @@ type EventHandler a = forall p e i ni.
 
 -- | 'event' creates a new event filter and starts listening for events
 -- | from the chain head until a 'TerminateEvent' result.
-events :: forall p e a i ni.
-          IsAsyncProvider p
-       => DecodeEvent i ni a
-       => EventFilter a
-       => Address
-       -> EventHandler a
-       -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+events
+  :: forall p e a i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> EventHandler a
+  -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 events addr handler = forkWeb3' (Proxy :: Proxy p) $ do
   filterId <- eth_newFilter $ eventFilter (Proxy :: Proxy a) addr
   runMealy $ pollChanges filterId handler
@@ -81,17 +82,18 @@ events addr handler = forkWeb3' (Proxy :: Proxy p) $ do
 -- | 'eventsFromBlock' will replay events from a lower bound 'BlockNumber'
 -- | making batch requests for changes until it catches up with the chain head,
 -- | at which point it will begin polling for changes.
-eventsFromBlock :: forall p e a i ni.
-                      IsAsyncProvider p
-                   => DecodeEvent i ni a
-                   => EventFilter a
-                   => Address
-                   -> BlockNumber
-                   -- ^ lower bound block number
-                   -> Int
-                   -- ^ window size
-                   -> EventHandler a
-                   -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+eventsFromBlock
+  :: forall p e a i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> BlockNumber
+  -- ^ lower bound block number
+  -> Int
+  -- ^ window size
+  -> EventHandler a
+  -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 eventsFromBlock addr leftBound window handler = forkWeb3' (Proxy :: Proxy p) $ do
     mbn <- catchUpEvents addr leftBound window handler
     case mbn of
@@ -101,19 +103,20 @@ eventsFromBlock addr leftBound window handler = forkWeb3' (Proxy :: Proxy p) $ d
 -- | 'runEventsBounded' processes events from a 'BlockNumber' to a 'BlockNumber'
 -- | batching the changes using the window range until it finishes or reaches a
 -- | 'TerminateEvent' result.
-eventsBounded :: forall p e a i ni.
-                    IsAsyncProvider p
-              => DecodeEvent i ni a
-              => EventFilter a
-              => Address
-              -> BlockNumber
-              -- ^ fromBlock
-              -> BlockNumber
-              -- ^ toBlock
-              -> Int
-              -- ^ window
-              -> EventHandler a
-              -> Web3 p e (Fiber (eth :: ETH | e) Unit)
+eventsBounded
+  :: forall p e a i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> BlockNumber
+  -- ^ fromBlock
+  -> BlockNumber
+  -- ^ toBlock
+  -> Int
+  -- ^ window
+  -> EventHandler a
+  -> Web3 p e (Fiber (eth :: ETH | e) Unit)
 eventsBounded addr from to window handler =
   forkWeb3' (Proxy :: Proxy p) <<< void $ playEvents addr from (BN to) window handler
 
@@ -121,42 +124,44 @@ eventsBounded addr from to window handler =
 
 type FilterStreamState =
   { currentBlock :: BlockNumber
-  , endingBlock :: BlockMode
-  , windowSize :: Int
+  , endingBlock  :: BlockMode
+  , windowSize   :: Int
   }
 
 -- | 'catchUpEvents' proceeses events from a lower bound with a handler until
 -- | the chain head is reached or until a 'TerminateEvent' result. The 'BlockNumber'
 -- | returned is the latest block that was not processed.
-catchUpEvents :: forall p e a i ni.
-                 IsAsyncProvider p
-              => DecodeEvent i ni a
-              => EventFilter a
-              => Address
-              -> BlockNumber
-              -- ^ lower bound block number
-              -> Int
-              -- ^ window size
-              -> EventHandler a 
-              -> Web3 p e (Maybe BlockNumber)
+catchUpEvents
+  :: forall p e a i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> BlockNumber
+  -- ^ lower bound block number
+  -> Int
+  -- ^ window size
+  -> EventHandler a 
+  -> Web3 p e (Maybe BlockNumber)
 catchUpEvents addr bn window handler = playEvents addr bn Latest window handler
 
 -- | 'playEvents' starts playing the event logs from a starting 'BlockNumber'
 -- | until it has caught up to the latest. It then returns the most recent 'BlockNumber'
 -- | that has not been processed.
-playEvents :: forall p e a i ni.
-              IsAsyncProvider p
-           => DecodeEvent i ni a
-           => EventFilter a
-           => Address
-           -> BlockNumber
-           -- ^ lower bound block number
-           -> BlockMode
-           -- ^ stopping block mode
-           -> Int
-           -- ^ window size
-           -> EventHandler a 
-           -> Web3 p e (Maybe BlockNumber)
+playEvents
+  :: forall p e a i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> BlockNumber
+  -- ^ lower bound block number
+  -> BlockMode
+  -- ^ stopping block mode
+  -> Int
+  -- ^ window size
+  -> EventHandler a 
+  -> Web3 p e (Maybe BlockNumber)
 playEvents addr bn bm w handler =
     let s = { currentBlock: bn
             , endingBlock: bm
@@ -179,14 +184,15 @@ playEvents addr bn bm w handler =
 
 -- | 'filterChangesStream' creates a filter from a  lower bound 'BlockNumber' to latest
 -- | then polls the node for changes once per second.
-filterChangesStream :: forall p e a s i ni.
-                       IsAsyncProvider p
-                    => DecodeEvent i ni a
-                    => EventFilter a
-                    => Address
-                    -> BlockNumber
-                    -> EventHandler a 
-                    -> MealyT (Web3 p e) s Unit
+filterChangesStream
+  :: forall p e a s i ni
+   . IsAsyncProvider p
+  => DecodeEvent i ni a
+  => EventFilter a
+  => Address
+  -> BlockNumber
+  -> EventHandler a 
+  -> MealyT (Web3 p e) s Unit
 filterChangesStream addr from handler = do
     let pa = Proxy :: Proxy a
     filterId <- wrapEffect <<< eth_newFilter $ eventFilter pa addr # _fromBlock .~ Just (BN from)
@@ -196,8 +202,8 @@ filterChangesStream addr from handler = do
 -- | It will play until 'endingBlock' is reached, or the chain head depending on
 -- | the 'BlockMode' in 'FilterStreamState'.
 leftBoundedFilterStream
-  :: forall p e a.
-     IsAsyncProvider p
+  :: forall p e a
+   . IsAsyncProvider p
   => EventFilter a
   => Proxy a
   -> Address
@@ -223,13 +229,14 @@ leftBoundedFilterStream pa addr =
               in pure $ Emit fltr $ mealy \s' ->
                    leftBoundedFilterStream' pa' addr' s' {currentBlock = succ to'}
 
-pollChanges :: forall p e a i ni s.
-               IsAsyncProvider p
-            => EventFilter a
-            => DecodeEvent i ni a
-            => FilterId
-            -> EventHandler a 
-            -> MealyT (Web3 p e) s Unit
+pollChanges
+  :: forall p e a i ni s
+   . IsAsyncProvider p
+  => EventFilter a
+  => DecodeEvent i ni a
+  => FilterId
+  -> EventHandler a 
+  -> MealyT (Web3 p e) s Unit
 pollChanges filterId handler = mealy $ \s -> do
     liftAff $ delay (Milliseconds 1000.0)
     changes <- eth_getFilterChanges filterId
@@ -238,12 +245,13 @@ pollChanges filterId handler = mealy $ \s -> do
        then pure $ Emit unit $ pollChanges filterId handler
        else eth_uninstallFilter filterId *> pure Halt
 
-processChanges :: forall i ni a f.
-                  DecodeEvent i ni a
-               => Monad f
-               => (a -> ReaderT Change f EventAction) 
-               -> Array Change
-               -> f (Array EventAction)
+processChanges
+  :: forall i ni a f
+   . DecodeEvent i ni a
+  => Monad f
+  => (a -> ReaderT Change f EventAction) 
+  -> Array Change
+  -> f (Array EventAction)
 processChanges handler changes = for (catMaybes $ map pairChange changes) \(Tuple changeWithMeta changeEvent) ->
     runReaderT (handler changeEvent) changeWithMeta
   where
@@ -297,17 +305,18 @@ instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod 
 instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
   call = _call
 
-_sendTransaction :: forall p a rep e u selector .
-                    IsAsyncProvider p
-                 => IsSymbol selector
-                 => Generic a rep
-                 => GenericABIEncode rep
-                 => EtherUnit u
-                 => Maybe Address
-                 -> Address
-                 -> u
-                 -> Tagged (SProxy selector) a
-                 -> Web3 p e HexString
+_sendTransaction
+  :: forall p a rep e u selector
+   . IsAsyncProvider p
+  => IsSymbol selector
+  => Generic a rep
+  => GenericABIEncode rep
+  => EtherUnit u
+  => Maybe Address
+  -> Address
+  -> u
+  -> Tagged (SProxy selector) a
+  -> Web3 p e HexString
 _sendTransaction mto f val dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
     eth_sendTransaction <<< txdata $ sel <> (genericABIEncode <<< untagged $ dat)
@@ -320,18 +329,19 @@ _sendTransaction mto f val dat = do
                                 # _value .~ Just (convert val)
                                 # _gas .~ defaultGas
 
-_call :: forall p a arep b brep e selector .
-         IsAsyncProvider p
-      => IsSymbol selector
-      => Generic a arep
-      => GenericABIEncode arep
-      => Generic b brep
-      => GenericABIDecode brep
-      => Address
-      -> Maybe Address
-      -> BlockMode
-      -> Tagged (SProxy selector) a
-      -> Web3 p e b
+_call
+  :: forall p a arep b brep e selector
+   . IsAsyncProvider p
+  => IsSymbol selector
+  => Generic a arep
+  => GenericABIEncode arep
+  => Generic b brep
+  => GenericABIDecode brep
+  => Address
+  -> Maybe Address
+  -> BlockMode
+  -> Tagged (SProxy selector) a
+  -> Web3 p e b
 _call t mf cm dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
     res <- eth_call (txdata $ sel <> (genericABIEncode <<< untagged $ dat)) cm
