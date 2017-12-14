@@ -62,10 +62,9 @@ event :: forall p e a i ni.
          IsAsyncProvider p
       => DecodeEvent i ni a
       => Filter
-      -> Int
       -> (a -> ReaderT Change (Web3 p e) EventAction)
       -> Web3 p e Unit
-event fltr w handler = event' fltr 1 handler
+event fltr handler = event' fltr 1 handler
 
 -- | 'event'' takes a 'Filter' and a handler, as well as a windowSize.
 -- | It runs the handler over the 'eventLogs' using 'reduceEventStream'. If no
