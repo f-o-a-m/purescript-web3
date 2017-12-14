@@ -28,7 +28,6 @@ module Network.Ethereum.Web3.Types.Types
        , Web3(..)
        , unsafeCoerceWeb3
        , Filter(..)
-       , defaultFilter
        , _address
        , _topics
        , _fromBlock
@@ -409,10 +408,10 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 
 -- | Low-level event filter data structure
 newtype Filter = Filter
-  { address   :: NullOrUndefined Address
-  , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
-  , fromBlock :: NullOrUndefined BlockMode
-  , toBlock   :: NullOrUndefined BlockMode
+  { address   :: Address
+  , topics    :: (Array (NullOrUndefined HexString))
+  , fromBlock :: BlockMode
+  , toBlock   :: BlockMode
   }
 
 derive instance genericFilter :: Generic Filter _
@@ -426,29 +425,21 @@ instance eqFilter :: Eq Filter where
 instance encodeFilter :: Encode Filter where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
-defaultFilter :: Filter
-defaultFilter =
-  Filter { address: NullOrUndefined Nothing
-         , topics: NullOrUndefined Nothing
-         , fromBlock: NullOrUndefined Nothing
-         , toBlock: NullOrUndefined Nothing
-         }
+_address :: Lens' Filter Address
+_address = lens (\(Filter f) -> f.address)
+          (\(Filter f) addr -> Filter $ f {address = addr})
 
-_address :: Lens' Filter (Maybe Address)
-_address = lens (\(Filter f) -> unNullOrUndefined $ f.address)
-          (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
+_topics :: Lens' Filter (Array (Maybe HexString))
+_topics = lens (\(Filter f) -> map unNullOrUndefined f.topics)
+          (\(Filter f) ts -> Filter $ f {topics = (map NullOrUndefined ts)})
 
-_topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
-_topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
-          (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
+_fromBlock :: Lens' Filter BlockMode
+_fromBlock = lens (\(Filter f) -> f.fromBlock)
+          (\(Filter f) b -> Filter $ f {fromBlock = b})
 
-_fromBlock :: Lens' Filter (Maybe BlockMode)
-_fromBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
-          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
-
-_toBlock :: Lens' Filter (Maybe BlockMode)
-_toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.toBlock)
-          (\(Filter f) b -> Filter $ f {toBlock = NullOrUndefined b})
+_toBlock :: Lens' Filter BlockMode
+_toBlock = lens (\(Filter f) -> f.toBlock)
+          (\(Filter f) b -> Filter $ f {toBlock = b})
 
 -- | Used by the ethereum client to identify the filter you are querying
 newtype FilterId = FilterId HexString
