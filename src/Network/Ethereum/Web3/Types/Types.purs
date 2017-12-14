@@ -49,6 +49,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Array (many)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
@@ -66,7 +67,7 @@ import Data.String (length, take) as S
 import Data.String (stripPrefix, Pattern(..), fromCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (runParser)
+import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
@@ -133,7 +134,8 @@ mkHexString str = HexString <$>
     Nothing -> go str
     Just res -> go res
   where
-    go s = hush $ runParser s (fromCharArray <$> many hexDigit)
+    go s = hush $ runTrampParser s (fromCharArray <$> many hexDigit)
+    runTrampParser s = runTrampoline <<< runParserT s
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
@@ -217,7 +219,6 @@ newtype Block
           , hash :: HexString
           , logsBloom :: HexString
           , miner :: HexString
-          , mixHash :: HexString
           , nonce :: HexString
           , number :: BigNumber
           , parentHash :: HexString
@@ -233,6 +234,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
@@ -260,6 +262,7 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance newtypeTransaction :: Newtype Transaction _
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
@@ -284,6 +287,7 @@ newtype TransactionReceipt =
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
+derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
 derive instance eqTxReceipt :: Eq TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
@@ -307,6 +311,7 @@ newtype TransactionOptions =
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
+derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
 
 instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
@@ -365,6 +370,7 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
+derive instance newtypeSyncStatus :: Newtype SyncStatus _
 derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
@@ -415,6 +421,7 @@ newtype Filter = Filter
   }
 
 derive instance genericFilter :: Generic Filter _
+derive instance newtypeFilter :: Newtype Filter _
 
 instance showFilter :: Show Filter where
   show = genericShow
@@ -476,6 +483,7 @@ newtype Change = Change
   }
 
 derive instance genericChange :: Generic Change _
+derive instance newtypeChange :: Newtype Change _
 
 instance showChange :: Show Change where
   show = genericShow
