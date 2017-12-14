@@ -27,12 +27,13 @@ module Network.Ethereum.Web3.Types.Types
        , _nonce
        , Web3(..)
        , unsafeCoerceWeb3
-       , Filter(..)
+       , Filter
+       , defaultFilter
        , _address
        , _topics
        , _fromBlock
        , _toBlock
-       , FilterId(..)
+       , FilterId
        , Change(..)
        , FalseOrObject(..)
        , unFalseOrObject
@@ -49,8 +50,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Trampoline (runTrampoline)
-import Data.Array (many)
+import Data.Array (head, many, uncons)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
@@ -59,15 +59,16 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
+import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take) as S
-import Data.String (stripPrefix, Pattern(..), fromCharArray)
+import Data.String (stripPrefix, Pattern(..), fromCharArray, toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (runParserT)
+import Text.Parsing.Parser (runParser)
 import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
@@ -131,11 +132,20 @@ unHex (HexString hx) = hx
 mkHexString :: String -> Maybe HexString
 mkHexString str = HexString <$>
   case stripPrefix (Pattern "0x") str of
-    Nothing -> go str
-    Just res -> go res
+    Nothing -> if isJust (go <<< toCharArray $ str)
+                 then Just str
+                 else Nothing
+    Just res -> if isJust (go <<< toCharArray $ res)
+                  then Just res
+                  else Nothing
   where
-    go s = hush $ runTrampParser s (fromCharArray <$> many hexDigit)
-    runTrampParser s = runTrampoline <<< runParserT s
+    hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdef"
+    go s = case uncons s of
+      Nothing -> pure unit
+      Just {head, tail} ->
+        if head `Set.member` hexAlph
+          then go tail
+          else Nothing
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
@@ -219,6 +229,7 @@ newtype Block
           , hash :: HexString
           , logsBloom :: HexString
           , miner :: HexString
+          , mixHash :: HexString
           , nonce :: HexString
           , number :: BigNumber
           , parentHash :: HexString
@@ -234,7 +245,6 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
-derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
@@ -262,7 +272,6 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
-derive instance newtypeTransaction :: Newtype Transaction _
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
@@ -287,7 +296,6 @@ newtype TransactionReceipt =
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
-derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
 derive instance eqTxReceipt :: Eq TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
@@ -311,7 +319,6 @@ newtype TransactionOptions =
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
-derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
 
 instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
@@ -370,7 +377,6 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
-derive instance newtypeSyncStatus :: Newtype SyncStatus _
 derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
@@ -414,14 +420,13 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 
 -- | Low-level event filter data structure
 newtype Filter = Filter
-  { address   :: Address
-  , topics    :: (Array (NullOrUndefined HexString))
+  { address   :: NullOrUndefined Address
+  , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
   , fromBlock :: BlockMode
   , toBlock   :: BlockMode
   }
 
 derive instance genericFilter :: Generic Filter _
-derive instance newtypeFilter :: Newtype Filter _
 
 instance showFilter :: Show Filter where
   show = genericShow
@@ -432,13 +437,20 @@ instance eqFilter :: Eq Filter where
 instance encodeFilter :: Encode Filter where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
-_address :: Lens' Filter Address
-_address = lens (\(Filter f) -> f.address)
-          (\(Filter f) addr -> Filter $ f {address = addr})
+defaultFilter :: Filter
+defaultFilter = Filter { address: NullOrUndefined Nothing
+                       , topics: NullOrUndefined Nothing
+                       , fromBlock: Latest
+                       , toBlock: Latest
+                       }
 
-_topics :: Lens' Filter (Array (Maybe HexString))
-_topics = lens (\(Filter f) -> map unNullOrUndefined f.topics)
-          (\(Filter f) ts -> Filter $ f {topics = (map NullOrUndefined ts)})
+_address :: Lens' Filter (Maybe Address)
+_address = lens (\(Filter f) -> unNullOrUndefined f.address)
+          (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
+
+_topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
+_topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
+          (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
 _fromBlock :: Lens' Filter BlockMode
 _fromBlock = lens (\(Filter f) -> f.fromBlock)
@@ -483,7 +495,6 @@ newtype Change = Change
   }
 
 derive instance genericChange :: Generic Change _
-derive instance newtypeChange :: Newtype Change _
 
 instance showChange :: Show Change where
   show = genericShow

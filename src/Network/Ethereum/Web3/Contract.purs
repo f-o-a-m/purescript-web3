@@ -55,7 +55,7 @@ instance eqEventAction :: Eq EventAction where
 
 class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
-    eventFilter :: Proxy a -> {topics :: Array (Maybe HexString)}
+    eventFilter :: Proxy a -> Address -> Filter
 
 -- | run 'event'' one block at a time.
 event :: forall p e a i ni.

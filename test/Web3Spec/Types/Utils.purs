@@ -18,9 +18,9 @@ utilsSpec = describe "utils-spec" do
 
       it "can convert hex strings to utf8" do
         toUtf8 (unsafePartial (fromJust <<< mkHexString) "6d79537472696e67") `shouldEqual` "myString"
-        toUtf8 (unsafePartial (fromJust <<< mkHexString) "6d79537472696e67\00") `shouldEqual` "myString"
-        toUtf8 (unsafePartial (fromJust <<< mkHexString) "65787065637465642076616c7565\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00")
-          `shouldEqual` "expected value"
+        toUtf8 (unsafePartial (fromJust <<< mkHexString) "6d79537472696e6700") `shouldEqual` "myString\00"
+        toUtf8 (unsafePartial (fromJust <<< mkHexString) "65787065637465642076616c7565000000000000000000000000000000000000")
+          `shouldEqual` "expected value\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
 
       it "can convert strings to hex" do
         fromUtf8 "myString" `shouldEqual` unsafePartial (fromJust <<< mkHexString) "6d79537472696e67"
