@@ -57,7 +57,7 @@ class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> {topics :: Array (Maybe HexString)}
 
-
+-- | run 'event'' one block at a time.
 event :: forall p e a i ni.
          IsAsyncProvider p
       => DecodeEvent i ni a
@@ -67,6 +67,9 @@ event :: forall p e a i ni.
       -> Web3 p e Unit
 event fltr w handler = event' fltr 1 handler
 
+-- | 'event'' takes a 'Filter' and a handler, as well as a windowSize.
+-- | It runs the handler over the 'eventLogs' using 'reduceEventStream'. If no
+-- | 'TerminateEvent' is thrown, it then transitions to polling.
 event' :: forall p e a i ni.
           IsAsyncProvider p
        => DecodeEvent i ni a
@@ -87,6 +90,9 @@ event' fltr w handler = do
       filterId <- eth_newFilter $ fltr # _fromBlock .~ BN newStart.currentBlock
       void $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler unit
 
+-- | 'reduceEventStream' takes a handler and an initial state and attempts to run
+-- | the handler over the event stream. If the machine ends without a 'TerminateEvent'
+-- | result, we return the current state. Otherwise we return 'Nothing'.
 reduceEventStream :: forall f s a i ni.
                      Monad f
                   => DecodeEvent i ni a
@@ -104,6 +110,8 @@ reduceEventStream m handler s = do
          then reduceEventStream m' handler s
          else pure Nothing
 
+-- | 'playLogs' streams the 'filterStream' and calls eth_getLogs on these
+-- | 'Filter' objects.
 playLogs :: forall p e a i ni.
             IsAsyncProvider p
          => DecodeEvent i ni a
@@ -113,6 +121,9 @@ playLogs  = do
   changes <- wrapEffect $ eth_getLogs filter
   pure $ mkFilterChanges changes
 
+-- | 'pollFilter' takes a 'FilterId' and a max 'BlockMode' and polls a filter
+-- | for changes until the chainHead's 'BlockNumber' exceeds the 'BlockMode',
+-- | if ever. There is a minimum delay of 1 second between polls.
 pollFilter :: forall p e a i ni s.
                IsAsyncProvider p
             => DecodeEvent i ni a
@@ -128,7 +139,7 @@ pollFilter filterId stop = mealy $ \s -> do
        changes <- eth_getFilterChanges filterId
        pure $ Emit (mkFilterChanges changes) (pollFilter filterId stop)
 
--- * Process Filter Changes
+-- * Process Filter Changes helpers
 
 type FilterChange a =
   { rawChange :: Change
@@ -157,7 +168,7 @@ processChanges handler changes = for changes \c ->
     runReaderT (handler c.event) c.rawChange
 
 
--- * Filter Streams
+-- * Filter Stream
 
 type FilterStreamState =
   { currentBlock :: BlockNumber
@@ -165,6 +176,12 @@ type FilterStreamState =
   , windowSize :: Int
   }
 
+-- | 'filterStream' is a machine which represents taking an initial filter
+-- | over a range of blocks b1, ... bn (where bn is possibly 'Latest' or 'Pending',
+-- | but b1 is an actual 'BlockNumber'), and making a stream of filter objects
+-- | which cover this filter in intervals of size 'windowSize'. The machine
+-- | halts whenever the 'fromBlock' of a spanning filter either (1) excedes the
+-- | initial filter's 'toBlock' or (2) is greater than the chain head's 'BlockNumber'.
 filterStream :: forall p e.
                 IsAsyncProvider p
              => MealyT (Web3 p e) FilterStreamState Filter
@@ -185,6 +202,7 @@ filterStream = mealy filterStream'
               in pure $ Emit fltr $ mealy \s' ->
                    filterStream' s' {currentBlock = succ to'}
 
+-- | Coerce a 'BlockMode' to an actual 'BlockNumber'.
 mkBlockNumber :: forall p e . IsAsyncProvider p => BlockMode -> Web3 p e BlockNumber
 mkBlockNumber bm = case bm of
   BN bn -> pure bn
