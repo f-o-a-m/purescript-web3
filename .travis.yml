@@ -13,3 +13,10 @@ install:
   - npm install
 script:
   - npm -s test
+cache:
+  yarn: true
+  directories:
+    - node-modules
+    - output
+    - .pulp-cache
+    - bower_components
