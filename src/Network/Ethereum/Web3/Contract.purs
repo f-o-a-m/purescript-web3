@@ -199,8 +199,7 @@ filterStream = mealy filterStream'
                   fltr = s.initialFilter
                            # _fromBlock .~ BN s.currentBlock
                            # _toBlock .~ BN to'
-              in do
-                 pure $ Emit fltr $ mealy \s' ->
+              in pure $ Emit fltr $ mealy \s' ->
                    filterStream' s' {currentBlock = succ to'}
 
 -- | Coerce a 'BlockMode' to an actual 'BlockNumber'.
