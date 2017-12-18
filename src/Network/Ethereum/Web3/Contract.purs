@@ -82,11 +82,12 @@ event' fltr w handler = do
                      , initialFilter: fltr
                      , windowSize: w
                      }
-  mbn <- reduceEventStream playLogs handler initialState
-  case mbn of
+  mLastProcessedFilterState <- reduceEventStream playLogs handler initialState
+  case mLastProcessedFilterState of
     Nothing -> pure unit
-    Just newStart -> do
-      filterId <- eth_newFilter $ fltr # _fromBlock .~ BN newStart.currentBlock
+    Just lastProcessedFilterState -> do
+      let pollingFromBlock = wrap $ unwrap lastProcessedFilterState.currentBlock + one
+      filterId <- eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock
       void $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler unit
 
 -- | 'reduceEventStream' takes a handler and an initial state and attempts to run
@@ -198,7 +199,8 @@ filterStream = mealy filterStream'
                   fltr = s.initialFilter
                            # _fromBlock .~ BN s.currentBlock
                            # _toBlock .~ BN to'
-              in pure $ Emit fltr $ mealy \s' ->
+              in do
+                 pure $ Emit fltr $ mealy \s' ->
                    filterStream' s' {currentBlock = succ to'}
 
 -- | Coerce a 'BlockMode' to an actual 'BlockNumber'.
