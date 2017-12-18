@@ -4,6 +4,7 @@ module Network.Ethereum.Web3.Contract
  , EventAction(..)
  , event
  , event'
+ , mkBlockNumber
  , class CallMethod
  , call
  , class TxMethod
@@ -29,12 +30,13 @@ import Data.Newtype (wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
+import Debug.Trace (traceA)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, decodeEvent, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockMode(..), BlockNumber, Change, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
-
+import Unsafe.Coerce (unsafeCoerce)
 --------------------------------------------------------------------------------
 -- * Events
 --------------------------------------------------------------------------------
@@ -132,10 +134,14 @@ pollFilter :: forall p e a i ni s.
 pollFilter filterId stop = mealy $ \s -> do
   bn <- eth_blockNumber
   if BN bn > stop
-     then eth_uninstallFilter filterId *> pure Halt
+     then do
+          traceA $ "stopping poll -- current block number --" <> show bn
+          eth_uninstallFilter filterId *> pure Halt
      else do
        liftAff $ delay (Milliseconds 1000.0)
+       traceA $ "polling filter till " <> show stop <> " -- changes -- "
        changes <- eth_getFilterChanges filterId
+       traceA $ show changes
        pure $ Emit (mkFilterChanges changes) (pollFilter filterId stop)
 
 -- * Process Filter Changes helpers
@@ -194,11 +200,13 @@ filterStream = mealy filterStream'
       end <- mkBlockNumber $ s.initialFilter ^. _toBlock
       if s.currentBlock > end
          then pure Halt
-         else let to' = newTo end s.currentBlock s.windowSize
+         else do
+              traceA $ "FilterStreamState -- Current Block Number -- " <> show s.currentBlock
+              let to' = newTo end s.currentBlock s.windowSize
                   fltr = s.initialFilter
                            # _fromBlock .~ BN s.currentBlock
                            # _toBlock .~ BN to'
-              in pure $ Emit fltr $ mealy \s' ->
+              pure $ Emit fltr $ mealy \s' ->
                    filterStream' s' {currentBlock = succ to'}
 
 -- | Coerce a 'BlockMode' to an actual 'BlockNumber'.
