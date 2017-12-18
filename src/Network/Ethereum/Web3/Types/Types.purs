@@ -42,7 +42,6 @@ module Network.Ethereum.Web3.Types.Types
 
 import Prelude
 
-import Control.Error.Util (hush)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
@@ -50,7 +49,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Data.Array (head, many, uncons)
+import Data.Array (uncons)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
@@ -65,11 +64,9 @@ import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take) as S
-import Data.String (stripPrefix, Pattern(..), fromCharArray, toCharArray)
+import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (runParser)
-import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
