@@ -30,13 +30,12 @@ import Data.Newtype (wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
-import Debug.Trace (traceA)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, decodeEvent, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Types (class EtherUnit, Address, ChainCursor(..), BlockNumber, Change, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
-import Unsafe.Coerce (unsafeCoerce)
+
 --------------------------------------------------------------------------------
 -- * Events
 --------------------------------------------------------------------------------
@@ -66,7 +65,7 @@ event :: forall p e a i ni.
       => Filter
       -> (a -> ReaderT Change (Web3 p e) EventAction)
       -> Web3 p e Unit
-event fltr handler = event' fltr 0 handler
+event fltr handler = event' fltr zero handler
 
 -- | 'event'' takes a 'Filter' and a handler, as well as a windowSize.
 -- | It runs the handler over the 'eventLogs' using 'reduceEventStream'. If no
@@ -136,13 +135,10 @@ pollFilter filterId stop = mealy $ \s -> do
   bn <- eth_blockNumber
   if BN bn > stop
      then do
-          traceA $ "stopping poll -- current block number --" <> show bn
           eth_uninstallFilter filterId *> pure Halt
      else do
        liftAff $ delay (Milliseconds 1000.0)
-       traceA $ "polling filter till " <> show stop <> " -- changes -- "
        changes <- eth_getFilterChanges filterId
-       traceA $ show changes
        pure $ Emit (mkFilterChanges changes) (pollFilter filterId stop)
 
 -- * Process Filter Changes helpers
@@ -202,7 +198,6 @@ filterStream = mealy filterStream'
       if s.currentBlock > end
          then pure Halt
          else do
-              traceA $ "FilterStreamState -- Current Block Number -- " <> show s.currentBlock
               let to' = newTo end s.currentBlock s.windowSize
                   fltr = s.initialFilter
                            # _fromBlock .~ BN s.currentBlock
