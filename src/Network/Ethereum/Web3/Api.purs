@@ -4,7 +4,7 @@ import Prelude
 
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
-import Network.Ethereum.Web3.Types (Web3, Address, BigNumber, Block, CallMode, HexString, Transaction, TransactionOptions, TransactionReceipt, Change, FilterId, Filter, SyncStatus)
+import Network.Ethereum.Web3.Types (Web3, Address, BigNumber, Block, BlockNumber, ChainCursor, HexString, Transaction, TransactionOptions, TransactionReceipt, Change, FilterId, Filter, SyncStatus)
 import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3, defaultTransactionOptions, FalseOrObject)
 import Type.Data.Boolean (kind Boolean)
 
@@ -53,19 +53,19 @@ eth_gasPrice :: forall p e. IsAsyncProvider p => Web3 p e BigNumber
 eth_gasPrice = unsafeCoerceWeb3 $ remote "eth_gasPrice" :: Web3 p () BigNumber
 
 -- | Returns the number of most recent block
-eth_blockNumber :: forall p e. IsAsyncProvider p => Web3 p e BigNumber
-eth_blockNumber = unsafeCoerceWeb3 $ remote "eth_blockNumber" :: Web3 p () BigNumber
+eth_blockNumber :: forall p e. IsAsyncProvider p => Web3 p e BlockNumber
+eth_blockNumber = unsafeCoerceWeb3 $ remote "eth_blockNumber" :: Web3 p () BlockNumber
 
 -- | Returns the balance of the account of given address.
-eth_getBalance :: forall p e . IsAsyncProvider p => Address -> CallMode -> Web3 p e BigNumber
+eth_getBalance :: forall p e . IsAsyncProvider p => Address -> ChainCursor -> Web3 p e BigNumber
 eth_getBalance addr cm = unsafeCoerceWeb3 $ remote "eth_getBalance" addr cm :: Web3 p () BigNumber
 
 -- | Returns the value from a storage position at a given address
-eth_getStorageAt :: forall p e. IsAsyncProvider p => Address -> BigNumber -> CallMode -> Web3 p e HexString
+eth_getStorageAt :: forall p e. IsAsyncProvider p => Address -> BigNumber -> ChainCursor -> Web3 p e HexString
 eth_getStorageAt addr storagePos cm = unsafeCoerceWeb3 $ remote "eth_getStorageAt" addr storagePos cm :: Web3 p () HexString
 
 -- | Returns the number of transactions *sent* from an address
-eth_getTransactionCount :: forall p e. IsAsyncProvider p => Address -> CallMode -> Web3 p e BigNumber
+eth_getTransactionCount :: forall p e. IsAsyncProvider p => Address -> ChainCursor -> Web3 p e BigNumber
 eth_getTransactionCount addr cm = unsafeCoerceWeb3 $ remote "eth_getTransactionCount" addr cm :: Web3 p () BigNumber
 
 -- | Returns the number of transactions in a block from a block matching the given block hash
@@ -73,7 +73,7 @@ eth_getBlockTransactionCountByHash :: forall p e. IsAsyncProvider p => HexString
 eth_getBlockTransactionCountByHash blockHash = unsafeCoerceWeb3 $ remote "eth_getBlockTransactionCountByHash" blockHash :: Web3 p () BigNumber
 
 -- | Returns the number of transactions in a block matching the given block number
-eth_getBlockTransactionCountByNumber :: forall p e. IsAsyncProvider p => CallMode -> Web3 p e BigNumber
+eth_getBlockTransactionCountByNumber :: forall p e. IsAsyncProvider p => ChainCursor -> Web3 p e BigNumber
 eth_getBlockTransactionCountByNumber cm = unsafeCoerceWeb3 $ remote "eth_getBlockTransactionCountByNumber" cm :: Web3 p () BigNumber
 
 -- TODO - is it appropriate for these to be Ints?
@@ -83,11 +83,11 @@ eth_getUncleCountByBlockHash :: forall p e. IsAsyncProvider p => HexString -> We
 eth_getUncleCountByBlockHash blockNumber = unsafeCoerceWeb3 $ remote "eth_getUncleCountByBlockHash" blockNumber :: Web3 p () BigNumber
 
 -- | Returns the number of uncles in a block from a block matching the given block number
-eth_getUncleCountByBlockNumber :: forall p e. IsAsyncProvider p => CallMode -> Web3 p e BigNumber
+eth_getUncleCountByBlockNumber :: forall p e. IsAsyncProvider p => ChainCursor -> Web3 p e BigNumber
 eth_getUncleCountByBlockNumber cm = unsafeCoerceWeb3 $ remote "eth_getUncleCountByBlockNumber" cm :: Web3 p () BigNumber
 
 -- | Returns code at a given address
-eth_getCode :: forall p e. IsAsyncProvider p => Address -> CallMode -> Web3 p e HexString
+eth_getCode :: forall p e. IsAsyncProvider p => Address -> ChainCursor -> Web3 p e HexString
 eth_getCode addr cm = unsafeCoerceWeb3 $ remote "eth_getCode" addr cm :: Web3 p () HexString
 
 -- | The sign method calculates an Ethereum specific signature with: `sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)))`.
@@ -101,7 +101,7 @@ eth_sendRawTransaction :: forall p e. IsAsyncProvider p => HexString -> Web3 p e
 eth_sendRawTransaction rawTx = unsafeCoerceWeb3 $ remote "eth_sendRawTransaction" rawTx :: Web3 p () HexString
 
 -- | Makes a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas.
-eth_estimateGas :: forall p e. IsAsyncProvider p => TransactionOptions -> CallMode -> Web3 p e BigNumber
+eth_estimateGas :: forall p e. IsAsyncProvider p => TransactionOptions -> ChainCursor -> Web3 p e BigNumber
 eth_estimateGas txOpts cm = unsafeCoerceWeb3 $ remote "eth_estimateGas" txOpts cm :: Web3 p () BigNumber
 
 -- | Returns information about a transaction by block hash and transaction index position.
@@ -109,7 +109,7 @@ eth_getTransactionByBlockHashAndIndex :: forall p e. IsAsyncProvider p => HexStr
 eth_getTransactionByBlockHashAndIndex blockHash txIndex = unsafeCoerceWeb3 $ remote "eth_getTransactionByBlockHashAndIndex" blockHash txIndex :: Web3 p () Transaction
 
 -- | Returns information about a transaction by block number and transaction index position.
-eth_getTransactionByBlockNumberAndIndex :: forall p e. IsAsyncProvider p => CallMode -> BigNumber -> Web3 p e Transaction
+eth_getTransactionByBlockNumberAndIndex :: forall p e. IsAsyncProvider p => ChainCursor -> BigNumber -> Web3 p e Transaction
 eth_getTransactionByBlockNumberAndIndex cm txIndex = unsafeCoerceWeb3 $ remote "eth_getTransactionByBlockNumberAndIndex" cm txIndex :: Web3 p () Transaction
 
 -- | Returns the receipt of a transaction by transaction hash.
@@ -121,7 +121,7 @@ eth_getUncleByBlockHashAndIndex :: forall p e. IsAsyncProvider p => HexString ->
 eth_getUncleByBlockHashAndIndex blockHash uncleIndex = unsafeCoerceWeb3 $ remote "eth_getUncleByBlockHashAndIndex" blockHash uncleIndex :: Web3 p () Block
 
 -- | Returns information about a uncle of a block by number and uncle index position.
-eth_getUncleByBlockNumberAndIndex :: forall p e. IsAsyncProvider p => CallMode -> BigNumber -> Web3 p e Block
+eth_getUncleByBlockNumberAndIndex :: forall p e. IsAsyncProvider p => ChainCursor -> BigNumber -> Web3 p e Block
 eth_getUncleByBlockNumberAndIndex cm uncleIndex = unsafeCoerceWeb3 $ remote "eth_getUncleByBlockNumberAndIndex" cm uncleIndex :: Web3 p () Block
 
 -- | Returns a list of available compilers in the client.
@@ -134,7 +134,7 @@ eth_getCompilers = unsafeCoerceWeb3 $ remote "eth_getCompilers" :: Web3 p () (Ar
 -- eth_compileSolidity code = unsafeCoerceWeb3 $ remote "eth_compileSolidity" :: Web3 p () HexString
 
 -- | Returns information about a block by number.
-eth_getBlockByNumber :: forall p e . IsAsyncProvider p => CallMode -> Web3 p e Block
+eth_getBlockByNumber :: forall p e . IsAsyncProvider p => ChainCursor -> Web3 p e Block
 eth_getBlockByNumber cm = unsafeCoerceWeb3 $ remote "eth_getBlockByNumber" cm false :: Web3 p () Block
 
 -- | Returns information about a block by hash.
@@ -146,7 +146,7 @@ eth_getTransaction :: forall p e . IsAsyncProvider p => HexString -> Web3 p e Tr
 eth_getTransaction hx = unsafeCoerceWeb3 $ remote "eth_getTransactionByHash" hx :: Web3 p () Transaction
 
 -- | Call a function on a particular block's state root.
-eth_call :: forall p e . IsAsyncProvider p => TransactionOptions -> CallMode -> Web3 p e HexString
+eth_call :: forall p e . IsAsyncProvider p => TransactionOptions -> ChainCursor -> Web3 p e HexString
 eth_call opts cm = unsafeCoerceWeb3 $ remote "eth_call" opts cm :: Web3 p () HexString
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.

@@ -10,7 +10,8 @@ module Network.Ethereum.Web3.Types.Types
        , Address
        , unAddress
        , mkAddress
-       , CallMode(..)
+       , BlockNumber
+       , ChainCursor(..)
        , Block(..)
        , Transaction(..)
        , TransactionReceipt(..)
@@ -26,13 +27,13 @@ module Network.Ethereum.Web3.Types.Types
        , _nonce
        , Web3(..)
        , unsafeCoerceWeb3
-       , Filter(..)
+       , Filter
        , defaultFilter
        , _address
        , _topics
        , _fromBlock
        , _toBlock
-       , FilterId(..)
+       , FilterId
        , Change(..)
        , FalseOrObject(..)
        , unFalseOrObject
@@ -41,7 +42,6 @@ module Network.Ethereum.Web3.Types.Types
 
 import Prelude
 
-import Control.Error.Util (hush)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
@@ -49,8 +49,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Trampoline (runTrampoline)
-import Data.Array (many)
+import Data.Array (uncons)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
@@ -59,15 +58,15 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
+import Data.Ordering (invert)
+import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take) as S
-import Data.String (stripPrefix, Pattern(..), fromCharArray)
+import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (runParserT)
-import Text.Parsing.Parser.Token (hexDigit)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -130,11 +129,20 @@ unHex (HexString hx) = hx
 mkHexString :: String -> Maybe HexString
 mkHexString str = HexString <$>
   case stripPrefix (Pattern "0x") str of
-    Nothing -> go str
-    Just res -> go res
+    Nothing -> if isJust (go <<< toCharArray $ str)
+                 then Just str
+                 else Nothing
+    Just res -> if isJust (go <<< toCharArray $ res)
+                  then Just res
+                  else Nothing
   where
-    go s = hush $ runTrampParser s (fromCharArray <$> many hexDigit)
-    runTrampParser s = runTrampoline <<< runParserT s
+    hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdef"
+    go s = case uncons s of
+      Nothing -> pure unit
+      Just {head, tail} ->
+        if head `Set.member` hexAlph
+          then go tail
+          else Nothing
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
@@ -168,19 +176,47 @@ mkAddress hx = if hexLength hx == 40 then Just <<< Address $ hx else Nothing
 -- * Block
 --------------------------------------------------------------------------------
 
+newtype BlockNumber = BlockNumber BigNumber
+
+derive newtype instance showBlockNumber :: Show BlockNumber
+derive newtype instance eqBlockNumber :: Eq BlockNumber
+derive newtype instance ordBlockNumber :: Ord BlockNumber
+derive newtype instance decodeBlockNumber :: Decode BlockNumber
+derive newtype instance encodeBlockNumber :: Encode BlockNumber
+derive instance newtypeBlockNumber :: Newtype BlockNumber _
+
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
-data CallMode =
+data ChainCursor =
     Latest
   | Pending
   | Earliest
-  | BlockNumber BigNumber
+  | BN BlockNumber
 
-instance encodeCallMode :: Encode CallMode where
+derive instance genericChainCursor :: Generic ChainCursor _
+
+instance eqChainCursor :: Eq ChainCursor where
+  eq = genericEq
+
+instance showChainCursor :: Show ChainCursor where
+  show = genericShow
+
+instance ordChainCursor :: Ord ChainCursor where
+  compare Pending Pending = EQ
+  compare Latest Latest = EQ
+  compare Earliest Earliest = EQ
+  compare (BN a) (BN b) = compare a b
+  compare _ Pending = LT
+  compare Pending Latest = GT
+  compare _ Latest = LT
+  compare Earliest _ = LT
+  compare a b = invert $ compare b a
+
+instance encodeChainCursor :: Encode ChainCursor where
   encode cm = case cm of
     Latest -> encode "latest"
     Pending -> encode "pending"
     Earliest -> encode "earliest"
-    BlockNumber n -> encode n
+    BN n -> encode n
 
 newtype Block
   = Block { difficulty :: BigNumber
@@ -190,6 +226,7 @@ newtype Block
           , hash :: HexString
           , logsBloom :: HexString
           , miner :: HexString
+          , mixHash :: HexString
           , nonce :: HexString
           , number :: BigNumber
           , parentHash :: HexString
@@ -205,7 +242,6 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
-derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
@@ -222,7 +258,7 @@ newtype Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
               , blockHash :: HexString
-              , blockNumber :: BigNumber
+              , blockNumber :: BlockNumber
               , transactionIndex :: BigNumber
               , from :: Address
               , to :: NullOrUndefined Address
@@ -233,7 +269,6 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
-derive instance newtypeTransaction :: Newtype Transaction _
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
@@ -246,11 +281,11 @@ instance decodeTransaction :: Decode Transaction where
 -- * TransactionReceipt
 --------------------------------------------------------------------------------
 
-newtype TransactionReceipt = 
+newtype TransactionReceipt =
   TransactionReceipt { transactionHash :: HexString
                      , transactionIndex :: BigNumber
                      , blockHash :: HexString
-                     , blockNumber :: BigNumber
+                     , blockNumber :: BlockNumber
                      , cumulativeGasUsed :: BigNumber
                      , gasUsed :: BigNumber
                      , contractAddress :: NullOrUndefined Address
@@ -258,7 +293,6 @@ newtype TransactionReceipt =
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
-derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
 derive instance eqTxReceipt :: Eq TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
@@ -282,7 +316,6 @@ newtype TransactionOptions =
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
-derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
 
 instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
@@ -341,7 +374,6 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
-derive instance newtypeSyncStatus :: Newtype SyncStatus _
 derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
@@ -387,12 +419,11 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 newtype Filter = Filter
   { address   :: NullOrUndefined Address
   , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
-  , fromBlock :: NullOrUndefined HexString
-  , toBlock   :: NullOrUndefined HexString
+  , fromBlock :: ChainCursor
+  , toBlock   :: ChainCursor
   }
 
 derive instance genericFilter :: Generic Filter _
-derive instance newtypeFilter :: Newtype Filter _
 
 instance showFilter :: Show Filter where
   show = genericShow
@@ -404,28 +435,27 @@ instance encodeFilter :: Encode Filter where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
 defaultFilter :: Filter
-defaultFilter =
-  Filter { address: NullOrUndefined Nothing
-         , topics: NullOrUndefined Nothing
-         , fromBlock: NullOrUndefined Nothing
-         , toBlock: NullOrUndefined Nothing
-         }
+defaultFilter = Filter { address: NullOrUndefined Nothing
+                       , topics: NullOrUndefined Nothing
+                       , fromBlock: Latest
+                       , toBlock: Latest
+                       }
 
 _address :: Lens' Filter (Maybe Address)
-_address = lens (\(Filter f) -> unNullOrUndefined $ f.address)
+_address = lens (\(Filter f) -> unNullOrUndefined f.address)
           (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
 
 _topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
 _topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
           (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
-_fromBlock :: Lens' Filter (Maybe HexString)
-_fromBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
-          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
+_fromBlock :: Lens' Filter ChainCursor
+_fromBlock = lens (\(Filter f) -> f.fromBlock)
+          (\(Filter f) b -> Filter $ f {fromBlock = b})
 
-_toBlock :: Lens' Filter (Maybe HexString)
-_toBlock = lens (\(Filter f) -> unNullOrUndefined $ f.fromBlock)
-          (\(Filter f) b -> Filter $ f {fromBlock = NullOrUndefined b})
+_toBlock :: Lens' Filter ChainCursor
+_toBlock = lens (\(Filter f) -> f.toBlock)
+          (\(Filter f) b -> Filter $ f {toBlock = b})
 
 -- | Used by the ethereum client to identify the filter you are querying
 newtype FilterId = FilterId HexString
@@ -455,14 +485,13 @@ newtype Change = Change
   , transactionIndex :: HexString
   , transactionHash  :: HexString
   , blockHash        :: HexString
-  , blockNumber      :: HexString
+  , blockNumber      :: BlockNumber
   , address          :: Address
   , data             :: HexString
   , topics           :: Array HexString
   }
 
 derive instance genericChange :: Generic Change _
-derive instance newtypeChange :: Newtype Change _
 
 instance showChange :: Show Change where
   show = genericShow
