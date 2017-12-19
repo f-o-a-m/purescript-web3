@@ -11,7 +11,7 @@ module Network.Ethereum.Web3.Types.Types
        , unAddress
        , mkAddress
        , BlockNumber
-       , BlockMode(..)
+       , ChainCursor(..)
        , Block(..)
        , Transaction(..)
        , TransactionReceipt(..)
@@ -186,21 +186,21 @@ derive newtype instance encodeBlockNumber :: Encode BlockNumber
 derive instance newtypeBlockNumber :: Newtype BlockNumber _
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
-data BlockMode =
+data ChainCursor =
     Latest
   | Pending
   | Earliest
   | BN BlockNumber
 
-derive instance genericBlockMode :: Generic BlockMode _
+derive instance genericChainCursor :: Generic ChainCursor _
 
-instance eqBlockMode :: Eq BlockMode where
+instance eqChainCursor :: Eq ChainCursor where
   eq = genericEq
 
-instance showBlockMode :: Show BlockMode where
+instance showChainCursor :: Show ChainCursor where
   show = genericShow
 
-instance ordBlockMode :: Ord BlockMode where
+instance ordChainCursor :: Ord ChainCursor where
   compare Pending Pending = EQ
   compare Latest Latest = EQ
   compare Earliest Earliest = EQ
@@ -211,7 +211,7 @@ instance ordBlockMode :: Ord BlockMode where
   compare Earliest _ = LT
   compare a b = invert $ compare b a
 
-instance encodeBlockMode :: Encode BlockMode where
+instance encodeChainCursor :: Encode ChainCursor where
   encode cm = case cm of
     Latest -> encode "latest"
     Pending -> encode "pending"
@@ -419,8 +419,8 @@ unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
 newtype Filter = Filter
   { address   :: NullOrUndefined Address
   , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
-  , fromBlock :: BlockMode
-  , toBlock   :: BlockMode
+  , fromBlock :: ChainCursor
+  , toBlock   :: ChainCursor
   }
 
 derive instance genericFilter :: Generic Filter _
@@ -449,11 +449,11 @@ _topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
 _topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
           (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
-_fromBlock :: Lens' Filter BlockMode
+_fromBlock :: Lens' Filter ChainCursor
 _fromBlock = lens (\(Filter f) -> f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = b})
 
-_toBlock :: Lens' Filter BlockMode
+_toBlock :: Lens' Filter ChainCursor
 _toBlock = lens (\(Filter f) -> f.toBlock)
           (\(Filter f) b -> Filter $ f {toBlock = b})
 

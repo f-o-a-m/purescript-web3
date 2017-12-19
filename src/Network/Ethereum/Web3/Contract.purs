@@ -34,7 +34,7 @@ import Debug.Trace (traceA)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, decodeEvent, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockMode(..), BlockNumber, Change, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, ChainCursor(..), BlockNumber, Change, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
 import Unsafe.Coerce (unsafeCoerce)
 --------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ event :: forall p e a i ni.
       => Filter
       -> (a -> ReaderT Change (Web3 p e) EventAction)
       -> Web3 p e Unit
-event fltr handler = event' fltr 1 handler
+event fltr handler = event' fltr 0 handler
 
 -- | 'event'' takes a 'Filter' and a handler, as well as a windowSize.
 -- | It runs the handler over the 'eventLogs' using 'reduceEventStream'. If no
@@ -123,14 +123,14 @@ playLogs  = do
   changes <- wrapEffect $ eth_getLogs filter
   pure $ mkFilterChanges changes
 
--- | 'pollFilter' takes a 'FilterId' and a max 'BlockMode' and polls a filter
--- | for changes until the chainHead's 'BlockNumber' exceeds the 'BlockMode',
+-- | 'pollFilter' takes a 'FilterId' and a max 'ChainCursor' and polls a filter
+-- | for changes until the chainHead's 'BlockNumber' exceeds the 'ChainCursor',
 -- | if ever. There is a minimum delay of 1 second between polls.
 pollFilter :: forall p e a i ni s.
                IsAsyncProvider p
             => DecodeEvent i ni a
             => FilterId
-            -> BlockMode
+            -> ChainCursor
             -> MealyT (Web3 p e) s (Array (FilterChange a))
 pollFilter filterId stop = mealy $ \s -> do
   bn <- eth_blockNumber
@@ -210,8 +210,8 @@ filterStream = mealy filterStream'
               pure $ Emit fltr $ mealy \s' ->
                    filterStream' s' {currentBlock = succ to'}
 
--- | Coerce a 'BlockMode' to an actual 'BlockNumber'.
-mkBlockNumber :: forall p e . IsAsyncProvider p => BlockMode -> Web3 p e BlockNumber
+-- | Coerce a 'ChainCursor' to an actual 'BlockNumber'.
+mkBlockNumber :: forall p e . IsAsyncProvider p => ChainCursor -> Web3 p e BlockNumber
 mkBlockNumber bm = case bm of
   BN bn -> pure bn
   Earliest -> pure <<< wrap $ zero
@@ -249,7 +249,7 @@ class CallMethod (selector :: Symbol) a b where
          -- ^ Contract address
          -> Maybe Address
          -- from address
-         -> BlockMode
+         -> ChainCursor
          -- ^ State mode for constant call (latest or pending)
          -> Tagged (SProxy selector) a
          -- ^ Method data
@@ -294,7 +294,7 @@ _call :: forall p a arep b brep e selector .
       => GenericABIDecode brep
       => Address
       -> Maybe Address
-      -> BlockMode
+      -> ChainCursor
       -> Tagged (SProxy selector) a
       -> Web3 p e b
 _call t mf cm dat = do
