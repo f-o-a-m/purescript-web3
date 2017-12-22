@@ -100,7 +100,6 @@ instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) wh
        then dynEncoding  : encoded
        else staticEncoding : encoded
     where
-      currentLength = hexLength $ combineEncodedValues encoded
       staticEncoding = EncodedValue { encoding : toDataBuilder b
                                     , offset : Nothing
                                     , order : 1 + length encoded
@@ -116,7 +115,6 @@ instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData
        then _serialize (dynEncoding  : encoded) a
        else _serialize (staticEncoding : encoded) a
     where
-      currentLength = hexLength $ combineEncodedValues encoded
       staticEncoding = EncodedValue { encoding : toDataBuilder b
                                     , offset : Nothing
                                     , order : 1 + length encoded
