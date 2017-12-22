@@ -4,7 +4,6 @@ module Network.Ethereum.Web3.Contract
  , EventAction(..)
  , event
  , event'
- , mkBlockNumber
  , class CallMethod
  , call
  , class TxMethod
@@ -58,7 +57,7 @@ class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
     eventFilter :: Proxy a -> Address -> Filter
 
--- | run 'event'' one block at a time.
+-- | run `event'` one block at a time.
 event :: forall p e a i ni.
          IsAsyncProvider p
       => DecodeEvent i ni a
@@ -67,9 +66,9 @@ event :: forall p e a i ni.
       -> Web3 p e Unit
 event fltr handler = event' fltr zero handler
 
--- | 'event'' takes a 'Filter' and a handler, as well as a windowSize.
--- | It runs the handler over the 'eventLogs' using 'reduceEventStream'. If no
--- | 'TerminateEvent' is thrown, it then transitions to polling.
+-- | Takes a `Filter` and a handler, as well as a windowSize.
+-- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
+-- | `TerminateEvent` is thrown, it then transitions to polling.
 event' :: forall p e a i ni.
           IsAsyncProvider p
        => DecodeEvent i ni a
@@ -91,9 +90,9 @@ event' fltr w handler = do
       filterId <- eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock
       void $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler unit
 
--- | 'reduceEventStream' takes a handler and an initial state and attempts to run
--- | the handler over the event stream. If the machine ends without a 'TerminateEvent'
--- | result, we return the current state. Otherwise we return 'Nothing'.
+-- | `reduceEventStream` takes a handler and an initial state and attempts to run
+-- | the handler over the event stream. If the machine ends without a `TerminateEvent`
+-- | result, we return the current state. Otherwise we return `Nothing`.
 reduceEventStream :: forall f s a i ni.
                      Monad f
                   => DecodeEvent i ni a
@@ -111,8 +110,8 @@ reduceEventStream m handler s = do
          then reduceEventStream m' handler s
          else pure Nothing
 
--- | 'playLogs' streams the 'filterStream' and calls eth_getLogs on these
--- | 'Filter' objects.
+-- | `playLogs` streams the `filterStream` and calls eth_getLogs on these
+-- | `Filter` objects.
 playLogs :: forall p e a i ni.
             IsAsyncProvider p
          => DecodeEvent i ni a
@@ -122,8 +121,8 @@ playLogs  = do
   changes <- wrapEffect $ eth_getLogs filter
   pure $ mkFilterChanges changes
 
--- | 'pollFilter' takes a 'FilterId' and a max 'ChainCursor' and polls a filter
--- | for changes until the chainHead's 'BlockNumber' exceeds the 'ChainCursor',
+-- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
+-- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
 -- | if ever. There is a minimum delay of 1 second between polls.
 pollFilter :: forall p e a i ni s.
                IsAsyncProvider p
@@ -178,12 +177,12 @@ type FilterStreamState =
   , windowSize :: Int
   }
 
--- | 'filterStream' is a machine which represents taking an initial filter
--- | over a range of blocks b1, ... bn (where bn is possibly 'Latest' or 'Pending',
--- | but b1 is an actual 'BlockNumber'), and making a stream of filter objects
--- | which cover this filter in intervals of size 'windowSize'. The machine
--- | halts whenever the 'fromBlock' of a spanning filter either (1) excedes the
--- | initial filter's 'toBlock' or (2) is greater than the chain head's 'BlockNumber'.
+-- | `filterStream` is a machine which represents taking an initial filter
+-- | over a range of blocks b1, ... bn (where bn is possibly `Latest` or `Pending`,
+-- | but b1 is an actual `BlockNumber`), and making a stream of filter objects
+-- | which cover this filter in intervals of size `windowSize`. The machine
+-- | halts whenever the `fromBlock` of a spanning filter either (1) excedes the
+-- | initial filter's `toBlock` or (2) is greater than the chain head's `BlockNumber`.
 filterStream :: forall p e.
                 IsAsyncProvider p
              => MealyT (Web3 p e) FilterStreamState Filter
