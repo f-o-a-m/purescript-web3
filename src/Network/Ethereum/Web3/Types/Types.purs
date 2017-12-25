@@ -109,6 +109,8 @@ instance showHexString :: Show HexString where
 
 derive newtype instance hexStringEq :: Eq HexString
 
+derive newtype instance hexStringOrd :: Ord HexString
+
 derive newtype instance semigpStringEq :: Semigroup HexString
 
 derive newtype instance monoidStringEq :: Monoid HexString
@@ -161,6 +163,8 @@ newtype Address = Address HexString
 derive newtype instance addressShow :: Show Address
 
 derive newtype instance addressEq :: Eq Address
+
+derive newtype instance addressOrd :: Ord Address
 
 derive newtype instance decodeAddress :: Decode Address
 
@@ -514,7 +518,7 @@ newtype FalseOrObject a = FalseOrObject (Maybe a)
 derive instance newtypeFalseOrObj :: Newtype (FalseOrObject a) _
 derive instance eqFalseOrObj :: Eq a => Eq (FalseOrObject a)
 derive instance ordFalseOrObj :: Ord a => Ord (FalseOrObject a)
-derive instance genericFalseOrObj :: Generic (FalseOrObject a) _ 
+derive instance genericFalseOrObj :: Generic (FalseOrObject a) _
 
 instance showFalseOrObj :: Show a => Show (FalseOrObject a) where
     show x = "(FalseOrObject " <> show (unwrap x) <> ")"
@@ -524,10 +528,10 @@ unFalseOrObject (FalseOrObject a) = a
 
 readFalseOrObject :: forall a. (Foreign -> F a) -> Foreign -> F (FalseOrObject a)
 readFalseOrObject f value = do
-    isBool <- catchError ((\_ -> true) <$> readBoolean value) (\_ -> pure false) 
+    isBool <- catchError ((\_ -> true) <$> readBoolean value) (\_ -> pure false)
     if isBool then
         pure $ FalseOrObject Nothing
-      else 
+      else
         FalseOrObject <<< Just <$> f value
 
 instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
