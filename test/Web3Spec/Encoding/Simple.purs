@@ -16,6 +16,7 @@ import Data.Identity (Identity(..))
 import Data.Int (toStringAs)
 import Data.List.Types (NonEmptyList(..))
 import Data.Maybe (Maybe(..), fromJust)
+import Data.String (toLower)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
@@ -73,6 +74,12 @@ stringTests =
         let given = intercalate "" $ replicate 128 "0000000000000000000000000000000000000000000000000000000000000000"
         let expected = unsafePartial fromJust <<< mkHexString $ given
         given `shouldEqual` unHex expected
+        
+      it "can handle mixed case HexStrings" do
+        let given = "fF"
+        let expected = unsafePartial fromJust <<< mkHexString $ given
+        -- note; for easy equality we should canonicalize HexStrings as lowercase
+        toLower given `shouldEqual` unHex expected
 
 
 bytesDTests :: forall r . Spec r Unit
