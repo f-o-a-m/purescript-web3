@@ -26,7 +26,6 @@ import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Test.Spec.Assertions.Aff (expectError)
 
 
 encodingSimpleSpec :: forall r . Spec (console :: CONSOLE | r) Unit
@@ -84,7 +83,7 @@ stringTests =
         
       it "fails on odd lenght HexStrings" do
         let given = "f"
-        expectError $ unsafePartial fromJust <<< mkHexString $ given
+        mkHexString given `shouldEqual` Nothing
 
 
 bytesDTests :: forall r . Spec r Unit
