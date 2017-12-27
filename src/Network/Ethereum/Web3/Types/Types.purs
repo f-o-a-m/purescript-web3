@@ -107,7 +107,8 @@ newtype HexString = HexString String
 instance showHexString :: Show HexString where
   show (HexString hx) = "0x" <> hx
 
-derive newtype instance hexStringEq :: Eq HexString
+instance hexStringEq :: Eq HexString where
+  eq (HexString h1) (HexString h2) = S.toLower h1 == S.toLower h2
 
 derive newtype instance semigpStringEq :: Semigroup HexString
 

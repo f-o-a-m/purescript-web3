@@ -26,7 +26,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, unHex, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
 
 encodingSimpleSpec :: forall r . Spec (console :: CONSOLE | r) Unit
@@ -86,6 +86,14 @@ stringTests =
         let givens = ["f", "0", "000", "0f0", "fffff", "0000000000000000000000000000000000000000f"]
         _ <- sequence $ map (\g -> mkHexString g `shouldEqual` Nothing) givens
         pure unit
+
+      it "should hold equality across cases" do
+        mkHexString "ff" `shouldEqual` mkHexString "Ff"
+        mkHexString "0000aa" `shouldEqual` mkHexString "0000AA"
+        mkHexString "0000aa" `shouldEqual` mkHexString "0000aa"
+        mkHexString "abcdef" `shouldEqual` mkHexString "AbCdEf"
+        mkHexString "" `shouldNotEqual` mkHexString "ff"
+        mkHexString "ff" `shouldNotEqual` mkHexString "aa"
 
 
 bytesDTests :: forall r . Spec r Unit
