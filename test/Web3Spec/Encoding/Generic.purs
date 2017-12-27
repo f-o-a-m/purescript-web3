@@ -131,8 +131,8 @@ change = Change { data: amount
                 , address: a
                 }
   where
-    li = unsafePartial fromJust $ mkHexString "0"
-    bh = unsafePartial fromJust $ mkHexString "0"
-    tx = unsafePartial fromJust $ mkHexString "0"
-    txi = unsafePartial fromJust $ mkHexString "0"
+    li = unsafePartial fromJust $ mkHexString "00"
+    bh = unsafePartial fromJust $ mkHexString "00"
+    tx = unsafePartial fromJust $ mkHexString "00"
+    txi = unsafePartial fromJust $ mkHexString "00"
     a = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000000"

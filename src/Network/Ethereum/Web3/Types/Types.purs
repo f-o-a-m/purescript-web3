@@ -63,7 +63,7 @@ import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Data.Set (fromFoldable, member) as Set
-import Data.String (length, take) as S
+import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
@@ -127,22 +127,24 @@ unHex :: HexString -> String
 unHex (HexString hx) = hx
 
 mkHexString :: String -> Maybe HexString
-mkHexString str = HexString <$>
-  case stripPrefix (Pattern "0x") str of
-    Nothing -> if isJust (go <<< toCharArray $ str)
-                 then Just str
-                 else Nothing
-    Just res -> if isJust (go <<< toCharArray $ res)
-                  then Just res
-                  else Nothing
-  where
-    hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdef"
-    go s = case uncons s of
-      Nothing -> pure unit
-      Just {head, tail} ->
-        if head `Set.member` hexAlph
-          then go tail
-          else Nothing
+mkHexString str | S.length str `mod` 2 /= 0 = Nothing
+                | otherwise =
+    HexString <$>
+      case stripPrefix (Pattern "0x") str of
+        Nothing -> if isJust (go <<< toCharArray $ str)
+                    then Just $ S.toLower str
+                    else Nothing
+        Just res -> if isJust (go <<< toCharArray $ res)
+                      then Just $ S.toLower res
+                      else Nothing
+      where
+        hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdefABCDEF"
+        go s = case uncons s of
+          Nothing -> pure unit
+          Just {head, tail} ->
+            if head `Set.member` hexAlph
+              then go tail
+              else Nothing
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
@@ -514,7 +516,7 @@ newtype FalseOrObject a = FalseOrObject (Maybe a)
 derive instance newtypeFalseOrObj :: Newtype (FalseOrObject a) _
 derive instance eqFalseOrObj :: Eq a => Eq (FalseOrObject a)
 derive instance ordFalseOrObj :: Ord a => Ord (FalseOrObject a)
-derive instance genericFalseOrObj :: Generic (FalseOrObject a) _ 
+derive instance genericFalseOrObj :: Generic (FalseOrObject a) _
 
 instance showFalseOrObj :: Show a => Show (FalseOrObject a) where
     show x = "(FalseOrObject " <> show (unwrap x) <> ")"
@@ -524,10 +526,10 @@ unFalseOrObject (FalseOrObject a) = a
 
 readFalseOrObject :: forall a. (Foreign -> F a) -> Foreign -> F (FalseOrObject a)
 readFalseOrObject f value = do
-    isBool <- catchError ((\_ -> true) <$> readBoolean value) (\_ -> pure false) 
+    isBool <- catchError ((\_ -> true) <$> readBoolean value) (\_ -> pure false)
     if isBool then
         pure $ FalseOrObject Nothing
-      else 
+      else
         FalseOrObject <<< Just <$> f value
 
 instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
