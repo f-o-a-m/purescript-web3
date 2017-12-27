@@ -16,6 +16,8 @@ import Data.Identity (Identity(..))
 import Data.Int (toStringAs)
 import Data.List.Types (NonEmptyList(..))
 import Data.Maybe (Maybe(..), fromJust)
+import Data.String (toLower)
+import Data.Traversable (sequence)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
@@ -24,7 +26,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, unHex, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
 
 encodingSimpleSpec :: forall r . Spec (console :: CONSOLE | r) Unit
@@ -68,11 +70,30 @@ stringTests =
 
         roundTrip given expected
 
-    
+
       it "can handle VERY long HexStrings" do
         let given = intercalate "" $ replicate 128 "0000000000000000000000000000000000000000000000000000000000000000"
         let expected = unsafePartial fromJust <<< mkHexString $ given
         given `shouldEqual` unHex expected
+
+      it "can handle mixed case HexStrings" do
+        let given = "fF"
+        let expected = unsafePartial fromJust <<< mkHexString $ given
+        -- note; for easy equality we should canonicalize HexStrings as lowercase
+        toLower given `shouldEqual` unHex expected
+
+      it "fails on odd length HexStrings" do
+        let givens = ["f", "0", "000", "0f0", "fffff", "0000000000000000000000000000000000000000f"]
+        _ <- sequence $ map (\g -> mkHexString g `shouldEqual` Nothing) givens
+        pure unit
+
+      it "should hold equality across cases" do
+        mkHexString "ff" `shouldEqual` mkHexString "Ff"
+        mkHexString "0000aa" `shouldEqual` mkHexString "0000AA"
+        mkHexString "0000aa" `shouldEqual` mkHexString "0000aa"
+        mkHexString "abcdef" `shouldEqual` mkHexString "AbCdEf"
+        mkHexString "" `shouldNotEqual` mkHexString "ff"
+        mkHexString "ff" `shouldNotEqual` mkHexString "aa"
 
 
 bytesDTests :: forall r . Spec r Unit
@@ -207,7 +228,7 @@ intNTests =
 
 
 falseOrObjectTests :: forall r. Spec r Unit
-falseOrObjectTests = 
+falseOrObjectTests =
   describe "FalseOrObject tests" do
     let opts = defaultOptions { unwrapSingleConstructors = true }
 
@@ -218,4 +239,3 @@ falseOrObjectTests =
     it "can decode FalseOrObject instances that are objects" do
       let decodedObj = runExcept $ decodeJSON "{ \"startingBlock\": 0, \"currentBlock\": 1, \"highestBlock\": 2 }"
       decodedObj `shouldEqual` (Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: embed 0, currentBlock: embed 1, highestBlock: embed 2})
-      

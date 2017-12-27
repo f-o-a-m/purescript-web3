@@ -63,7 +63,7 @@ import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Data.Set (fromFoldable, member) as Set
-import Data.String (length, take) as S
+import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
@@ -107,7 +107,8 @@ newtype HexString = HexString String
 instance showHexString :: Show HexString where
   show (HexString hx) = "0x" <> hx
 
-derive newtype instance hexStringEq :: Eq HexString
+instance hexStringEq :: Eq HexString where
+  eq (HexString h1) (HexString h2) = S.toLower h1 == S.toLower h2
 
 derive newtype instance hexStringOrd :: Ord HexString
 
@@ -129,22 +130,24 @@ unHex :: HexString -> String
 unHex (HexString hx) = hx
 
 mkHexString :: String -> Maybe HexString
-mkHexString str = HexString <$>
-  case stripPrefix (Pattern "0x") str of
-    Nothing -> if isJust (go <<< toCharArray $ str)
-                 then Just str
-                 else Nothing
-    Just res -> if isJust (go <<< toCharArray $ res)
-                  then Just res
-                  else Nothing
-  where
-    hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdef"
-    go s = case uncons s of
-      Nothing -> pure unit
-      Just {head, tail} ->
-        if head `Set.member` hexAlph
-          then go tail
-          else Nothing
+mkHexString str | S.length str `mod` 2 /= 0 = Nothing
+                | otherwise =
+    HexString <$>
+      case stripPrefix (Pattern "0x") str of
+        Nothing -> if isJust (go <<< toCharArray $ str)
+                    then Just $ S.toLower str
+                    else Nothing
+        Just res -> if isJust (go <<< toCharArray $ res)
+                      then Just $ S.toLower res
+                      else Nothing
+      where
+        hexAlph = Set.fromFoldable <<< toCharArray $ "0123456789abcdefABCDEF"
+        go s = case uncons s of
+          Nothing -> pure unit
+          Just {head, tail} ->
+            if head `Set.member` hexAlph
+              then go tail
+              else Nothing
 
 -- | Compute the length of the hex string, which is twice the number of bytes it represents
 hexLength :: HexString -> Int
