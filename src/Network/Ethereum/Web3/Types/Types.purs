@@ -233,7 +233,6 @@ newtype Block
           , hash :: HexString
           , logsBloom :: HexString
           , miner :: HexString
-          , mixHash :: HexString
           , nonce :: HexString
           , number :: BigNumber
           , parentHash :: HexString
