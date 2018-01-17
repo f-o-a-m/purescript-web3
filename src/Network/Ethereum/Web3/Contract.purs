@@ -23,16 +23,17 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens ((.~), (^.))
-import Data.Machine.Mealy (MealyT, Step(..), mealy, stepMealy, wrapEffect)
+import Data.Machine.Mealy (MealyT, Step(..), mealy, stepMealy, wrapEffect, halt, fromArray, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
+import Data.Tuple (Tuple(..), fst)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, decodeEvent, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, ChainCursor(..), BlockNumber, Change, Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, BlockNumber, ChainCursor(..), Change(..), Filter, FilterId, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, embed, hexadecimal, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -106,7 +107,7 @@ reduceEventStream m handler s = do
     Halt -> pure <<< Just $ s
     Emit changes m' -> do
       acts <- processChanges handler changes
-      if TerminateEvent `notElem` acts
+      if TerminateEvent `notElem` map fst acts
          then reduceEventStream m' handler s
          else pure Nothing
 
@@ -164,9 +165,11 @@ processChanges :: forall i ni a f.
                => Monad f
                => (a -> ReaderT Change f EventAction)
                -> Array (FilterChange a)
-               -> f (Array EventAction)
-processChanges handler changes = for changes \c ->
-    runReaderT (handler c.event) c.rawChange
+               -> f (Array (Tuple EventAction BlockNumber))
+processChanges handler changes = for changes \c -> do
+    act <- runReaderT (handler c.event) c.rawChange
+    let (Change change) = c.rawChange
+    pure $ Tuple act change.blockNumber
 
 
 -- * Filter Stream
@@ -302,3 +305,25 @@ _call t mf cm dat = do
       defaultTransactionOptions # _to .~ Just t
                                 # _from .~ mf
                                 # _data .~ Just d
+
+--------------------------------------------------------------------------------
+-- * Machines
+--------------------------------------------------------------------------------
+--runWhile :: forall f s . Monad f => (s -> Boolean) -> MealyT f s s
+--runWhile p = do
+--  s <- id
+--  if p s
+--    then runWhile p
+--    else singleton s
+--
+--final :: forall f s . Monad f => MealyT f s s
+--final = mealy $ \s -> do
+--  res <- runMealyT id s
+--  case res of
+--    Halt -> pure $ Emit s halt
+--    Emit _ m -> runMealyT m s
+--
+--test :: forall f . Monad f =>  MealyT f Unit Unit
+--test = do
+--  a <- fromArray [1,2,3] >>> final
+--  wrapEffect $ traceA $ show a
