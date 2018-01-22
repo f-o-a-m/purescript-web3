@@ -4,7 +4,7 @@ import Prelude
 
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
-import Network.Ethereum.Web3.Types (Web3, Address, BigNumber, Block, BlockNumber, ChainCursor, HexString, Transaction, TransactionOptions, TransactionReceipt, Change, FilterId, Filter, SyncStatus)
+import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, Filter, FilterId, HexString, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
 import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3, defaultTransactionOptions, FalseOrObject)
 import Type.Data.Boolean (kind Boolean)
 
@@ -93,7 +93,7 @@ eth_getCode addr cm = unsafeCoerceWeb3 $ remote "eth_getCode" addr cm :: Web3 p 
 -- | The sign method calculates an Ethereum specific signature with: `sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)))`.
 -- | By adding a prefix to the message makes the calculated signature recognisable as an Ethereum specific signature. This prevents misuse where a malicious DApp can sign arbitrary data (e.g. transaction) and use the signature to impersonate the victim.
 -- | **Note** the address to sign with must be unlocked.
-eth_sign :: forall p e. IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
+eth_sign :: forall p e. Warn "eth_sign is depricated in favor of personal_sign" => IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
 eth_sign addr msg = unsafeCoerceWeb3 $ remote "eth_sign" addr msg :: Web3 p () HexString
 
 -- | Creates new message call transaction or a contract creation for signed transactions
@@ -182,3 +182,7 @@ eth_getLogs filter = unsafeCoerceWeb3 $ remote "eth_getLogs" filter :: Web3 p ()
 -- | Uninstalls a filter with given id. Should always be called when watch is no longer needed.
 eth_uninstallFilter :: forall p e . IsAsyncProvider p => FilterId -> Web3 p e Boolean
 eth_uninstallFilter fid = unsafeCoerceWeb3 $ remote "eth_uninstallFilter" fid :: Web3 p () Boolean
+
+personal_sign :: forall p e . IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
+personal_sign signer _data = unsafeCoerceWeb3 $ remote "personal_sign" signer _data :: Web3 p () HexString
+
