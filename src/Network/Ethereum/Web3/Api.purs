@@ -93,7 +93,7 @@ eth_getCode addr cm = unsafeCoerceWeb3 $ remote "eth_getCode" addr cm :: Web3 p 
 -- | The sign method calculates an Ethereum specific signature with: `sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)))`.
 -- | By adding a prefix to the message makes the calculated signature recognisable as an Ethereum specific signature. This prevents misuse where a malicious DApp can sign arbitrary data (e.g. transaction) and use the signature to impersonate the victim.
 -- | **Note** the address to sign with must be unlocked.
-eth_sign :: forall p e. Warn "eth_sign is depricated in favor of personal_sign" => IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
+eth_sign :: forall p e. Warn "eth_sign is deprecated in favor of personal_sign" => IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
 eth_sign addr msg = unsafeCoerceWeb3 $ remote "eth_sign" addr msg :: Web3 p () HexString
 
 -- | Creates new message call transaction or a contract creation for signed transactions
