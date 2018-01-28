@@ -162,7 +162,7 @@ eth_getAccounts = unsafeCoerceWeb3 $ remote "eth_accounts" defaultTransactionOpt
 eth_newFilter :: forall p e . IsAsyncProvider p => Filter -> Web3 p e FilterId
 eth_newFilter f = unsafeCoerceWeb3 $ remote "eth_newFilter" f :: Web3 p () FilterId
 
--- | Creates a filter in the node, to notify when a new block arrives. 
+-- | Creates a filter in the node, to notify when a new block arrives.
 -- | To check if the state has changed, call `eth_getFilterChanges`.
 eth_newBlockFilter :: forall p e. IsAsyncProvider p => Web3 p e FilterId
 eth_newBlockFilter = unsafeCoerceWeb3 $ remote "eth_newBlockFilter" :: Web3 p () FilterId
@@ -183,6 +183,10 @@ eth_getLogs filter = unsafeCoerceWeb3 $ remote "eth_getLogs" filter :: Web3 p ()
 eth_uninstallFilter :: forall p e . IsAsyncProvider p => FilterId -> Web3 p e Boolean
 eth_uninstallFilter fid = unsafeCoerceWeb3 $ remote "eth_uninstallFilter" fid :: Web3 p () Boolean
 
+-- | Sign a message with the given address, returning the signature.
 personal_sign :: forall p e . IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
 personal_sign signer _data = unsafeCoerceWeb3 $ remote "personal_sign" signer _data :: Web3 p () HexString
 
+-- | Recover the address that signed the message.
+personal_ecRecover :: forall p e . IsAsyncProvider p => HexString -> HexString -> Web3 p e Address
+personal_ecRecover _data sig = unsafeCoerceWeb3 $ remote "personal_ecRecover" msg sig :: Web3 p () Address
