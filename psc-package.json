@@ -4,6 +4,7 @@
     "source": "https://github.com/f-o-a-m/package-sets.git",
     "depends": [
         "prelude",
+        "coroutines",
         "errors",
         "profunctor-lenses",
         "foreign",
@@ -19,7 +20,6 @@
         "spec",
         "typelevel-prelude",
         "psci-support",
-        "tagged",
-        "machines"
+        "tagged"
     ]
 }
