@@ -34,6 +34,7 @@ module Network.Ethereum.Web3.Types.Types
        , _fromBlock
        , _toBlock
        , FilterId
+       , EventAction(..)
        , Change(..)
        , FalseOrObject(..)
        , unFalseOrObject
@@ -49,6 +50,7 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
+import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
 import Data.Foreign (readBoolean, Foreign, F)
 import Data.Foreign.Class (class Decode, class Encode, encode, decode)
@@ -389,7 +391,7 @@ instance showSyncStatus :: Show SyncStatus where
     show = genericShow
 
 --------------------------------------------------------------------------------
--- * Web3M
+-- * Web3
 --------------------------------------------------------------------------------
 
 foreign import data ETH :: Effect
@@ -413,6 +415,8 @@ derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 p e)
 derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 p e)
 
 derive newtype instance monadThrowWeb3 :: MonadThrow Error (Web3 p e)
+
+derive newtype instance monadRecWeb3 :: MonadRec (Web3 p e)
 
 unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
 unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
@@ -479,6 +483,26 @@ instance encodeFilterId :: Encode FilterId where
 
 instance decodeFilterId :: Decode FilterId where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+
+--------------------------------------------------------------------------------
+-- | EventAction
+--------------------------------------------------------------------------------
+
+-- | Represents a flag to continue or discontinue listening to the filter
+data EventAction = ContinueEvent
+                 -- ^ Continue to listen events
+                 | TerminateEvent
+                 -- ^ Terminate event listener
+
+derive instance genericEventAction :: Generic EventAction _
+
+instance showEventAction :: Show EventAction where
+  show = genericShow
+
+instance eqEventAction :: Eq EventAction where
+  eq = genericEq
+
 
 --------------------------------------------------------------------------------
 -- * Raw Event Log Changes
