@@ -189,4 +189,4 @@ personal_sign signer _data = unsafeCoerceWeb3 $ remote "personal_sign" signer _d
 
 -- | Recover the address that signed the message.
 personal_ecRecover :: forall p e . IsAsyncProvider p => HexString -> HexString -> Web3 p e Address
-personal_ecRecover _data sig = unsafeCoerceWeb3 $ remote "personal_ecRecover" msg sig :: Web3 p () Address
+personal_ecRecover _data sig = unsafeCoerceWeb3 $ remote "personal_ecRecover" _data sig :: Web3 p () Address
