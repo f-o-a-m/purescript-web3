@@ -34,6 +34,7 @@ module Network.Ethereum.Web3.Types.Types
        , _fromBlock
        , _toBlock
        , FilterId
+       , EventAction(..)
        , Change(..)
        , FalseOrObject(..)
        , unFalseOrObject
@@ -482,6 +483,26 @@ instance encodeFilterId :: Encode FilterId where
 
 instance decodeFilterId :: Decode FilterId where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+
+--------------------------------------------------------------------------------
+-- | EventAction
+--------------------------------------------------------------------------------
+
+-- | Represents a flag to continue or discontinue listening to the filter
+data EventAction = ContinueEvent
+                 -- ^ Continue to listen events
+                 | TerminateEvent
+                 -- ^ Terminate event listener
+
+derive instance genericEventAction :: Generic EventAction _
+
+instance showEventAction :: Show EventAction where
+  show = genericShow
+
+instance eqEventAction :: Eq EventAction where
+  eq = genericEq
+
 
 --------------------------------------------------------------------------------
 -- * Raw Event Log Changes
