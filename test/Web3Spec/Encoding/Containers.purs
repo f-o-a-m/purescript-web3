@@ -5,12 +5,13 @@ import Prelude
 
 import Control.Monad.Aff (Aff)
 import Data.ByteString as BS
+import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
+import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -26,7 +27,7 @@ encodingContainersSpec = describe "encoding-spec for containers" do
 roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
-  fromData encoded `shouldEqual` Just decoded
+  fromData encoded `shouldEqual` Right decoded
 
 roundTripGeneric :: forall r a rep.
                     Show a
@@ -39,7 +40,7 @@ roundTripGeneric :: forall r a rep.
                  -> Aff r Unit
 roundTripGeneric decoded encoded = do
   encoded `shouldEqual` genericABIEncode decoded
-  genericFromData encoded `shouldEqual` Just decoded
+  genericFromData encoded `shouldEqual` Right decoded
 
 staticArraysTests :: forall r . Spec r Unit
 staticArraysTests =

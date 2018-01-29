@@ -3,7 +3,9 @@ module Web3Spec.Encoding.Generic (encodingGenericSpec) where
 
 import Prelude
 
+import Control.Error.Util (hush)
 import Data.Array (unsafeIndex, uncons)
+import Data.Either (fromRight)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -13,7 +15,7 @@ import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
-import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, class IndexedEvent, decodeEvent, genericArrayParser)
+import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
@@ -44,7 +46,7 @@ toRecordFieldsSpec =
       it "can parse a change an address array" do
         let (Transfer t) = transfer
             expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)
-        fromData (unsafePartial $ unsafeIndex addressArray 1) `shouldEqual` Just t.to
+        hush (fromData (unsafePartial $ unsafeIndex addressArray 1)) `shouldEqual` Just t.to
         genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
 
       it "can combine events" do
@@ -104,7 +106,7 @@ transfer :: Transfer
 transfer =
   let t = unsafePartial fromJust $ mkAddress =<< mkHexString "0x407d73d8a49eeb85d32cf465507dd71d507100c1"
       f = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000001"
-      a = unsafePartial fromJust $ fromData =<< mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
+      a = unsafePartial fromJust $ map hush fromData =<< mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
   in Transfer { to: t
               , from: f
               , amount: a
