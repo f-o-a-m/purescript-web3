@@ -23,7 +23,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Streaming.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, hexadecimal, nullWord, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultStorage, defaultTransactionOptions, hexadecimal, nullWord, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -156,17 +156,22 @@ _call :: forall p a arep b brep e selector .
 _call t mf cm dat = do
     let sig = reflectSymbol $ (SProxy :: SProxy selector)
         sel = toSelector sig
-        dat' = genericABIEncode <<< untagged $ dat
-    res <- eth_call (txdata $ sel <> dat') cm
+        fullData = sel <> (genericABIEncode <<< untagged $ dat)
+    res <- eth_call (txdata fullData) cm
     pure $ case genericFromData res of
-        Left err -> if res == nullWord
-                      then Left NullStorageError
-                      else Left $ ParseError { response: res
-                                             , signature: sig
-                                             , _data: dat'
-                                             , parseError: err
-                                             }
-        Right x -> Right x
+      Left err -> Left $
+        if res == nullWord
+           then NullStorageError
+           else if res == defaultStorage
+                   then DefaultStorageError { signature: sig
+                                            , _data: fullData
+                                            }
+                   else ParseError { response: res
+                                   , signature: sig
+                                   , _data: fullData
+                                   , parseError: err
+                                   }
+      Right x -> Right x
   where
     txdata d  =
       defaultTransactionOptions # _to .~ Just t
