@@ -72,7 +72,7 @@ import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (ParseError(..))
+import Text.Parsing.Parser (ParseError)
 
 --------------------------------------------------------------------------------
 -- * Signed Values

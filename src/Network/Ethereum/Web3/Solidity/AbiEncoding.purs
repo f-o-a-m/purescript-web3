@@ -3,7 +3,6 @@ module Network.Ethereum.Web3.Solidity.AbiEncoding where
 import Prelude
 
 import Data.Array (length) as A
-import Data.Bifunctor (lmap)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Data.Either (Either)
@@ -19,7 +18,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, mkHexString, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, unsafeToInt)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser (ParseError(..), Parser, ParserT, fail, runParser)
+import Text.Parsing.Parser (ParseError, Parser, ParserT, fail, runParser)
 import Text.Parsing.Parser.Token (hexDigit)
 import Type.Proxy (Proxy(..))
 
