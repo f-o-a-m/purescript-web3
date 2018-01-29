@@ -158,15 +158,15 @@ _call t mf cm dat = do
         sel = toSelector sig
         dat' = genericABIEncode <<< untagged $ dat
     res <- eth_call (txdata $ sel <> dat') cm
-    case genericFromData res of
-        Left err -> pure $ if res == nullWord
-                             then Left NullStorageError
-                             else Left $ ParseError { response: res
-                                                    , signature: sig
-                                                    , _data: dat'
-                                                    , parseError: err
-                                                    }
-        Right x -> pure $ Right x
+    pure $ case genericFromData res of
+        Left err -> if res == nullWord
+                      then Left NullStorageError
+                      else Left $ ParseError { response: res
+                                             , signature: sig
+                                             , _data: dat'
+                                             , parseError: err
+                                             }
+        Right x -> Right x
   where
     txdata d  =
       defaultTransactionOptions # _to .~ Just t
