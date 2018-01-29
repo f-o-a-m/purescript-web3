@@ -30,7 +30,8 @@
     "purescript-tagged": "^1.0.0",
     "purescript-machines": "^4.0.0",
     "purescript-free": "^4.2.0",
-    "purescript-coroutines": "^4.0.0"
+    "purescript-coroutines": "^4.0.0",
+    "purescript-typelevel-prelude": "^2.6.0"
   },
   "devDependencies": {
     "purescript-debug": "v3.0.0",

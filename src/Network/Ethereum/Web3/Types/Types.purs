@@ -7,8 +7,6 @@ module Network.Ethereum.Web3.Types.Types
        , unHex
        , hexLength
        , takeHex
-       , defaultStorage
-       , nullWord
        , Address
        , unAddress
        , mkAddress
@@ -161,12 +159,6 @@ hexLength (HexString hx) = S.length hx
 
 takeHex :: Int -> HexString -> HexString
 takeHex n (HexString hx) = HexString $ S.take n hx
-
-defaultStorage :: HexString
-defaultStorage = HexString "0000000000000000000000000000000000000000000000000000000000000000"
-
-nullWord :: HexString
-nullWord = HexString mempty
 
 --------------------------------------------------------------------------------
 -- * Addresses
@@ -583,10 +575,9 @@ data CallError =
                , _data :: HexString
                , parseError :: ParseError
                }
-  | DefaultStorageError { signature :: String
-                        , _data :: HexString
-                        }
-  | NullStorageError
+  | NullStorageError { signature :: String
+                     , _data :: HexString
+                     }
 
 derive instance genericCallError :: Generic CallError _
 
