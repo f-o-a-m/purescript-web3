@@ -12,9 +12,8 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Control.Monad.Eff.Exception (error)
-import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ReaderT)
+import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic)
 import Data.Lens ((.~), (^.))
@@ -24,7 +23,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Streaming.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, ChainCursor(..), Change, Filter, HexString, EventAction, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, hexadecimal, nullWord, parseBigNumber, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -110,7 +109,7 @@ class CallMethod (selector :: Symbol) a b where
          -- ^ State mode for constant call (latest or pending)
          -> Tagged (SProxy selector) a
          -- ^ Method data
-         -> Web3 p e b
+         -> Web3 p e (Either CallError b)
          -- ^ 'Web3' wrapped result
 
 instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod s a where
@@ -153,13 +152,21 @@ _call :: forall p a arep b brep e selector .
       -> Maybe Address
       -> ChainCursor
       -> Tagged (SProxy selector) a
-      -> Web3 p e b
+      -> Web3 p e (Either CallError b)
 _call t mf cm dat = do
-    let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
-    res <- eth_call (txdata $ sel <> (genericABIEncode <<< untagged $ dat)) cm
+    let sig = reflectSymbol $ (SProxy :: SProxy selector)
+        sel = toSelector sig
+        dat' = genericABIEncode <<< untagged $ dat
+    res <- eth_call (txdata $ sel <> dat') cm
     case genericFromData res of
-        Nothing -> throwError <<< error $ "Unable to parse result"
-        Just x -> pure x
+        Left err -> pure $ if res == nullWord
+                             then Left NullStorageError
+                             else Left $ ParseError { response: res
+                                                    , signature: sig
+                                                    , _data: dat'
+                                                    , parseError: err
+                                                    }
+        Right x -> pure $ Right x
   where
     txdata d  =
       defaultTransactionOptions # _to .~ Just t

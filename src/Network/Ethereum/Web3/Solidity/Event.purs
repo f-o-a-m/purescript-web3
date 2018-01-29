@@ -10,6 +10,7 @@ module Network.Ethereum.Web3.Solidity.Event
 
 import Prelude
 
+import Control.Error.Util (hush)
 import Data.Array (uncons)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
@@ -34,12 +35,12 @@ instance arrayParserNoArgs :: ArrayParser NoArguments where
 instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of
     Nothing -> Nothing
-    Just {head} -> Argument <$> fromData head
+    Just {head} -> map Argument <<< hush <<< fromData $ head
 
 instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (Product (Argument a) as) where
   arrayParser hxs = case uncons hxs of
     Nothing -> Nothing
-    Just {head, tail} -> Product <$> (Argument <$> fromData head) <*> arrayParser tail
+    Just {head, tail} -> Product <$> (map Argument <<< hush <<< fromData $ head) <*> arrayParser tail
 
 instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
   arrayParser = map Constructor <<< arrayParser
@@ -68,7 +69,7 @@ parseChange :: forall a b arep brep.
 parseChange (Change change) anonymous = do
   topics <- if anonymous then pure change.topics else  _.tail <$> uncons change.topics
   a <- genericArrayParser topics
-  b <- genericFromData change.data
+  b <- hush <<< genericFromData $ change.data
   pure $ Event a b
 
 

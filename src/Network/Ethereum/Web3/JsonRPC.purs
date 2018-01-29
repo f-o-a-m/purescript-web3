@@ -10,15 +10,15 @@ import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Except (runExcept)
 import Data.Array ((:))
 import Data.Either (Either(..), either)
-import Data.Foreign (Foreign)
+import Data.Foreign (Foreign, ForeignError(..), fail, isNull, readString)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
 import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Types (ETH, Web3(..))
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
+import Network.Ethereum.Web3.Types (ETH, Web3(..))
 
 type MethodName = String
 
@@ -65,6 +65,10 @@ mkRequest name reqId ps = Request { jsonrpc : "2.0"
                                   , params : ps
                                   }
 
+--------------------------------------------------------------------------------
+-- | RPC Errors
+--------------------------------------------------------------------------------
+
 data RpcError =
   RpcError { code     :: Int
            , message  :: String
@@ -78,15 +82,32 @@ instance showRpcError :: Show RpcError where
 instance decodeRpcError :: Decode RpcError where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
-newtype Response = Response (Either RpcError Foreign)
 
-getResponse :: Response -> Either RpcError Foreign
+data Web3Error =
+    Rpc RpcError
+  | NullError
+
+derive instance genericWeb3Error :: Generic Web3Error _
+
+instance showWeb3Error :: Show Web3Error where
+  show = genericShow
+
+instance decodeWeb3Error :: Decode Web3Error where
+  decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
+    where
+      nullParser = do
+        res <- readProp "result" x
+        if isNull res
+          then pure NullError
+          else readString res >>= \r -> fail (TypeMismatch "NullError" r)
+
+newtype Response = Response (Either Web3Error Foreign)
+
+getResponse :: Response -> Either Web3Error Foreign
 getResponse (Response r) = r
 
 instance decodeResponse' :: Decode Response where
-  decode a =
-    let errDecoder = readProp "error" a >>= decode
-    in Response <$> ((Left <$> errDecoder) <|> (Right <$> readProp "result" a))
+  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> readProp "result" a))
 
 -- | Attempt to decode the response, throwing an Error in case of failure
 decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a

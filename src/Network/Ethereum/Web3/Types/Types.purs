@@ -7,6 +7,7 @@ module Network.Ethereum.Web3.Types.Types
        , unHex
        , hexLength
        , takeHex
+       , nullWord
        , Address
        , unAddress
        , mkAddress
@@ -39,6 +40,7 @@ module Network.Ethereum.Web3.Types.Types
        , FalseOrObject(..)
        , unFalseOrObject
        , SyncStatus(..)
+       , CallError(..)
        ) where
 
 import Prelude
@@ -53,7 +55,7 @@ import Control.Monad.Error.Class (class MonadThrow, catchError)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
 import Data.Foreign (readBoolean, Foreign, F)
-import Data.Foreign.Class (class Decode, class Encode, encode, decode)
+import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
@@ -69,6 +71,7 @@ import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
+import Text.Parsing.Parser (ParseError(..))
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -157,6 +160,9 @@ hexLength (HexString hx) = S.length hx
 
 takeHex :: Int -> HexString -> HexString
 takeHex n (HexString hx) = HexString $ S.take n hx
+
+nullWord :: HexString
+nullWord = HexString "0000000000000000000000000000000000000000000000000000000000000000"
 
 --------------------------------------------------------------------------------
 -- * Addresses
@@ -562,3 +568,20 @@ readFalseOrObject f value = do
 
 instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
     decode x = readFalseOrObject decode x
+
+--------------------------------------------------------------------------------
+-- | Errors
+--------------------------------------------------------------------------------
+
+data CallError =
+    ParseError { response :: HexString
+               , signature :: String
+               , _data :: HexString
+               , parseError :: ParseError
+               }
+  | NullStorageError
+
+derive instance genericCallError :: Generic CallError _
+
+instance showCallError :: Show CallError where
+  show = genericShow
