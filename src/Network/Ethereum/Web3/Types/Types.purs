@@ -62,7 +62,7 @@ import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', lens)
 import Data.Maybe (Maybe(..), isJust)
-import Data.Monoid (class Monoid, mempty)
+import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Data.Set (fromFoldable, member) as Set
