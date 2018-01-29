@@ -1,5 +1,5 @@
 "use strict";
-var Web3 = require('web3');
+const HttpProvider = require('ethjs-provider-http');
 
 exports.metamaskProvider = function () {
     if (typeof web3 !== 'undefined') {
@@ -14,7 +14,7 @@ exports.httpProvider = function (providerUrl) {
         if (typeof web3 !== 'undefined' && web3.currentProvider.host == providerUrl) {
            return web3.currentProvider;
         } else {
-           return new Web3.providers.HttpProvider(providerUrl);
+           return new HttpProvider(providerUrl);
         }
     };
 };
