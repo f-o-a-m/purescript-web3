@@ -5,7 +5,7 @@ exports.metamaskProvider = function () {
     if (typeof web3 !== 'undefined') {
         return web3.currentProvider;
     } else {
-        return new Error("No Metamask provider found.");
+        throw new Error("No Metamask provider found.");
     }
 };
 
