@@ -139,7 +139,7 @@ eth_getBlockByNumber cm = unsafeCoerceWeb3 $ remote "eth_getBlockByNumber" cm fa
 
 -- | Returns information about a block by hash.
 eth_getBlockByHash :: forall p e . IsAsyncProvider p => HexString -> Web3 p e Block
-eth_getBlockByHash hx = unsafeCoerceWeb3 $ remote "eth_getBlockByHash" hx :: Web3 p () Block
+eth_getBlockByHash hx = unsafeCoerceWeb3 $ remote "eth_getBlockByHash" hx false :: Web3 p () Block
 
 -- | Returns information about a transaction by hash.
 eth_getTransaction :: forall p e . IsAsyncProvider p => HexString -> Web3 p e Transaction
