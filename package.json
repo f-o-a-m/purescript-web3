@@ -15,9 +15,9 @@
     "bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
     "bower": "^1.8.0",
     "crypto-js": "^3.1.8",
+    "ethjs-provider-http": "^0.1.6",
     "psc-package": "^0.2.4-rc1",
     "pulp": "^12.0.0",
-    "utf8": "^2.1.2",
-    "web3": "^0.19.1"
+    "utf8": "^2.1.2"
   }
 }
