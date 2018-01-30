@@ -5,7 +5,6 @@ import Prelude
 
 import Control.Error.Util (hush)
 import Data.Array (unsafeIndex, uncons)
-import Data.Either (fromRight)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
