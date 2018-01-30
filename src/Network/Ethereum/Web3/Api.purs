@@ -184,7 +184,7 @@ eth_uninstallFilter :: forall p e . IsAsyncProvider p => FilterId -> Web3 p e Bo
 eth_uninstallFilter fid = unsafeCoerceWeb3 $ remote "eth_uninstallFilter" fid :: Web3 p () Boolean
 
 -- | Sign a message with the given address, returning the signature.
-personal_sign :: forall p e . IsAsyncProvider p => Address -> HexString -> Web3 p e HexString
+personal_sign :: forall p e . IsAsyncProvider p => HexString -> Address -> Web3 p e HexString
 personal_sign signer _data = unsafeCoerceWeb3 $ remote "personal_sign" signer _data :: Web3 p () HexString
 
 -- | Recover the address that signed the message.
