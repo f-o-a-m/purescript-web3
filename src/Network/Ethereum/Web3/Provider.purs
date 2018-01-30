@@ -1,9 +1,13 @@
 module Network.Ethereum.Web3.Provider where
 
 import Prelude
+
 import Control.Monad.Aff (Aff, Fiber, forkAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Exception (EXCEPTION, try)
+import Control.Monad.Error.Class (throwError)
+import Data.Either (Either(..))
 import Network.Ethereum.Web3.Types (ETH, Web3(..))
 import Type.Proxy (Proxy(..))
 
@@ -19,10 +23,14 @@ data Metamask
 metamask :: Proxy Metamask
 metamask = Proxy
 
-foreign import metamaskProvider :: forall e . Eff e Provider
+foreign import metamaskProvider :: forall e . Eff (exception :: EXCEPTION | e) Provider
 
 instance providerMetamaskM :: IsAsyncProvider Metamask where
-  getAsyncProvider = Web3 <<< liftEff $ metamaskProvider
+  getAsyncProvider = do
+    emm <- liftEff $ try metamaskProvider
+    case emm of
+      Right mm -> pure mm
+      Left err -> throwError err
 
 -- | Connect to an ethereum client at a given address, eg "http://localhost:8545"
 foreign import httpProvider :: forall e . String -> Eff e Provider
