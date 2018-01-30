@@ -250,6 +250,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
