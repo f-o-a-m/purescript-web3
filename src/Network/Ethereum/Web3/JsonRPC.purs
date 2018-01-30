@@ -20,7 +20,6 @@ import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
 import Network.Ethereum.Web3.Types (ETH, Web3(..))
 
-type MethodName = String
 
 --------------------------------------------------------------------------------
 -- * Asynchronous RPC Calls
@@ -45,77 +44,3 @@ foreign import _sendAsync :: Provider -> Request -> EffFnAff (eth :: ETH) Foreig
 remote :: forall a . Remote () a => MethodName -> a
 remote n = remote_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
 
--- | Web3 json RPC format
-newtype Request =
-  Request { jsonrpc :: String
-          , id :: Int
-          , method :: MethodName
-          , params :: Array Foreign
-          }
-
-derive instance genericRequest :: Generic Request _
-
-instance encodeRequest :: Encode Request where
-  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
-
-mkRequest :: MethodName -> Int -> Array Foreign -> Request
-mkRequest name reqId ps = Request { jsonrpc : "2.0"
-                                  , id : reqId
-                                  , method : name
-                                  , params : ps
-                                  }
-
---------------------------------------------------------------------------------
--- | RPC Errors
---------------------------------------------------------------------------------
-
-data RpcError =
-  RpcError { code     :: Int
-           , message  :: String
-           }
-
-derive instance genericRpcError :: Generic RpcError _
-
-instance showRpcError :: Show RpcError where
-  show = genericShow
-
-instance decodeRpcError :: Decode RpcError where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
-
-
-data Web3Error =
-    Rpc RpcError
-  | NullError
-
-derive instance genericWeb3Error :: Generic Web3Error _
-
-instance showWeb3Error :: Show Web3Error where
-  show = genericShow
-
-instance decodeWeb3Error :: Decode Web3Error where
-  decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
-    where
-      nullParser = do
-        res <- readProp "result" x
-        if isNull res
-          then pure NullError
-          else readString res >>= \r -> fail (TypeMismatch "NullError" r)
-
-newtype Response = Response (Either Web3Error Foreign)
-
-getResponse :: Response -> Either Web3Error Foreign
-getResponse (Response r) = r
-
-instance decodeResponse' :: Decode Response where
-  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> readProp "result" a))
-
--- | Attempt to decode the response, throwing an Error in case of failure
-decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
-decodeResponse a = do
-    resp <- tryParse a
-    case getResponse resp of
-      Left err -> throw <<< show $ err
-      Right f -> tryParse f
-
-tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
-tryParse = either (throw <<< show) pure <<< runExcept <<< decode

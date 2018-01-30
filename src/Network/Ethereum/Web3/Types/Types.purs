@@ -44,6 +44,7 @@ module Network.Ethereum.Web3.Types.Types
 
 import Prelude
 
+import Control.Alternative ((<|>))
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
@@ -51,11 +52,15 @@ import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
+import Control.Monad.Except (ExceptT(..))
+import Control.Monad.Morph (hoist)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
-import Data.Foreign (readBoolean, Foreign, F)
+import Data.Either (Either(..))
+import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
+import Data.Foreign.Index (readProp)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -400,7 +405,7 @@ foreign import data ETH :: Effect
 
 -- | A monad for asynchronous Web3 actions
 
-newtype Web3 p e a = Web3 (Aff (eth :: ETH | e) a)
+newtype Web3 p e a = Web3 (ExceptT Web3Error (Aff (eth :: ETH | e)) a)
 
 derive newtype instance functorWeb3 :: Functor (Web3 p e)
 
@@ -416,12 +421,12 @@ derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 p e)
 
 derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 p e)
 
-derive newtype instance monadThrowWeb3 :: MonadThrow Error (Web3 p e)
+derive newtype instance monadThrowWeb3 :: MonadThrow Web3Error (Web3 p e)
 
 derive newtype instance monadRecWeb3 :: MonadRec (Web3 p e)
 
 unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
-unsafeCoerceWeb3 (Web3 action) = Web3 $ unsafeCoerceAff action
+unsafeCoerceWeb3 (Web3 action) = Web3 $ hoist unsafeCoerceAff action
 
 --------------------------------------------------------------------------------
 -- * Filters
@@ -566,7 +571,51 @@ instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
     decode x = readFalseOrObject decode x
 
 --------------------------------------------------------------------------------
--- | Errors
+-- | Web3 RPC
+--------------------------------------------------------------------------------
+
+type MethodName = String
+
+newtype Request =
+  Request { jsonrpc :: String
+          , id :: Int
+          , method :: MethodName
+          , params :: Array Foreign
+          }
+
+derive instance genericRequest :: Generic Request _
+
+instance encodeRequest :: Encode Request where
+  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+
+mkRequest :: MethodName -> Int -> Array Foreign -> Request
+mkRequest name reqId ps = Request { jsonrpc : "2.0"
+                                  , id : reqId
+                                  , method : name
+                                  , params : ps
+                                  }
+
+newtype Response = Response (Either Web3Error Foreign)
+
+getResponse :: Response -> Either Web3Error Foreign
+getResponse (Response r) = r
+
+instance decodeResponse' :: Decode Response where
+  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> readProp "result" a))
+
+---- | Attempt to decode the response, throwing an Error in case of failure
+--decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
+--decodeResponse a = do
+--    resp <- tryParse a
+--    case getResponse resp of
+--      Left err -> throw <<< show $ err
+--      Right f -> tryParse f
+--
+--tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
+--tryParse = either (throw <<< show) pure <<< runExcept <<< decode
+
+--------------------------------------------------------------------------------
+-- * Errors
 --------------------------------------------------------------------------------
 
 data CallError =
@@ -583,3 +632,34 @@ derive instance genericCallError :: Generic CallError _
 
 instance showCallError :: Show CallError where
   show = genericShow
+
+data RpcError =
+  RpcError { code     :: Int
+           , message  :: String
+           }
+
+derive instance genericRpcError :: Generic RpcError _
+
+instance showRpcError :: Show RpcError where
+  show = genericShow
+
+instance decodeRpcError :: Decode RpcError where
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+data Web3Error =
+    Rpc RpcError
+  | NullError
+
+derive instance genericWeb3Error :: Generic Web3Error _
+
+instance showWeb3Error :: Show Web3Error where
+  show = genericShow
+
+instance decodeWeb3Error :: Decode Web3Error where
+  decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
+    where
+      nullParser = do
+        res <- readProp "result" x
+        if isNull res
+          then pure NullError
+          else readString res >>= \r -> fail (TypeMismatch "NullError" r)
