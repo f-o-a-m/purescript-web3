@@ -39,6 +39,8 @@ module Network.Ethereum.Web3.Types.Types
        , FalseOrObject(..)
        , unFalseOrObject
        , SyncStatus(..)
+       , Web3Error(..)
+       , RpcError(..)
        , CallError(..)
        ) where
 
@@ -50,9 +52,8 @@ import Control.Monad.Aff.Class (class MonadAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
-import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Except (ExceptT(..))
+import Control.Monad.Except (ExceptT)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
@@ -633,10 +634,12 @@ derive instance genericCallError :: Generic CallError _
 instance showCallError :: Show CallError where
   show = genericShow
 
-data RpcError =
+newtype RpcError =
   RpcError { code     :: Int
            , message  :: String
            }
+
+derive instance newtypeRPCError :: Newtype RpcError _
 
 derive instance genericRpcError :: Generic RpcError _
 
