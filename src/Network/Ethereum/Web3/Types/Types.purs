@@ -39,6 +39,10 @@ module Network.Ethereum.Web3.Types.Types
        , FalseOrObject(..)
        , unFalseOrObject
        , SyncStatus(..)
+       , MethodName
+       , Request
+       , mkRequest
+       , Response(..)
        , Web3Error(..)
        , RpcError(..)
        , CallError(..)
@@ -596,24 +600,10 @@ mkRequest name reqId ps = Request { jsonrpc : "2.0"
                                   , params : ps
                                   }
 
-newtype Response = Response (Either Web3Error Foreign)
+newtype Response a = Response (Either Web3Error a)
 
-getResponse :: Response -> Either Web3Error Foreign
-getResponse (Response r) = r
-
-instance decodeResponse' :: Decode Response where
-  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> readProp "result" a))
-
----- | Attempt to decode the response, throwing an Error in case of failure
---decodeResponse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
---decodeResponse a = do
---    resp <- tryParse a
---    case getResponse resp of
---      Left err -> throw <<< show $ err
---      Right f -> tryParse f
---
---tryParse :: forall e a . Decode a => Foreign -> Eff (exception :: EXCEPTION | e) a
---tryParse = either (throw <<< show) pure <<< runExcept <<< decode
+instance decodeResponse' :: Decode a => Decode (Response a) where
+  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> (readProp "result" a >>= decode)))
 
 --------------------------------------------------------------------------------
 -- * Errors
