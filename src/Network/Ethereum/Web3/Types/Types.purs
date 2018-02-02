@@ -27,6 +27,7 @@ module Network.Ethereum.Web3.Types.Types
        , _nonce
        , Web3(..)
        , unsafeCoerceWeb3
+       , throwWeb3
        , Filter
        , defaultFilter
        , _address
@@ -51,11 +52,12 @@ module Network.Ethereum.Web3.Types.Types
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff)
-import Control.Monad.Aff.Class (class MonadAff)
+import Control.Monad.Aff (Aff, liftEff')
+import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
+import Control.Monad.Eff.Exception (Error, throwException)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Morph (hoist)
@@ -80,7 +82,6 @@ import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
-import Text.Parsing.Parser (ParseError)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -432,6 +433,9 @@ derive newtype instance monadRecWeb3 :: MonadRec (Web3 p e)
 
 unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
 unsafeCoerceWeb3 (Web3 action) = Web3 $ hoist unsafeCoerceAff action
+
+throwWeb3 :: forall p e a. Error -> Web3 p e a
+throwWeb3 = liftAff <<< liftEff' <<< throwException
 
 --------------------------------------------------------------------------------
 -- * Filters

@@ -12,9 +12,7 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Control.Monad.Aff (liftEff')
-import Control.Monad.Aff.Class (liftAff)
-import Control.Monad.Eff.Exception (throw)
+import Control.Monad.Eff.Exception (error)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
@@ -27,7 +25,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Streaming.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, TransactionOptions, Web3, _data, _fromBlock, _toBlock, toSelector)
+import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, TransactionOptions, Web3, _data, _fromBlock, _toBlock, throwWeb3, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -150,7 +148,7 @@ _call txOptions cursor dat = do
           then pure <<< Left $ NullStorageError { signature: sig
                                                 , _data: fullData
                                                 }
-          else liftAff <<< liftEff' <<< throw $ show err
+          else throwWeb3 <<< error $ show err
       Right x -> pure $ Right x
   where
     txdata d  = txOptions # _data .~ Just d

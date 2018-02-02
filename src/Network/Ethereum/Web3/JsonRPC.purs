@@ -2,19 +2,19 @@ module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
 
-import Control.Monad.Aff (Aff, liftEff')
+import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
-import Control.Monad.Eff.Exception (throw)
-import Control.Monad.Except (runExcept)
+import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
+import Control.Monad.Except (runExcept)
 import Data.Array ((:))
 import Data.Either (Either(..))
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
-import Network.Ethereum.Web3.Types (ETH, Web3, Request, Response(..), MethodName, mkRequest)
+import Network.Ethereum.Web3.Types (ETH, MethodName, Request, Response(..), Web3, mkRequest, throwWeb3)
 
 
 --------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ instance remoteBase :: (IsAsyncProvider p, Decode a) => Remote e (Web3 p e a) wh
       Right (Response r) -> case r of
         Left err -> throwError err
         Right a -> pure a
-      Left err -> liftAff <<< liftEff' $ throw $ "Parser error : " <> show err
+      Left err -> throwWeb3 $ error $ "Parser error : " <> show err
 
 instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
