@@ -7,6 +7,7 @@ module Network.Ethereum.Web3.Types.Types
        , unHex
        , hexLength
        , takeHex
+       , nullWord
        , Address
        , unAddress
        , mkAddress
@@ -170,6 +171,9 @@ hexLength (HexString hx) = S.length hx
 
 takeHex :: Int -> HexString -> HexString
 takeHex n (HexString hx) = HexString $ S.take n hx
+
+nullWord :: HexString
+nullWord = HexString "0000000000000000000000000000000000000000000000000000000000000000"
 
 --------------------------------------------------------------------------------
 -- * Addresses
