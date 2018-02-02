@@ -610,14 +610,9 @@ instance decodeResponse' :: Decode a => Decode (Response a) where
 --------------------------------------------------------------------------------
 
 data CallError =
-    ParseError { response :: HexString
-               , signature :: String
-               , _data :: HexString
-               , parseError :: ParseError
-               }
-  | NullStorageError { signature :: String
-                     , _data :: HexString
-                     }
+  NullStorageError { signature :: String
+                   , _data :: HexString
+                   }
 
 derive instance genericCallError :: Generic CallError _
 

@@ -12,6 +12,9 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
+import Control.Monad.Aff (liftEff')
+import Control.Monad.Aff.Class (liftAff)
+import Control.Monad.Eff.Exception (throw)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
@@ -141,17 +144,13 @@ _call txOptions cursor dat = do
         sel = toSelector sig
         fullData = sel <> (genericABIEncode <<< untagged $ dat)
     res <- eth_call (txdata $ sel <> (genericABIEncode <<< untagged $ dat)) cursor
-    pure $ case genericFromData res of
-      Left err -> Left $
+    case genericFromData res of
+      Left err ->
         if res == mempty
-          then NullStorageError { signature: sig
-                                , _data: fullData
-                                }
-          else ParseError { response: res
-                          , signature: sig
-                          , _data: fullData
-                          , parseError: err
-                          }
-      Right x -> Right x
+          then pure <<< Left $ NullStorageError { signature: sig
+                                                , _data: fullData
+                                                }
+          else liftAff <<< liftEff' <<< throw $ show err
+      Right x -> pure $ Right x
   where
     txdata d  = txOptions # _data .~ Just d
