@@ -123,7 +123,6 @@ _sendTransaction txOptions dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
     eth_sendTransaction <<< txdata $ sel <> (genericABIEncode <<< untagged $ dat)
   where
-    defaultGas = parseBigNumber hexadecimal "0x2dc2dc"
     txdata d = txOptions # _data .~ Just d
 
 _call :: forall p a arep b brep e selector .
