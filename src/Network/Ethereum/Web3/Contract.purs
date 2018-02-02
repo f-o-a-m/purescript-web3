@@ -24,7 +24,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Streaming.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, Web3, _data, _from, _fromBlock, _gas, _to, _toBlock, _value, convert, defaultTransactionOptions, hexadecimal, parseBigNumber, toSelector)
+import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, TransactionOptions, Web3, _data, _fromBlock, _toBlock, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -82,16 +82,10 @@ event' fltr w handler = do
 -- | of a transaction with this value as the payload.
 class TxMethod (selector :: Symbol) a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall p e u.
+    sendTx :: forall p e.
               IsAsyncProvider p
            => IsSymbol selector
-           => EtherUnit u
-           => Maybe Address
-           -- ^ Contract address
-           -> Address
-           -- ^ from address
-           -> u
-           -- ^ paymentValue
+           => TransactionOptions
            -> Tagged (SProxy selector) a
            -- ^ Method data
            -> Web3 p e HexString
@@ -102,10 +96,8 @@ class CallMethod (selector :: Symbol) a b where
     call :: forall p e.
             IsAsyncProvider p
          => IsSymbol selector
-         => Address
-         -- ^ Contract address
-         -> Maybe Address
-         -- from address
+         => TransactionOptions
+         -- ^ TransactionOptions
          -> ChainCursor
          -- ^ State mode for constant call (latest or pending)
          -> Tagged (SProxy selector) a
@@ -119,28 +111,19 @@ instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod 
 instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
   call = _call
 
-_sendTransaction :: forall p a rep e u selector .
+_sendTransaction :: forall p a rep e selector .
                     IsAsyncProvider p
                  => IsSymbol selector
                  => Generic a rep
                  => GenericABIEncode rep
-                 => EtherUnit u
-                 => Maybe Address
-                 -> Address
-                 -> u
+                 => TransactionOptions
                  -> Tagged (SProxy selector) a
                  -> Web3 p e HexString
-_sendTransaction mto f val dat = do
+_sendTransaction txOptions dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
     eth_sendTransaction <<< txdata $ sel <> (genericABIEncode <<< untagged $ dat)
   where
-    defaultGas = parseBigNumber hexadecimal "0x2dc2dc"
-    txdata d =
-      defaultTransactionOptions # _to .~ mto
-                                # _from .~ Just f
-                                # _data .~ Just d
-                                # _value .~ Just (convert val)
-                                # _gas .~ defaultGas
+    txdata d = txOptions # _data .~ Just d
 
 _call :: forall p a arep b brep e selector .
          IsAsyncProvider p
@@ -149,16 +132,15 @@ _call :: forall p a arep b brep e selector .
       => GenericABIEncode arep
       => Generic b brep
       => GenericABIDecode brep
-      => Address
-      -> Maybe Address
+      => TransactionOptions
       -> ChainCursor
       -> Tagged (SProxy selector) a
       -> Web3 p e (Either CallError b)
-_call t mf cm dat = do
+_call txOptions cursor dat = do
     let sig = reflectSymbol $ (SProxy :: SProxy selector)
         sel = toSelector sig
         fullData = sel <> (genericABIEncode <<< untagged $ dat)
-    res <- eth_call (txdata fullData) cm
+    res <- eth_call (txdata $ sel <> (genericABIEncode <<< untagged $ dat)) cursor
     pure $ case genericFromData res of
       Left err -> Left $
         if res == mempty
@@ -172,7 +154,4 @@ _call t mf cm dat = do
                           }
       Right x -> Right x
   where
-    txdata d  =
-      defaultTransactionOptions # _to .~ Just t
-                                # _from .~ mf
-                                # _data .~ Just d
+    txdata d  = txOptions # _data .~ Just d

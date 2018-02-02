@@ -14,7 +14,7 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class IsAsyncProvider, Address, Web3Error, ChainCursor(..), ETH, Ether, EventAction(..), Value, Web3, _address, _fromBlock, _toBlock, _topics, defaultFilter, embed, event, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx, class EventFilter, eventFilter)
+import Network.Ethereum.Web3 (class IsAsyncProvider, Address, ChainCursor(..), ETH, Ether, EventAction(..), Value, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, embed, event, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx, class EventFilter, eventFilter, defaultTransactionOptions)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:&), D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Network.Ethereum.Web3.Types.Types (HexString(..))
 import Partial.Unsafe (unsafePartial)
@@ -67,7 +67,7 @@ instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = liftEff <<< httpProvider $ "http://localhost:8545"
 
 setA :: forall e . IntN (D2 :& D5 :& D6) -> Web3 HttpProvider e HexString
-setA n = sendTx (Just ssAddress) adminAddress (zero :: Value Ether) ((tagged <<< Tuple1 $ n) :: FnSet)
+setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
 countMonitor :: forall e. Web3 HttpProvider (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
 countMonitor =
