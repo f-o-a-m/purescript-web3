@@ -229,15 +229,15 @@ genericToRecordFields a =
 
 --------------------------------------------------------------------------------
 
-class UncurryFields (order :: RowList) fields curried result | curried -> order result fields, order -> fields, order result -> curried  where
-  uncurryFields :: RLProxy order -> Record fields -> curried -> result
+class UncurryFields fields curried result | curried -> result fields where
+  uncurryFields :: Record fields -> curried -> result
 
-instance uncurryFieldsEmpty :: UncurryFields Nil () (Web3 p e b) (Web3 p e b) where
-  uncurryFields _ _ = id
+instance uncurryFieldsEmpty :: UncurryFields () (Web3 p e b) (Web3 p e b) where
+  uncurryFields _ = id
 
-instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields rl before f b) => UncurryFields (Cons s a rl) after (Tagged (SProxy s) a -> f) b where
-  uncurryFields _ r f =
+instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
+  uncurryFields r f =
     let arg = (Record.get (SProxy :: SProxy s) r)
         before = Record.delete (SProxy :: SProxy s) r :: Record before
         partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
-    in uncurryFields (RLProxy :: RLProxy rl) before partiallyApplied
+    in uncurryFields before partiallyApplied
