@@ -14,8 +14,6 @@ module Network.Ethereum.Web3.Solidity.Generic
  , genericToRecordFields
  , class ArgsToRowListProxy
  , argsToRowListProxy
- , class UncurryFields
- , uncurryFields
  ) where
 
 import Prelude
@@ -23,7 +21,7 @@ import Prelude
 import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
-import Data.Functor.Tagged (Tagged, untagged, tagged)
+import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
@@ -31,7 +29,7 @@ import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (HexString, Web3, hexLength, unHex, unsafeToInt)
+import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
@@ -227,17 +225,3 @@ genericToRecordFields a =
   in toRecordFields (RLProxy :: RLProxy l) row
 
 
---------------------------------------------------------------------------------
-
-class UncurryFields fields curried result | curried -> result fields where
-  uncurryFields :: Record fields -> curried -> result
-
-instance uncurryFieldsEmpty :: UncurryFields () (Web3 p e b) (Web3 p e b) where
-  uncurryFields _ = id
-
-instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
-  uncurryFields r f =
-    let arg = (Record.get (SProxy :: SProxy s) r)
-        before = Record.delete (SProxy :: SProxy s) r :: Record before
-        partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
-    in uncurryFields before partiallyApplied

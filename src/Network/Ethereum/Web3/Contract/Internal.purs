@@ -1,8 +1,10 @@
-module Network.Ethereum.Web3.Streaming.Internal
+module Network.Ethereum.Web3.Contract.Internal
  ( reduceEventStream
  , pollFilter
  , logsStream
  , mkBlockNumber
+ , class UncurryFields
+ , uncurryFields
  ) where
 
 import Prelude
@@ -15,11 +17,15 @@ import Control.Monad.Trans.Class (lift)
 import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consumer, emit)
 import Data.Array (catMaybes, dropWhile, uncons)
 import Data.Either (Either(..))
+import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
 import Data.Newtype (wrap, unwrap)
+import Data.Record as Record
+import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
+import Type.Row (class RowLacks)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges, eth_uninstallFilter)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
@@ -132,3 +138,22 @@ mkBlockNumber bm = case bm of
   BN bn -> pure bn
   Earliest -> pure <<< wrap $ zero
   _ -> eth_blockNumber
+
+--------------------------------------------------------------------------------
+-- * Uncurry Helper
+--------------------------------------------------------------------------------
+
+-- | Useful class for using records as arguments to solidity functions
+
+class UncurryFields fields curried result | curried -> result fields where
+  uncurryFields :: Record fields -> curried -> result
+
+instance uncurryFieldsEmpty :: UncurryFields () (Web3 p e b) (Web3 p e b) where
+  uncurryFields _ = id
+
+instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
+  uncurryFields r f =
+    let arg = (Record.get (SProxy :: SProxy s) r)
+        before = Record.delete (SProxy :: SProxy s) r :: Record before
+        partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
+    in uncurryFields before partiallyApplied
