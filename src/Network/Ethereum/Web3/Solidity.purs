@@ -37,7 +37,7 @@ import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, class IndexedEvent, isAnonymous)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromDataParser, fromData)
-import Network.Ethereum.Web3.Solidity.Generic (class GenericABIEncode, class GenericABIDecode, class ArgsToRowListProxy, genericABIEncode, genericABIDecode, genericFromData, class ToRecordFields, toRecordFields)
+import Network.Ethereum.Web3.Solidity.Generic (class GenericABIEncode, class GenericABIDecode, class ArgsToRowListProxy, genericABIEncode, genericABIDecode, genericFromData, class ToRecordFields, toRecordFields, class UncurryFields, uncurryFields)
 import Network.Ethereum.Web3.Types (BigNumber, Address)
 import Data.ByteString (ByteString)
 

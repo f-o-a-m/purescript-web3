@@ -14,6 +14,8 @@ module Network.Ethereum.Web3.Solidity.Generic
  , genericToRecordFields
  , class ArgsToRowListProxy
  , argsToRowListProxy
+ , class UncurryFields
+ , uncurryFields
  ) where
 
 import Prelude
@@ -21,15 +23,15 @@ import Prelude
 import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
-import Data.Functor.Tagged (Tagged, untagged)
+import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Data.Record (insert)
+import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
+import Network.Ethereum.Web3.Types (HexString, Web3, hexLength, unHex, unsafeToInt)
 import Text.Parsing.Parser (ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
@@ -200,17 +202,17 @@ instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy 
 instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
   argsToRowListProxy _ = RLProxy
 
-class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args, rowList -> fields where
+class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
   toRecordFields :: RLProxy rowList -> args -> Record fields
 
 instance toRecordBase :: (IsSymbol s, RowCons s a () r, RowLacks s ()) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
-  toRecordFields _ (Argument a) = insert (SProxy :: SProxy s) (untagged a) {}
+  toRecordFields _ (Argument a) = Record.insert (SProxy :: SProxy s) (untagged a) {}
 
 instance toRecordBaseNull :: ToRecordFields NoArguments () Nil where
   toRecordFields _ _ = {}
 
 instance toRecordInductive :: (ToRecordFields as r1 l, RowCons s a r1 r2, RowLacks s r1, IsSymbol s, ListToRow l r1) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a l) where
-  toRecordFields _ (Product (Argument a) as) = insert (SProxy :: SProxy s) (untagged a) rest
+  toRecordFields _ (Product (Argument a) as) = Record.insert (SProxy :: SProxy s) (untagged a) rest
     where rest = (toRecordFields (RLProxy :: RLProxy l) as :: Record r1)
 
 genericToRecordFields :: forall args fields l a name .
@@ -224,3 +226,18 @@ genericToRecordFields a =
   let Constructor row = from a
   in toRecordFields (RLProxy :: RLProxy l) row
 
+
+--------------------------------------------------------------------------------
+
+class UncurryFields (order :: RowList) fields curried result | curried -> order result fields, order -> fields, order result -> curried  where
+  uncurryFields :: RLProxy order -> Record fields -> curried -> result
+
+instance uncurryFieldsEmpty :: UncurryFields Nil () (Web3 p e b) (Web3 p e b) where
+  uncurryFields _ _ = id
+
+instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields rl before f b) => UncurryFields (Cons s a rl) after (Tagged (SProxy s) a -> f) b where
+  uncurryFields _ r f =
+    let arg = (Record.get (SProxy :: SProxy s) r)
+        before = Record.delete (SProxy :: SProxy s) r :: Record before
+        partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
+    in uncurryFields (RLProxy :: RLProxy rl) before partiallyApplied
