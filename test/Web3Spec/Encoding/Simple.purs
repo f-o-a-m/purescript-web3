@@ -5,16 +5,14 @@ import Prelude
 
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Except (runExcept, runExceptT)
+import Control.Monad.Except (runExcept)
 import Data.Array (replicate)
 import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Foldable (intercalate)
-import Data.Foreign (ForeignError(..))
-import Data.Foreign.Generic (decodeJSON, defaultOptions, genericDecodeJSON)
-import Data.Identity (Identity(..))
-import Data.Int (toStringAs)
-import Data.List.Types (NonEmptyList(..))
+import Data.Foreign (ForeignError)
+import Data.Foreign.Generic (decodeJSON, defaultOptions)
+import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.String (toLower)
 import Data.Traversable (sequence)
@@ -23,7 +21,7 @@ import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), decimal, embed, mkAddress, mkHexString, parseBigNumber, pow, unHex, (+<), (-<))
+import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, pow, unHex, (+<), (-<))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
@@ -43,7 +41,7 @@ encodingSimpleSpec = describe "encoding-spec" do
 roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
-  fromData encoded `shouldEqual` Just decoded
+  fromData encoded `shouldEqual` Right decoded
 
 stringTests :: forall r . Spec r Unit
 stringTests =

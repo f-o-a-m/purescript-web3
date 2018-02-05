@@ -9,7 +9,7 @@ import Data.Array (head)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Network.Ethereum.Web3 (class IsAsyncProvider, Block(..), ChainCursor(..), HexString, Web3, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
+import Network.Ethereum.Web3 (class IsAsyncProvider, Block(..), ChainCursor(..), HexString, Web3, Web3Error, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getBlockByNumber, eth_getFilterChanges, eth_getSyncing, eth_getTransaction, eth_getTransactionReceipt, eth_newFilter)
 import Network.Ethereum.Web3.Types (FalseOrObject(..))
 import Partial.Unsafe (unsafePartial)
@@ -30,8 +30,8 @@ instance isAsyncHttp :: IsAsyncProvider HttpProvider where
 runWeb3_ = runWeb3 http
 
 -- note: this does not need to work, just typecheck
-runNtTest :: forall a r. Newtype a _ => Web3 _ _ a -> Aff _ (Either Error a)
-runNtTest web3req = try $ wrap <$> unwrap <$> runWeb3_ web3req
+runNtTest :: forall a r. Newtype a _ => Web3 _ _ a -> Aff _ (Either Web3Error a)
+runNtTest web3req = map wrap <$> map unwrap <$> runWeb3_ web3req
 
 
 fakeTxid :: HexString

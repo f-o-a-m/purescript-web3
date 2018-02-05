@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Aff (Fiber)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
+import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -13,7 +14,7 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class IsAsyncProvider, Address, ChainCursor(..), ETH, Ether, EventAction(..), Value, Web3, _address, _fromBlock, _toBlock, _topics, defaultFilter, embed, event, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx, class EventFilter, eventFilter, defaultTransactionOptions)
+import Network.Ethereum.Web3 (class IsAsyncProvider, Address, ChainCursor(..), ETH, Ether, EventAction(..), Value, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, embed, event, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx, class EventFilter, eventFilter, defaultTransactionOptions)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:&), D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Network.Ethereum.Web3.Types.Types (HexString(..))
 import Partial.Unsafe (unsafePartial)
@@ -68,7 +69,7 @@ instance isAsyncHttp :: IsAsyncProvider HttpProvider where
 setA :: forall e . IntN (D2 :& D5 :& D6) -> Web3 HttpProvider e HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
-countMonitor :: forall e. Web3 HttpProvider (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) Unit)
+countMonitor :: forall e. Web3 HttpProvider (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
 countMonitor =
   let fltr = eventFilter (Proxy :: Proxy CountSet) ssAddress
                 # _fromBlock .~ (BN <<< wrap <<< embed $ 10)

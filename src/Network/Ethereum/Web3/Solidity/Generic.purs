@@ -18,9 +18,9 @@ module Network.Ethereum.Web3.Solidity.Generic
 
 import Prelude
 
-import Control.Error.Util (hush)
 import Control.Monad.State.Class (get)
 import Data.Array (foldl, length, reverse, sort, uncons, (:))
+import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
@@ -30,7 +30,7 @@ import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Types (HexString, hexLength, unHex, unsafeToInt)
-import Text.Parsing.Parser (ParseState(..), Parser, runParser)
+import Text.Parsing.Parser (ParseError, ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
@@ -160,8 +160,8 @@ genericFromData :: forall a rep.
                    Generic a rep
                 => GenericABIDecode rep
                 => HexString
-                -> Maybe a
-genericFromData = hush <<< flip runParser genericABIDecode <<< unHex
+                -> Either ParseError a
+genericFromData = flip runParser genericABIDecode <<< unHex
 
 -- helpers
 

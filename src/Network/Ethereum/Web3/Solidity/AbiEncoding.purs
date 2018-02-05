@@ -2,13 +2,13 @@ module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
 
-import Control.Error.Util (hush)
 import Data.Array (length) as A
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
+import Data.Either (Either)
 import Data.Foldable (foldMap)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
-import Data.Maybe (Maybe, maybe, fromJust)
+import Data.Maybe (maybe, fromJust)
 import Data.String (fromCharArray)
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
@@ -18,7 +18,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Web3.Types (class Algebra, Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, mkHexString, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, unsafeToInt)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser (Parser, ParserT, runParser, fail)
+import Text.Parsing.Parser (ParseError, Parser, ParserT, fail, runParser)
 import Text.Parsing.Parser.Token (hexDigit)
 import Type.Proxy (Proxy(..))
 
@@ -36,8 +36,8 @@ instance abiDecodeAlgebra :: ABIDecode BigNumber where
   fromDataParser = int256HexParser
 
 -- | Parse encoded value, droping the leading `0x`
-fromData :: forall a . ABIDecode a => HexString -> Maybe a
-fromData = hush <<< flip runParser fromDataParser <<< unHex
+fromData :: forall a . ABIDecode a => HexString -> Either ParseError a
+fromData = flip runParser fromDataParser <<< unHex
 
 instance abiEncodeBool :: ABIEncode Boolean where
     toDataBuilder  = uInt256HexBuilder <<< fromBool
