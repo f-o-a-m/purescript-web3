@@ -25,7 +25,7 @@ import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Data.Record (insert)
+import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
@@ -200,17 +200,17 @@ instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy 
 instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
   argsToRowListProxy _ = RLProxy
 
-class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args, rowList -> fields where
+class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
   toRecordFields :: RLProxy rowList -> args -> Record fields
 
 instance toRecordBase :: (IsSymbol s, RowCons s a () r, RowLacks s ()) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
-  toRecordFields _ (Argument a) = insert (SProxy :: SProxy s) (untagged a) {}
+  toRecordFields _ (Argument a) = Record.insert (SProxy :: SProxy s) (untagged a) {}
 
 instance toRecordBaseNull :: ToRecordFields NoArguments () Nil where
   toRecordFields _ _ = {}
 
 instance toRecordInductive :: (ToRecordFields as r1 l, RowCons s a r1 r2, RowLacks s r1, IsSymbol s, ListToRow l r1) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a l) where
-  toRecordFields _ (Product (Argument a) as) = insert (SProxy :: SProxy s) (untagged a) rest
+  toRecordFields _ (Product (Argument a) as) = Record.insert (SProxy :: SProxy s) (untagged a) rest
     where rest = (toRecordFields (RLProxy :: RLProxy l) as :: Record r1)
 
 genericToRecordFields :: forall args fields l a name .
@@ -223,4 +223,5 @@ genericToRecordFields :: forall args fields l a name .
 genericToRecordFields a =
   let Constructor row = from a
   in toRecordFields (RLProxy :: RLProxy l) row
+
 

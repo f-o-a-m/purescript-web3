@@ -127,9 +127,7 @@ instance hexStringEq :: Eq HexString where
   eq (HexString h1) (HexString h2) = S.toLower h1 == S.toLower h2
 
 derive newtype instance hexStringOrd :: Ord HexString
-
 derive newtype instance semigpStringEq :: Semigroup HexString
-
 derive newtype instance monoidStringEq :: Monoid HexString
 
 instance decodeHexString :: Decode HexString where
@@ -183,13 +181,9 @@ nullWord = HexString "0000000000000000000000000000000000000000000000000000000000
 newtype Address = Address HexString
 
 derive newtype instance addressShow :: Show Address
-
 derive newtype instance addressEq :: Eq Address
-
 derive newtype instance addressOrd :: Ord Address
-
 derive newtype instance decodeAddress :: Decode Address
-
 derive newtype instance encodeAddress :: Encode Address
 
 unAddress :: Address -> HexString
@@ -267,6 +261,7 @@ newtype Block
           }
 
 derive instance genericBlock :: Generic Block _
+derive instance newtypeBlock :: Newtype Block _
 derive instance eqBlock :: Eq Block
 
 instance showBlock :: Show Block where
@@ -294,6 +289,7 @@ newtype Transaction =
               }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance newtypeTransaction :: Newtype Transaction _
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
@@ -318,6 +314,7 @@ newtype TransactionReceipt =
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
+derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
 derive instance eqTxReceipt :: Eq TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
@@ -341,6 +338,8 @@ newtype TransactionOptions =
                      }
 
 derive instance genericTransactionOptions :: Generic TransactionOptions _
+derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
+derive instance eqTransactionOptions :: Eq TransactionOptions
 
 instance showTransactionOptions :: Show TransactionOptions where
   show = genericShow
@@ -399,6 +398,7 @@ newtype SyncStatus = SyncStatus
     }
 
 derive instance genericSyncStatus :: Generic SyncStatus _
+derive instance newtypeSyncStatus :: Newtype SyncStatus _
 derive instance eqSyncStatus :: Eq SyncStatus
 
 instance decodeSyncStatus :: Decode SyncStatus where
@@ -454,6 +454,7 @@ newtype Filter = Filter
   }
 
 derive instance genericFilter :: Generic Filter _
+derive instance newtypeFilter :: Newtype Filter _
 
 instance showFilter :: Show Filter where
   show = genericShow
@@ -542,6 +543,7 @@ newtype Change = Change
   }
 
 derive instance genericChange :: Generic Change _
+derive instance newtypeChange :: Newtype Change _
 
 instance showChange :: Show Change where
   show = genericShow
