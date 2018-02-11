@@ -4,8 +4,8 @@ import Prelude
 
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
-import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, Filter, FilterId, HexString, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
-import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3, defaultTransactionOptions, FalseOrObject)
+import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, FalseOrObject(..), Filter, FilterId, HexString, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
+import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3)
 import Type.Data.Boolean (kind Boolean)
 
 -- | Returns current node version string.
@@ -101,7 +101,7 @@ eth_sendRawTransaction :: forall p e. IsAsyncProvider p => HexString -> Web3 p e
 eth_sendRawTransaction rawTx = unsafeCoerceWeb3 $ remote "eth_sendRawTransaction" rawTx :: Web3 p () HexString
 
 -- | Makes a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas.
-eth_estimateGas :: forall p e. IsAsyncProvider p => TransactionOptions -> ChainCursor -> Web3 p e BigNumber
+eth_estimateGas :: forall p e. IsAsyncProvider p => TransactionOptions Wei -> ChainCursor -> Web3 p e BigNumber
 eth_estimateGas txOpts cm = unsafeCoerceWeb3 $ remote "eth_estimateGas" txOpts cm :: Web3 p () BigNumber
 
 -- | Returns information about a transaction by block hash and transaction index position.
@@ -146,16 +146,16 @@ eth_getTransaction :: forall p e . IsAsyncProvider p => HexString -> Web3 p e Tr
 eth_getTransaction hx = unsafeCoerceWeb3 $ remote "eth_getTransactionByHash" hx :: Web3 p () Transaction
 
 -- | Call a function on a particular block's state root.
-eth_call :: forall p e . IsAsyncProvider p => TransactionOptions -> ChainCursor -> Web3 p e HexString
+eth_call :: forall p e . IsAsyncProvider p => TransactionOptions NoPay -> ChainCursor -> Web3 p e HexString
 eth_call opts cm = unsafeCoerceWeb3 $ remote "eth_call" opts cm :: Web3 p () HexString
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.
-eth_sendTransaction :: forall p e . IsAsyncProvider p => TransactionOptions -> Web3 p e HexString
+eth_sendTransaction :: forall p e . IsAsyncProvider p => TransactionOptions Wei-> Web3 p e HexString
 eth_sendTransaction opts = unsafeCoerceWeb3 $ remote "eth_sendTransaction" opts :: Web3 p () HexString
 
 -- | Get all account addresses registered at the `Provider`
 eth_getAccounts :: forall p e . IsAsyncProvider p => Web3 p e (Array Address)
-eth_getAccounts = unsafeCoerceWeb3 $ remote "eth_accounts" defaultTransactionOptions :: Web3 p () (Array Address)
+eth_getAccounts = unsafeCoerceWeb3 $ remote "eth_accounts" :: Web3 p () (Array Address)
 
 -- | Creates a filter object, based on filter options, to notify when the
 -- | state changes (logs). To check if the state has changed, call 'eth_getFilterChanges'.

@@ -73,7 +73,7 @@ import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Lens.Lens (Lens', lens)
+import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
@@ -82,7 +82,7 @@ import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
-import Network.Ethereum.Web3.Types.EtherUnit (Value, Wei)
+import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, Value, Wei, convert)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -327,27 +327,27 @@ instance decodeTxReceipt :: Decode TransactionReceipt where
 -- * TransactionOptions
 --------------------------------------------------------------------------------
 
-newtype TransactionOptions =
+newtype TransactionOptions u =
   TransactionOptions { from :: NullOrUndefined Address
                      , to :: NullOrUndefined Address
-                     , value :: NullOrUndefined (Value Wei)
+                     , value :: NullOrUndefined (Value u)
                      , gas :: NullOrUndefined BigNumber
                      , gasPrice :: NullOrUndefined BigNumber
                      , data :: NullOrUndefined HexString
                      , nonce :: NullOrUndefined BigNumber
                      }
 
-derive instance genericTransactionOptions :: Generic TransactionOptions _
-derive instance newtypeTransactionOptions :: Newtype TransactionOptions _
-derive instance eqTransactionOptions :: Eq TransactionOptions
+derive instance genericTransactionOptions :: Generic (TransactionOptions u) _
+derive instance newtypeTransactionOptions :: Newtype (TransactionOptions u) _
+derive instance eqTransactionOptions :: Eq (TransactionOptions u)
 
-instance showTransactionOptions :: Show TransactionOptions where
+instance showTransactionOptions :: Show (TransactionOptions u) where
   show = genericShow
 
-instance encodeTransactionOptions :: Encode TransactionOptions where
+instance encodeTransactionOptions :: Encode (TransactionOptions u) where
   encode = genericEncode (defaultOptions { unwrapSingleConstructors = true })
 
-defaultTransactionOptions :: TransactionOptions
+defaultTransactionOptions :: forall u . TransactionOptions u
 defaultTransactionOptions =
   TransactionOptions { from : NullOrUndefined Nothing
                      , to : NullOrUndefined Nothing
@@ -357,33 +357,32 @@ defaultTransactionOptions =
                      , data : NullOrUndefined Nothing
                      , nonce : NullOrUndefined Nothing
                      }
-
 -- * Lens Boilerplate
-_from :: Lens' TransactionOptions (Maybe Address)
+_from :: forall u. Lens' (TransactionOptions u) (Maybe Address)
 _from = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.from)
           (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {from = NullOrUndefined addr})
 
-_to :: Lens' TransactionOptions (Maybe Address)
+_to :: forall u. Lens' (TransactionOptions u) (Maybe Address)
 _to = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.to)
            (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {to = NullOrUndefined addr})
 
-_data :: Lens' TransactionOptions (Maybe HexString)
+_data :: forall u. Lens' (TransactionOptions u) (Maybe HexString)
 _data = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.data)
            (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = NullOrUndefined dat})
 
-_value :: Lens' TransactionOptions (Maybe (Value Wei))
+_value :: forall u. EtherUnit u => Lens (TransactionOptions u) (TransactionOptions Wei) (Maybe (Value u)) (Maybe (Value Wei))
 _value = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.value)
-           (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined val})
+           (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined $ map convert val})
 
-_gas :: Lens' TransactionOptions (Maybe BigNumber)
+_gas :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
 _gas = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gas)
            (\(TransactionOptions txOpts) g -> TransactionOptions $ txOpts {gas = NullOrUndefined g})
 
-_gasPrice :: Lens' TransactionOptions (Maybe BigNumber)
+_gasPrice :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
 _gasPrice = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gasPrice)
               (\(TransactionOptions txOpts) gp -> TransactionOptions $ txOpts {gasPrice = NullOrUndefined gp})
 
-_nonce :: Lens' TransactionOptions (Maybe BigNumber)
+_nonce :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
 _nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
            (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
 

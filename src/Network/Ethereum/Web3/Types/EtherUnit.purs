@@ -13,13 +13,14 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , Ether
   , KEther
   , Value
+  , NoPay
   , mkValue
   , noPay
   ) where
 
 import Prelude
 
-import Data.Foreign.Class (class Decode, class Encode)
+import Data.Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
@@ -35,7 +36,11 @@ derive newtype instance showValue :: Show (Value a)
 
 derive newtype instance encodeValue ::  Encode (Value a)
 
+instance encodeNoPay :: Encode (Value NoPay) where
+  encode _ = encode (Value zero)
+
 derive newtype instance decodeValue ::  Decode (Value a)
+
 
 unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
@@ -128,6 +133,8 @@ data KEther
 instance unitSpecKE :: EtherUnitSpec KEther where
     divider = const $ unsafeConvert $ "1000000000000000000000"
     name    = const "kether"
+
+data NoPay
 
 noPay :: Value Wei
 noPay = Value zero

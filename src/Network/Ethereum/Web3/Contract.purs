@@ -25,7 +25,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, TransactionOptions, Web3, _data, _fromBlock, _toBlock, throwWeb3, toSelector)
+import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, NoPay, TransactionOptions, Web3, Wei, _data, _fromBlock, _toBlock, throwWeb3, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ class TxMethod (selector :: Symbol) a where
     sendTx :: forall p e.
               IsAsyncProvider p
            => IsSymbol selector
-           => TransactionOptions
+           => TransactionOptions Wei
            -> Tagged (SProxy selector) a
            -- ^ Method data
            -> Web3 p e HexString
@@ -97,7 +97,7 @@ class CallMethod (selector :: Symbol) a b where
     call :: forall p e.
             IsAsyncProvider p
          => IsSymbol selector
-         => TransactionOptions
+         => TransactionOptions NoPay
          -- ^ TransactionOptions
          -> ChainCursor
          -- ^ State mode for constant call (latest or pending)
@@ -117,7 +117,7 @@ _sendTransaction :: forall p a rep e selector .
                  => IsSymbol selector
                  => Generic a rep
                  => GenericABIEncode rep
-                 => TransactionOptions
+                 => TransactionOptions Wei
                  -> Tagged (SProxy selector) a
                  -> Web3 p e HexString
 _sendTransaction txOptions dat = do
@@ -133,7 +133,7 @@ _call :: forall p a arep b brep e selector .
       => GenericABIEncode arep
       => Generic b brep
       => GenericABIDecode brep
-      => TransactionOptions
+      => TransactionOptions NoPay
       -> ChainCursor
       -> Tagged (SProxy selector) a
       -> Web3 p e (Either CallError b)
