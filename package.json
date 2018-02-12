@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "postinstall": "bower install",
+    "build": "pulp build",
     "test": "pulp test"
   },
   "dependencies": {
