@@ -1,8 +1,7 @@
 module Web3Spec.Types.BigNumber (bigNumberSpec) where
 
 
-import Prelude (Unit, add, discard, map, mul, negate, one, pure, show
-               , sub, zero, ($), (<$>), (<*>), (>>=))
+import Prelude
 import Data.Maybe (Maybe(Just))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -44,7 +43,7 @@ bigNumberSpec = describe "BigNumber-spec" do
       it "can add, subtract, and multiply BigNumbers as an Int-Alegbra" do
         (add <$> (parseBigNumber decimal "1") <*> (parseBigNumber decimal "1")) `shouldEqual` (parseBigNumber decimal "2")
         (sub <$> (parseBigNumber hexadecimal "0xf") <*> (parseBigNumber decimal "1")) `shouldEqual` (parseBigNumber decimal "14")
-        ((parseBigNumber hexadecimal "0xf") >>= \x -> pure $ 15 >+ x) `shouldEqual` parseBigNumber decimal "30"
-        ((parseBigNumber decimal "21") >>= \x -> pure $ x -< 0) `shouldEqual` parseBigNumber hexadecimal "0x15"
+        ((parseBigNumber hexadecimal "0xf") >>= \x -> pure $ embed 15 + x) `shouldEqual` parseBigNumber decimal "30"
+        ((parseBigNumber decimal "21") >>= \x -> pure $ x - zero) `shouldEqual` parseBigNumber hexadecimal "0x15"
         (Just $ one `mul` one) `shouldEqual` parseBigNumber decimal "1"
-        (Just $ one *< (-7)) `shouldEqual` parseBigNumber hexadecimal "-0x7"
+        (Just $ one * embed (-7)) `shouldEqual` parseBigNumber hexadecimal "-0x7"

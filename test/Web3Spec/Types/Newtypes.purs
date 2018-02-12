@@ -2,19 +2,17 @@ module Web3Spec.Types.Newtypes (ntTests) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff, Error)
+import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Error.Class (try)
-import Data.Array (head)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Network.Ethereum.Web3 (class IsAsyncProvider, Block(..), ChainCursor(..), HexString, Web3, Web3Error, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getBlockByNumber, eth_getFilterChanges, eth_getSyncing, eth_getTransaction, eth_getTransactionReceipt, eth_newFilter)
+import Network.Ethereum.Web3 (class IsAsyncProvider, ChainCursor(..), ETH, HexString, Web3, Web3Error, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
+import Network.Ethereum.Web3.Api (eth_getBlockByNumber, eth_getFilterChanges, eth_getSyncing, eth_getTransaction, eth_getTransactionReceipt, eth_newFilter)
 import Network.Ethereum.Web3.Types (FalseOrObject(..))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
 
 -- Set up HTTP provider for testing, note, this doesn't
@@ -27,10 +25,17 @@ http = Proxy
 instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = liftEff <<< httpProvider $ "http://localhost:8545"
 
+runWeb3_ :: forall t12 t13.
+        Web3 HttpProvider t13 t12
+        -> Aff
+             ( eth :: ETH
+             | t13
+             )
+             (Either Web3Error t12)
 runWeb3_ = runWeb3 http
 
 -- note: this does not need to work, just typecheck
-runNtTest :: forall a r. Newtype a _ => Web3 _ _ a -> Aff _ (Either Web3Error a)
+runNtTest :: forall a r e . Newtype a r => Web3 HttpProvider e a -> Aff (eth :: ETH | e) (Either Web3Error a)
 runNtTest web3req = map wrap <$> map unwrap <$> runWeb3_ web3req
 
 
@@ -39,7 +44,7 @@ fakeTxid = unsafePartial fromJust $ mkHexString "00"
 
 
 -- | tests that typecheck if these types derive newtype
-ntTests :: forall r . Spec _ Unit
+ntTests :: Spec _ Unit
 ntTests = describe "newtype-tests" do
     it "Block should derive newtype" $ do
         _ <- runNtTest $ eth_getBlockByNumber Latest

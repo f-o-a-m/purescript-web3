@@ -1,12 +1,6 @@
 module Network.Ethereum.Web3.Types.BigNumber
   ( BigNumber
   , class Algebra, embed
-  , (*<), rmul
-  , (>*), lmul
-  , (+<), radd
-  , (>+), ladd
-  , (-<), rsub
-  , (>-), lsub
   , pow
   , toString
   , parseBigNumber
@@ -22,6 +16,7 @@ import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, encode)
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
+import Data.Module (class LeftModule, class RightModule)
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -73,57 +68,23 @@ foreign import _subBigNumber :: BigNumber -> BigNumber -> BigNumber
 instance ringBigNumber :: Ring BigNumber where
   sub = _subBigNumber
 
--- | Class for embedding one ring inside another. Used mostly for coercing numerical values to `BigNumber` types.
--- | The emedding ring is refered to as the subalgebra. The embedding is assumed to be a ring homomorphism,
--- | and `a` is an `r`-bimodule under `lmul` and `rmul`.
+instance bigNumberLModule :: LeftModule BigNumber Int where
+  mzeroL = embedInt 0
+  maddL = add
+  msubL = sub
+  mmulL a b = embedInt a * b
 
-class (Ring r, Ring a) <= Algebra r a where
+instance bigNumberRModule :: RightModule BigNumber Int where
+  mzeroR = embedInt 0
+  maddR = add
+  msubR = sub
+  mmulR a b = a * embedInt b
+
+class (Ring r, Ring a, LeftModule a r, RightModule a r) <= Algebra a r where
   embed :: r -> a
 
-instance embedInt' :: Algebra Int BigNumber where
+instance embedInt' :: Algebra BigNumber Int where
   embed = embedInt
-
-instance embedNumber :: Algebra Number BigNumber where
-  embed = _numberToBigNumber
-
-instance embedBigNumber :: Algebra BigNumber BigNumber where
-  embed = id
-
--- | Add a subalgebra value on the right
-radd :: forall r a . Algebra r a => a -> r -> a
-radd a r = a `add` embed r
-
-infixr 6 radd as +<
-
--- | Add a subalgebra value on the left
-ladd :: forall r a . Algebra r a => r -> a -> a
-ladd r a = embed r `add` a
-
-infixl 6 ladd as >+
-
--- | Subtract a subalgebra value on the right
-rsub :: forall r a . Algebra r a => a -> r -> a
-rsub a r = a `sub` embed r
-
-infixr 6 rsub as -<
-
--- Subtract a subalgebra value on the left
-lsub :: forall r a . Algebra r a => r -> a -> a
-lsub r a = embed r `sub` a
-
-infixl 6 lsub as >-
-
--- | Multiply a subalgebra value on the right
-rmul :: forall r a . Algebra r a => a -> r -> a
-rmul a r = a `mul` embed r
-
-infixr 7 rmul as *<
-
--- | Multiply a subalgebra value on the left
-lmul :: forall r a . Algebra r a => r -> a -> a
-lmul r a = embed r `mul` a
-
-infixl 7 lmul as >*
 
 foreign import reciprical :: BigNumber -> BigNumber
 

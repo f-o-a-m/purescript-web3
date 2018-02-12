@@ -4,7 +4,7 @@ import Prelude
 
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
-import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, FalseOrObject(..), Filter, FilterId, HexString, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
+import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, HexString, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
 import Network.Ethereum.Web3.Types.Types (unsafeCoerceWeb3)
 import Type.Data.Boolean (kind Boolean)
 
