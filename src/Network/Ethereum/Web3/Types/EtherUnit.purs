@@ -13,14 +13,16 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , Ether
   , KEther
   , Value
+  , NoPay
   , mkValue
-  , noPay
   ) where
 
 import Prelude
 
-import Data.Foreign.Class (class Decode, class Encode)
+import Data.Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
+import Data.Module (class LeftModule, (^*))
+import Data.Monoid (class Monoid)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
@@ -34,6 +36,9 @@ derive newtype instance eqValue :: Eq (Value a)
 derive newtype instance showValue :: Show (Value a)
 
 derive newtype instance encodeValue ::  Encode (Value a)
+
+instance encodeNoPay :: Encode (Value NoPay) where
+  encode _ = encode (Value zero)
 
 derive newtype instance decodeValue ::  Decode (Value a)
 
@@ -65,14 +70,17 @@ instance unitEtherUnitSpec :: EtherUnitSpec a => EtherUnit (Value a) where
     fromWei = Value
     toWei = unValue
 
-instance semiringEtherUnitSpec :: EtherUnitSpec a => Semiring (Value a) where
-   add a b = Value (unValue a `add` unValue b)
-   mul a b = Value (unValue a `mul` unValue b)
-   zero = Value zero
-   one = Value one
+instance semigroupEtherUnitSpec :: EtherUnitSpec a => Semigroup (Value a) where
+   append a b = Value (unValue a `add` unValue b)
 
-instance ringEtherUnitSpec :: EtherUnitSpec a => Ring (Value a) where
-   sub a b = Value (unValue a `sub` unValue b)
+instance monoidEtherUnitSpec :: EtherUnitSpec a => Monoid (Value a) where
+   mempty = mkValue zero
+
+instance modukeEtherUnitSpec :: EtherUnitSpec a => LeftModule (Value a) Int where
+  mzeroL = mkValue zero
+  maddL  (Value a) (Value b) = Value $ a + b
+  msubL  (Value a) (Value b) = Value $ a - b
+  mmulL a (Value b) = Value $ a ^* b
 
 data Wei
 
@@ -129,8 +137,12 @@ instance unitSpecKE :: EtherUnitSpec KEther where
     divider = const $ unsafeConvert $ "1000000000000000000000"
     name    = const "kether"
 
-noPay :: Value Wei
-noPay = Value zero
+data NoPay
+
+instance unitSpecNoPay :: EtherUnitSpec NoPay where
+    divider = const $ zero
+    name    = const "nopay"
 
 unsafeConvert :: String -> BigNumber
 unsafeConvert a = unsafePartial fromJust <<< parseBigNumber decimal $ a
+

@@ -21,7 +21,7 @@ import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, pow, unHex, (+<), (-<))
+import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, pow, unHex)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
@@ -185,19 +185,19 @@ uintNTests =
     describe "uint tests" do
 
       it "can encode uint8" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 8 -< 1) :: Maybe (UIntN D8)
+         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 8 - one) :: Maybe (UIntN D8)
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "00000000000000000000000000000000000000000000000000000000000000ff"
          roundTrip given expected
 
       it "can encode larger uint256" do
-         let mgiven =  (uIntNFromBigNumber $ ((embed $ 2) `pow` 256) -< 1) :: Maybe (UIntN (D2 :& (D5 :& D6)))
+         let mgiven =  (uIntNFromBigNumber $ ((embed $ 2) `pow` 256) - one) :: Maybe (UIntN (D2 :& (D5 :& D6)))
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger uin248" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 256 -< 1) :: Maybe (UIntN (D2 :& (D4 :& D8)))
+         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 256 - one) :: Maybe (UIntN (D2 :& (D4 :& D8)))
          mgiven `shouldEqual` Nothing
 
 intNTests :: forall r . Spec r Unit
@@ -211,17 +211,17 @@ intNTests =
          roundTrip given expected
 
       it "can encode larger uint256" do
-         let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) -< 1) :: Maybe (IntN (D2 :& D5 :& D6))
+         let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) - one) :: Maybe (IntN (D2 :& D5 :& D6))
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger int248" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 255 -< 1) :: Maybe (UIntN (D2 :& D4 :& D8))
+         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 255 - one) :: Maybe (UIntN (D2 :& D4 :& D8))
          mgiven `shouldEqual` Nothing
 
       it "can fail to encode larger negative int248" do
-         let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 +< 1) :: Maybe (UIntN (D2 :& D4 :& D8))
+         let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 + one) :: Maybe (UIntN (D2 :& D4 :& D8))
          mgiven `shouldEqual` Nothing
 
 

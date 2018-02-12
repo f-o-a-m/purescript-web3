@@ -10,6 +10,7 @@ import Web3Spec.Contract (simpleStorageSpec)
 import Web3Spec.Encoding.Containers (encodingContainersSpec)
 import Web3Spec.Encoding.Generic (encodingGenericSpec)
 import Web3Spec.Encoding.Simple (encodingSimpleSpec)
+import Web3Spec.EtherUnitSpec (etherUnitTests)
 import Web3Spec.Types.BigNumber (bigNumberSpec)
 import Web3Spec.Types.Sha3 (sha3Spec)
 import Web3Spec.Types.Utils (utilsSpec)
@@ -23,3 +24,4 @@ main = run [consoleReporter] $ do
   encodingSimpleSpec
   encodingGenericSpec
   simpleStorageSpec
+  etherUnitTests
