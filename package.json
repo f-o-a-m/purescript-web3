@@ -6,7 +6,7 @@
     "lib": "./src"
   },
   "scripts": {
-    "postinstall": "./node_modules/.bin/psc-package update",
+    "postinstall": "psc-package update",
     "test": "pulp --psc-package test"
   },
   "dependencies": {
