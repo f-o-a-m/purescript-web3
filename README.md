@@ -88,7 +88,7 @@ event tupleFilter $ \(TupleSet {newX,newY} -> do
       pure ContinueEvent
 ```
 
-For more examples, check out the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests) repo.
+For more examples, check out the foam [kitty monitor](https://github.com/f-o-a-m/purescript-kitty-monitor), the [example](https://github.com/f-o-a-m/purescript-web3-example) project using thermite, or the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests) repo.
 
 ## Resources
  
