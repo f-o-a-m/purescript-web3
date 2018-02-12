@@ -1,6 +1,6 @@
 {
     "name": "master",
-    "set": "master",
+    "set": "web3-v0.15.0-alpha",
     "source": "https://github.com/f-o-a-m/package-sets.git",
     "depends": [
         "aff",
