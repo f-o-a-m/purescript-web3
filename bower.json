@@ -33,7 +33,8 @@
     "purescript-coroutines": "^4.0.0",
     "purescript-typelevel-prelude": "^2.6.0",
     "purescript-type-equality": "^2.1.0",
-    "purescript-modules": "^3.0.0"
+    "purescript-modules": "^3.0.0",
+    "purescript-mmorph": "^3.0.0"
   },
   "devDependencies": {
     "purescript-debug": "v3.0.0",
