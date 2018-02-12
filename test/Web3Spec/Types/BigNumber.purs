@@ -5,7 +5,7 @@ import Prelude
 import Data.Maybe (Maybe(Just))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Network.Ethereum.Web3.Types.BigNumber
+import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, embed, hexadecimal, parseBigNumber)
 
 bigNumberSpec :: forall r . Spec r Unit
 bigNumberSpec = describe "BigNumber-spec" do
