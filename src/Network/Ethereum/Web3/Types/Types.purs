@@ -82,7 +82,7 @@ import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
-import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, Value, Wei, convert)
+import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -347,7 +347,7 @@ instance showTransactionOptions :: Show (TransactionOptions u) where
 instance encodeTransactionOptions :: Encode (TransactionOptions u) where
   encode = genericEncode (defaultOptions { unwrapSingleConstructors = true })
 
-defaultTransactionOptions :: forall u . TransactionOptions u
+defaultTransactionOptions :: TransactionOptions NoPay
 defaultTransactionOptions =
   TransactionOptions { from : NullOrUndefined Nothing
                      , to : NullOrUndefined Nothing
@@ -370,7 +370,7 @@ _data :: forall u. Lens' (TransactionOptions u) (Maybe HexString)
 _data = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.data)
            (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = NullOrUndefined dat})
 
-_value :: forall u. EtherUnit u => Lens (TransactionOptions u) (TransactionOptions Wei) (Maybe (Value u)) (Maybe (Value Wei))
+_value :: forall u. EtherUnit (Value u) => Lens (TransactionOptions u) (TransactionOptions Wei) (Maybe (Value u)) (Maybe (Value Wei))
 _value = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.value)
            (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined $ map convert val})
 

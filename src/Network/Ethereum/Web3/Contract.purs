@@ -17,15 +17,15 @@ import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic)
-import Data.Lens ((.~), (^.))
+import Data.Lens ((.~), (^.), (%~))
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction)
+import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Types (Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, NoPay, TransactionOptions, Web3, Wei, _data, _fromBlock, _toBlock, throwWeb3, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, NoPay, TransactionOptions, Value, Web3, Wei, _data, _fromBlock, _toBlock, _value, convert, throwWeb3, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -83,10 +83,11 @@ event' fltr w handler = do
 -- | of a transaction with this value as the payload.
 class TxMethod (selector :: Symbol) a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall p e.
+    sendTx :: forall p e u.
               IsAsyncProvider p
+           => EtherUnit (Value u)
            => IsSymbol selector
-           => TransactionOptions Wei
+           => TransactionOptions u
            -> Tagged (SProxy selector) a
            -- ^ Method data
            -> Web3 p e HexString
@@ -112,12 +113,13 @@ instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod 
 instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
   call = _call
 
-_sendTransaction :: forall p a rep e selector .
+_sendTransaction :: forall p a u rep e selector .
                     IsAsyncProvider p
                  => IsSymbol selector
                  => Generic a rep
                  => GenericABIEncode rep
-                 => TransactionOptions Wei
+                 => EtherUnit (Value u)
+                 => TransactionOptions u
                  -> Tagged (SProxy selector) a
                  -> Web3 p e HexString
 _sendTransaction txOptions dat = do
@@ -125,6 +127,7 @@ _sendTransaction txOptions dat = do
     eth_sendTransaction <<< txdata $ sel <> (genericABIEncode <<< untagged $ dat)
   where
     txdata d = txOptions # _data .~ Just d
+                         # _value %~ map convert
 
 _call :: forall p a arep b brep e selector .
          IsAsyncProvider p

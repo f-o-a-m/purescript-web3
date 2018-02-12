@@ -15,7 +15,6 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , Value
   , NoPay
   , mkValue
-  , noPay
   ) where
 
 import Prelude
@@ -26,7 +25,6 @@ import Data.Module (class LeftModule, (^*))
 import Data.Monoid (class Monoid)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
-import Test.Spec (Group)
 import Type.Proxy (Proxy(..))
 
 
@@ -43,7 +41,6 @@ instance encodeNoPay :: Encode (Value NoPay) where
   encode _ = encode (Value zero)
 
 derive newtype instance decodeValue ::  Decode (Value a)
-
 
 unValue :: forall a . Value a -> BigNumber
 unValue (Value a) = a
@@ -79,7 +76,7 @@ instance semigroupEtherUnitSpec :: EtherUnitSpec a => Semigroup (Value a) where
 instance monoidEtherUnitSpec :: EtherUnitSpec a => Monoid (Value a) where
    mempty = mkValue zero
 
-instance groupEtherUnitSpec :: EtherUnitSpec a => LeftModule (Value a) Int where
+instance modukeEtherUnitSpec :: EtherUnitSpec a => LeftModule (Value a) Int where
   mzeroL = mkValue zero
   maddL  (Value a) (Value b) = Value $ a + b
   msubL  (Value a) (Value b) = Value $ a - b
@@ -142,8 +139,10 @@ instance unitSpecKE :: EtherUnitSpec KEther where
 
 data NoPay
 
-noPay :: Value Wei
-noPay = Value zero
+instance unitSpecNoPay :: EtherUnitSpec NoPay where
+    divider = const $ zero
+    name    = const "nopay"
 
 unsafeConvert :: String -> BigNumber
 unsafeConvert a = unsafePartial fromJust <<< parseBigNumber decimal $ a
+
