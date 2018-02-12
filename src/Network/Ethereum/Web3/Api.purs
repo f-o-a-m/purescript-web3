@@ -150,7 +150,7 @@ eth_call :: forall p e . IsAsyncProvider p => TransactionOptions NoPay -> ChainC
 eth_call opts cm = unsafeCoerceWeb3 $ remote "eth_call" opts cm :: Web3 p () HexString
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.
-eth_sendTransaction :: forall p e . IsAsyncProvider p => TransactionOptions Wei-> Web3 p e HexString
+eth_sendTransaction :: forall p e . IsAsyncProvider p => TransactionOptions Wei -> Web3 p e HexString
 eth_sendTransaction opts = unsafeCoerceWeb3 $ remote "eth_sendTransaction" opts :: Web3 p () HexString
 
 -- | Get all account addresses registered at the `Provider`

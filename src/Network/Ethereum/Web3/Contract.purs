@@ -25,7 +25,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
 import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, NoPay, TransactionOptions, Value, Web3, Wei, _data, _fromBlock, _toBlock, _value, convert, throwWeb3, toSelector)
+import Network.Ethereum.Web3.Types (class EtherUnit, Address, CallError(..), ChainCursor(..), Change, EventAction, Filter, HexString, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3, toSelector)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------

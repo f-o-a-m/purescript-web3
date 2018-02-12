@@ -2,8 +2,11 @@ module Web3Spec.EtherUnitSpec  (etherUnitTests) where
 
 import Prelude
 
+import Data.Lens ((.~))
+import Data.Maybe (Maybe(..))
 import Data.Module (mzeroL, (^*), (^+), (^-))
-import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, convert, embed, mkValue, pow)
+import Network.Ethereum.Web3 (Ether, Shannon, Szabo, TransactionOptions, Value, Wei, _value, convert, defaultTransactionOptions, embed, mkValue, pow)
+import Network.Ethereum.Web3.Types (NoPay)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -26,3 +29,12 @@ etherUnitTests =
         two `shouldEqual` two'
         (two ^- two') `shouldEqual` mzeroL
         (2 ^* two') `shouldEqual` mkValue (embed 4)
+
+-- this other tests are just to make sure bad things dont compil
+
+noPay :: TransactionOptions NoPay
+noPay = defaultTransactionOptions
+
+-- fails to compile without the convert
+opts :: TransactionOptions Wei
+opts = defaultTransactionOptions # _value .~ Just (convert (mkValue one :: Value Ether))
