@@ -2,11 +2,10 @@ module Web3Spec.EtherUnitSpec  (etherUnitTests) where
 
 import Prelude
 
-import Data.Lens ((.~))
+import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Module (mzeroL, (^*), (^+), (^-))
-import Network.Ethereum.Web3 (Ether, Shannon, Szabo, TransactionOptions, Value, Wei, _value, convert, defaultTransactionOptions, embed, mkValue, pow)
-import Network.Ethereum.Web3.Types (NoPay)
+import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromWei, mkValue, pow)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -30,11 +29,9 @@ etherUnitTests =
         (two ^- two') `shouldEqual` mzeroL
         (2 ^* two') `shouldEqual` mkValue (embed 4)
 
--- this other tests are just to make sure bad things dont compil
+      it "can use the lens properly" do
+        let noPay = defaultTransactionOptions
+            opts = defaultTransactionOptions # _value .~ Just (convert (mkValue one :: Value Ether))
 
-noPay :: TransactionOptions NoPay
-noPay = defaultTransactionOptions
-
--- fails to compile without the convert
-opts :: TransactionOptions Wei
-opts = defaultTransactionOptions # _value .~ Just (convert (mkValue one :: Value Ether))
+        (noPay ^. _value) `shouldEqual` Nothing
+        (opts ^. _value) `shouldEqual` (Just $ fromWei (embed 10 `pow` 18 ) :: Value Wei)
