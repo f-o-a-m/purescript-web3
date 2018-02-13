@@ -27,27 +27,18 @@
     "purescript-transformers": "v3.4.0",
     "purescript-identity": "v3.1.0",
     "purescript-aff": "v4.0.0",
-    "purescript-tagged": "^1.0.0",
+    "purescript-tagged": "LiamGoodacre/purescript-tagged#2d8367cec912e048c362f8ecd021fe06feb7b234",
     "purescript-machines": "^4.0.0",
     "purescript-free": "^4.2.0",
     "purescript-coroutines": "^4.0.0",
     "purescript-typelevel-prelude": "^2.6.0",
-    "purescript-type-equality": "^2.1.0"
+    "purescript-type-equality": "^2.1.0",
+    "purescript-modules": "^3.0.0",
+    "purescript-mmorph": "^3.0.0"
   },
   "devDependencies": {
     "purescript-debug": "v3.0.0",
     "purescript-spec": "v2.0.0",
     "purescript-psci-support": "v3.0.0"
-  },
-  "resolutions": {
-    "purescript-identity": "v3.1.0",
-    "purescript-maybe": "^3.0.0",
-    "purescript-control": "^3.3.0",
-    "purescript-monoid": "^3.2.0",
-    "purescript-foldable-traversable": "^3.6.0",
-    "purescript-prelude": "^3.1.0",
-    "purescript-newtype": "^2.0.0",
-    "purescript-invariant": "^3.0.0",
-    "purescript-bifunctors": "^3.0.0"
   }
 }

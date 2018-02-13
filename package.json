@@ -1,22 +1,15 @@
 {
-  "name": "purescript-web3",
-  "namespace": "purescript-ethereum",
-  "version": "0.9.0",
-  "directories": {
-    "lib": "./src"
-  },
+  "private": true,
   "scripts": {
-    "postinstall": "./node_modules/.bin/psc-package update",
-    "test": "pulp --psc-package test"
+    "build": "pulp build",
+    "test": "pulp test"
   },
   "dependencies": {
     "big-integer": "^1.6.23",
     "bignumber": "^1.1.0",
     "bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
-    "bower": "^1.8.0",
     "crypto-js": "^3.1.8",
     "ethjs-provider-http": "^0.1.6",
-    "psc-package": "^0.2.4-rc1",
     "pulp": "^12.0.0",
     "utf8": "^2.1.2"
   }

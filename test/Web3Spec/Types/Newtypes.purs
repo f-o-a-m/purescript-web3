@@ -25,13 +25,10 @@ http = Proxy
 instance isAsyncHttp :: IsAsyncProvider HttpProvider where
   getAsyncProvider = liftEff <<< httpProvider $ "http://localhost:8545"
 
-runWeb3_ :: forall t12 t13.
-        Web3 HttpProvider t13 t12
-        -> Aff
-             ( eth :: ETH
-             | t13
-             )
-             (Either Web3Error t12)
+runWeb3_
+    :: forall a eff
+    .  Web3 HttpProvider eff a
+    -> Aff (eth :: ETH | eff) (Either Web3Error a)
 runWeb3_ = runWeb3 http
 
 -- note: this does not need to work, just typecheck
@@ -44,7 +41,7 @@ fakeTxid = unsafePartial fromJust $ mkHexString "00"
 
 
 -- | tests that typecheck if these types derive newtype
-ntTests :: Spec _ Unit
+ntTests :: forall eff. Spec (eth :: ETH | eff) Unit
 ntTests = describe "newtype-tests" do
     it "Block should derive newtype" $ do
         _ <- runNtTest $ eth_getBlockByNumber Latest
