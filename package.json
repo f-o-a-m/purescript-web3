@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "build": "pulp build",
+    "build": "pulp build -- --strict",
     "test": "pulp test"
   },
   "dependencies": {
@@ -11,6 +11,7 @@
     "crypto-js": "^3.1.8",
     "ethjs-provider-http": "^0.1.6",
     "pulp": "^12.0.0",
+    "purescript-psa": "^0.6.0",
     "utf8": "^2.1.2"
   }
 }
