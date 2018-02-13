@@ -27,7 +27,7 @@
     "purescript-transformers": "v3.4.0",
     "purescript-identity": "v3.1.0",
     "purescript-aff": "v4.0.0",
-    "purescript-tagged": "LiamGoodacre/purescript-tagged#2d8367cec912e048c362f8ecd021fe06feb7b234",
+    "purescript-tagged": "v2.0.0",
     "purescript-machines": "^4.0.0",
     "purescript-free": "^4.2.0",
     "purescript-coroutines": "^4.0.0",
