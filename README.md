@@ -16,15 +16,11 @@ We do not yet have a build tool similar to truffle, but if you are looking for a
 
 To see an example project using all of the purescript-web3 tools and with thermite/react ui, check out [purescript-web3-example](https://github.com/f-o-a-m/purescript-web3-example).
 
-## Prerequisites
-`purescript-web3` is using [psc-package](https://github.com/purescript/psc-package) to manage dependencies. Follow the instructions to install psc-package before building the project.
-
-
 ## Build Instructions
 ```
 > npm install
-> psc-package build
-> pulp test
+> npm run build
+> npm run test
 ```
 
 ## Documentation
