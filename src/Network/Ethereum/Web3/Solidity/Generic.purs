@@ -203,15 +203,26 @@ instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowList
 class ToRecordFields args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
   toRecordFields :: RLProxy rowList -> args -> Record fields
 
-instance toRecordBase :: (IsSymbol s, RowCons s a () r, RowLacks s ()) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
+instance toRecordBase :: 
+  ( IsSymbol s
+  , RowCons s a () r
+  , RowLacks s ()
+  ) => ToRecordFields (Argument (Tagged (SProxy s) a)) r (Cons s a Nil)
+  where
   toRecordFields _ (Argument a) = Record.insert (SProxy :: SProxy s) (untagged a) {}
 
 instance toRecordBaseNull :: ToRecordFields NoArguments () Nil where
   toRecordFields _ _ = {}
 
-instance toRecordInductive :: (ToRecordFields as r1 l, RowCons s a r1 r2, RowLacks s r1, IsSymbol s, ListToRow l r1) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a l) where
+instance toRecordInductive ::
+  ( ToRecordFields as r1 (Cons ls la ll)
+  , RowCons s a r1 r2
+  , RowLacks s r1
+  , IsSymbol s
+  , ListToRow (Cons ls la ll) r1
+  ) => ToRecordFields (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a (Cons ls la ll)) where
   toRecordFields _ (Product (Argument a) as) = Record.insert (SProxy :: SProxy s) (untagged a) rest
-    where rest = (toRecordFields (RLProxy :: RLProxy l) as :: Record r1)
+    where rest = (toRecordFields (RLProxy :: RLProxy (Cons ls la ll)) as :: Record r1)
 
 genericToRecordFields :: forall args fields l a name .
                          ToRecordFields args fields l
