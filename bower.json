@@ -28,7 +28,6 @@
     "purescript-identity": "v3.1.0",
     "purescript-aff": "v4.0.0",
     "purescript-tagged": "v2.0.0",
-    "purescript-machines": "^4.0.0",
     "purescript-free": "^4.2.0",
     "purescript-coroutines": "^4.0.0",
     "purescript-typelevel-prelude": "^2.6.0",
