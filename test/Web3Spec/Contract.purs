@@ -14,7 +14,7 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class IsAsyncProvider, Address, ChainCursor(..), ETH, EventAction(..), Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, embed, event, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx, class EventFilter, eventFilter, defaultTransactionOptions)
+import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), ETH, EventAction(..), Provider, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', httpProvider, mkAddress, mkHexString, sendTx)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:&), D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Network.Ethereum.Web3.Types.Types (HexString(..))
 import Partial.Unsafe (unsafePartial)
@@ -29,11 +29,6 @@ adminAddress :: Address
 adminAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "44cba02c089789b3299069c93832b7a8b8723b3e"
 
 type FnSet = Tagged (SProxy "(int256)") (Tuple1 (IntN (D2 :& D5 :& D6)))
-
-data HttpProvider
-
-http :: Proxy HttpProvider
-http = Proxy
 
 --------------------------------------------------------------------------------
 -- | CountSet
@@ -63,18 +58,15 @@ instance eventFilterCountSet :: EventFilter CountSet where
 
 -- this is the application code
 
-instance isAsyncHttp :: IsAsyncProvider HttpProvider where
-  getAsyncProvider = liftEff <<< httpProvider $ "http://localhost:8545"
-
-setA :: forall e . IntN (D2 :& D5 :& D6) -> Web3 HttpProvider e HexString
+setA :: forall e. IntN (D2 :& D5 :& D6) -> Web3 e HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
-countMonitor :: forall e. Web3 HttpProvider (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
+countMonitor :: forall e. Web3 (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
 countMonitor =
   let fltr = eventFilter (Proxy :: Proxy CountSet) ssAddress
                 # _fromBlock .~ (BN <<< wrap <<< embed $ 10)
                 # _toBlock .~ Latest
-  in forkWeb3' http $ event fltr \(CountSet cs) -> do
+  in forkWeb3' $ event fltr \(CountSet cs) -> do
     liftEff <<< logShow $ cs._count
     pure ContinueEvent
 

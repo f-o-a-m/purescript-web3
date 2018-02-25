@@ -8,31 +8,22 @@ import Control.Monad.Error.Class (try)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Network.Ethereum.Web3 (class IsAsyncProvider, ChainCursor(..), ETH, HexString, Web3, Web3Error, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
+import Network.Ethereum.Web3 (ChainCursor(..), ETH, HexString, Web3, Web3Error, defaultFilter, defaultTransactionOptions, httpProvider, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api (eth_getBlockByNumber, eth_getFilterChanges, eth_getSyncing, eth_getTransaction, eth_getTransactionReceipt, eth_newFilter)
 import Network.Ethereum.Web3.Types (FalseOrObject(..))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
-import Type.Proxy (Proxy(..))
-
--- Set up HTTP provider for testing, note, this doesn't
--- need to actually work, just needs to typecheck
-data HttpProvider
-
-http :: Proxy HttpProvider
-http = Proxy
-
-instance isAsyncHttp :: IsAsyncProvider HttpProvider where
-  getAsyncProvider = liftEff <<< httpProvider $ "http://localhost:8545"
 
 runWeb3_
     :: forall a eff
-    .  Web3 HttpProvider eff a
+    .  Web3 eff a
     -> Aff (eth :: ETH | eff) (Either Web3Error a)
-runWeb3_ = runWeb3 http
+runWeb3_ action = do
+    p <- liftEff $ httpProvider $ "http://localhost:8545"
+    runWeb3 p action
 
 -- note: this does not need to work, just typecheck
-runNtTest :: forall a r e . Newtype a r => Web3 HttpProvider e a -> Aff (eth :: ETH | e) (Either Web3Error a)
+runNtTest :: forall a r e . Newtype a r => Web3 e a -> Aff (eth :: ETH | e) (Either Web3Error a)
 runNtTest web3req = map wrap <$> map unwrap <$> runWeb3_ web3req
 
 

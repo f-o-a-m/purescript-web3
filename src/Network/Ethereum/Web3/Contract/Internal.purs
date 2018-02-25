@@ -27,7 +27,6 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
 import Type.Row (class RowLacks)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges, eth_uninstallFilter)
-import Network.Ethereum.Web3.Provider (class IsAsyncProvider)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, embed, Web3)
 
@@ -53,12 +52,11 @@ reduceEventStream prod handler = eventRunner `pullFrom` prod
 -- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
 -- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
 -- | if ever. There is a minimum delay of 1 second between polls.
-pollFilter :: forall p e a i ni .
-               IsAsyncProvider p
-           => DecodeEvent i ni a
+pollFilter :: forall e a i ni .
+              DecodeEvent i ni a
            => FilterId
            -> ChainCursor
-           -> Producer (Array (FilterChange a)) (Web3 p e) BlockNumber
+           -> Producer (Array (FilterChange a)) (Web3 e) BlockNumber
 pollFilter filterId stop = producer $ do
   bn <- eth_blockNumber
   if BN bn > stop
@@ -108,11 +106,10 @@ type FilterStreamState =
   , windowSize :: Int
   }
 
-logsStream :: forall p e i ni a.
-              IsAsyncProvider p
-           => DecodeEvent i ni a
+logsStream :: forall e i ni a.
+              DecodeEvent i ni a
            => FilterStreamState
-           -> Producer (Array (FilterChange a)) (Web3 p e) BlockNumber
+           -> Producer (Array (FilterChange a)) (Web3 e) BlockNumber
 logsStream currentState = do
     end <- lift <<< mkBlockNumber $ currentState.initialFilter ^. _toBlock
     if currentState.currentBlock > end
@@ -133,7 +130,7 @@ logsStream currentState = do
 
 
 -- | Coerce a 'ChainCursor' to an actual 'BlockNumber'.
-mkBlockNumber :: forall p e . IsAsyncProvider p => ChainCursor -> Web3 p e BlockNumber
+mkBlockNumber :: forall e . ChainCursor -> Web3 e BlockNumber
 mkBlockNumber bm = case bm of
   BN bn -> pure bn
   Earliest -> pure <<< wrap $ zero
@@ -148,7 +145,7 @@ mkBlockNumber bm = case bm of
 class UncurryFields fields curried result | curried -> result fields where
   uncurryFields :: Record fields -> curried -> result
 
-instance uncurryFieldsEmpty :: UncurryFields () (Web3 p e b) (Web3 p e b) where
+instance uncurryFieldsEmpty :: UncurryFields () (Web3 e b) (Web3 e b) where
   uncurryFields _ = id
 
 instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where

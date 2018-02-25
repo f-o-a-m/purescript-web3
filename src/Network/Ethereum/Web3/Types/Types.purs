@@ -26,8 +26,10 @@ module Network.Ethereum.Web3.Types.Types
        , _gasPrice
        , ETH
        , _nonce
+       , forkWeb3
+       , forkWeb3'
+       , runWeb3
        , Web3(..)
-       , unsafeCoerceWeb3
        , throwWeb3
        , Filter
        , defaultFilter
@@ -53,15 +55,14 @@ module Network.Ethereum.Web3.Types.Types
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff, liftEff')
+import Control.Monad.Aff (Aff, Fiber, forkAff, liftEff')
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
-import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error, throwException)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Except (ExceptT)
-import Control.Monad.Morph (hoist)
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
 import Data.Either (Either(..))
@@ -83,6 +84,7 @@ import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
+import Network.Ethereum.Web3.Types.Provider (Provider)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -414,31 +416,49 @@ foreign import data ETH :: Effect
 
 -- | A monad for asynchronous Web3 actions
 
-newtype Web3 p e a = Web3 (ExceptT Web3Error (Aff (eth :: ETH | e)) a)
+newtype Web3 e a = Web3 (ReaderT Provider (ExceptT Web3Error (Aff (eth :: ETH | e))) a)
 
-derive newtype instance functorWeb3 :: Functor (Web3 p e)
+derive newtype instance functorWeb3 :: Functor (Web3 e)
 
-derive newtype instance applyWeb3 :: Apply (Web3 p e)
+derive newtype instance applyWeb3 :: Apply (Web3 e)
 
-derive newtype instance applicativeWeb3 :: Applicative (Web3 p e)
+derive newtype instance applicativeWeb3 :: Applicative (Web3 e)
 
-derive newtype instance bindWeb3 :: Bind (Web3 p e)
+derive newtype instance bindWeb3 :: Bind (Web3 e)
 
-derive newtype instance monadWeb3 :: Monad (Web3 p e)
+derive newtype instance monadWeb3 :: Monad (Web3 e)
 
-derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 p e)
+derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 e)
 
-derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 p e)
+derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 e)
 
-derive newtype instance monadThrowWeb3 :: MonadThrow Web3Error (Web3 p e)
+derive newtype instance monadThrowWeb3 :: MonadThrow Web3Error (Web3 e)
 
-derive newtype instance monadRecWeb3 :: MonadRec (Web3 p e)
+derive newtype instance monadAskWeb3 :: MonadAsk Provider (Web3 e)
 
-unsafeCoerceWeb3 :: forall p e1 e2 . Web3 p e1 ~> Web3 p e2
-unsafeCoerceWeb3 (Web3 action) = Web3 $ hoist unsafeCoerceAff action
+derive newtype instance monadReaderWeb3 :: MonadReader Provider (Web3 e)
 
-throwWeb3 :: forall p e a. Error -> Web3 p e a
+derive newtype instance monadRecWeb3 :: MonadRec (Web3 e)
+
+throwWeb3 :: forall e a. Error -> Web3 e a
 throwWeb3 = liftAff <<< liftEff' <<< throwException
+
+-- | Run an asynchronous `ETH` action
+runWeb3 :: forall e a . Provider -> Web3 e a -> Aff (eth :: ETH | e) (Either Web3Error a)
+runWeb3 p (Web3 action) = runExceptT (runReaderT action p)
+
+-- | Fork an asynchronous `ETH` action
+forkWeb3 :: forall e a .
+            Provider
+         -> Web3 e a
+         -> Aff (eth :: ETH | e) (Fiber (eth :: ETH | e) (Either Web3Error a))
+forkWeb3 p = forkAff <<< runWeb3 p
+
+-- | Fork an asynchronous `ETH` action inside Web3 monad
+forkWeb3' :: forall e a. Web3 e a -> Web3 e (Fiber (eth :: ETH | e) (Either Web3Error a))
+forkWeb3' web3Action = do
+  p <- ask
+  liftAff $ forkWeb3 p web3Action
 
 --------------------------------------------------------------------------------
 -- * Filters

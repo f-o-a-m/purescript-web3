@@ -8,13 +8,14 @@ import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (runExcept)
+import Control.Monad.Reader (ask)
 import Data.Array ((:))
 import Data.Either (Either(..))
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Monoid (mempty)
-import Network.Ethereum.Web3.Provider (class IsAsyncProvider, Provider, getAsyncProvider)
 import Network.Ethereum.Web3.Types (ETH, MethodName, Request, Response(..), Web3, mkRequest, throwWeb3)
+import Network.Ethereum.Web3.Types.Provider (Provider)
 
 
 --------------------------------------------------------------------------------
@@ -22,12 +23,12 @@ import Network.Ethereum.Web3.Types (ETH, MethodName, Request, Response(..), Web3
 --------------------------------------------------------------------------------
 
 -- | Class representing a builder for a Web3 query
-class Remote e a where
-  remote_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | e) Foreign) -> a
+class Remote eff a | a -> eff where
+  remote_ :: (Provider -> Array Foreign -> Aff (eth :: ETH | eff) Foreign) -> a
 
-instance remoteBase :: (IsAsyncProvider p, Decode a) => Remote e (Web3 p e a) where
+instance remoteBase :: (Decode a) => Remote eff (Web3 eff a) where
   remote_ f = do
-    p <- getAsyncProvider
+    p <- ask
     res <- liftAff $ f p mempty
     case runExcept $ decode res of
       -- case where we get either a known Web3Error or a foreign value
@@ -36,11 +37,11 @@ instance remoteBase :: (IsAsyncProvider p, Decode a) => Remote e (Web3 p e a) wh
         Right a -> pure a
       Left err -> throwWeb3 $ error $ "Parser error : " <> show err
 
-instance remoteInductive :: (Encode a, Remote e b) => Remote e (a -> b) where
+instance remoteInductive :: (Encode a, Remote eff b) => Remote eff (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
 
-foreign import _sendAsync :: Provider -> Request -> EffFnAff (eth :: ETH) Foreign
+foreign import _sendAsync :: forall eff. Provider -> Request -> EffFnAff (eth :: ETH |eff) Foreign
 
 -- | Execute the Web3 query constructed inductively by the builder
-remote :: forall a . Remote () a => MethodName -> a
+remote :: forall a eff. Remote eff a => MethodName -> a
 remote n = remote_ $ \provider ps -> fromEffFnAff $ _sendAsync provider $ mkRequest n 1 ps
