@@ -7,6 +7,7 @@ module Network.Ethereum.Web3.Contract
  , call
  , class TxMethod
  , sendTx
+ , deployContract
  ) where
 
 import Prelude
@@ -17,7 +18,7 @@ import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic)
-import Data.Lens ((.~), (^.), (%~))
+import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
@@ -148,3 +149,15 @@ _call txOptions cursor dat = do
       Right x -> pure $ Right x
   where
     txdata d  = txOptions # _data .~ Just d
+
+deployContract :: forall a rep e.
+                    Generic a rep
+                 => GenericABIEncode rep
+                 => TransactionOptions NoPay
+                 -> HexString
+                 -> a
+                 -> Web3 e HexString
+deployContract txOptions deployByteCode args =
+  let txdata = txOptions # _data ?~ deployByteCode <> genericABIEncode args
+                         # _value %~ map convert
+  in eth_sendTransaction txdata
