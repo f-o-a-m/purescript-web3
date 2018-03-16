@@ -150,14 +150,14 @@ _call txOptions cursor dat = do
   where
     txdata d  = txOptions # _data .~ Just d
 
-deployContract :: forall a rep e.
+deployContract :: forall a rep e t.
                     Generic a rep
                  => GenericABIEncode rep
                  => TransactionOptions NoPay
                  -> HexString
-                 -> a
+                 -> Tagged t a
                  -> Web3 e HexString
 deployContract txOptions deployByteCode args =
-  let txdata = txOptions # _data ?~ deployByteCode <> genericABIEncode args
+  let txdata = txOptions # _data ?~ deployByteCode <> genericABIEncode (untagged args)
                          # _value %~ map convert
   in eth_sendTransaction txdata
