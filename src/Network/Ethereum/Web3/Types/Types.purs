@@ -313,7 +313,7 @@ newtype TransactionReceipt =
                      , gasUsed :: BigNumber
                      , contractAddress :: NullOrUndefined Address
                      , logs :: Array Change
-                     , status :: HexString -- 0x0 for fail, 0x1 for success
+                     , status :: String -- 0x0 for fail, 0x1 for success
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
