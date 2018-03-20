@@ -648,6 +648,9 @@ derive instance genericCallError :: Generic CallError _
 instance showCallError :: Show CallError where
   show = genericShow
 
+instance eqCallError :: Eq CallError where
+  eq = genericEq
+
 newtype RpcError =
   RpcError { code     :: Int
            , message  :: String
