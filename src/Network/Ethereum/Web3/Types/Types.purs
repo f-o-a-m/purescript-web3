@@ -660,6 +660,9 @@ derive instance genericRpcError :: Generic RpcError _
 instance showRpcError :: Show RpcError where
   show = genericShow
 
+instance eqRpcError :: Eq RpcError where
+  eq = genericEq
+
 instance decodeRpcError :: Decode RpcError where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
@@ -671,6 +674,9 @@ derive instance genericWeb3Error :: Generic Web3Error _
 
 instance showWeb3Error :: Show Web3Error where
   show = genericShow
+
+instance eqWeb3Error :: Eq Web3Error where
+  eq = genericEq
 
 instance decodeWeb3Error :: Decode Web3Error where
   decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
