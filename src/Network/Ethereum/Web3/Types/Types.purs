@@ -313,6 +313,7 @@ newtype TransactionReceipt =
                      , gasUsed :: BigNumber
                      , contractAddress :: NullOrUndefined Address
                      , logs :: Array Change
+                     , status :: String -- 0x0 for fail, 0x1 for success
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
@@ -648,6 +649,9 @@ derive instance genericCallError :: Generic CallError _
 instance showCallError :: Show CallError where
   show = genericShow
 
+instance eqCallError :: Eq CallError where
+  eq = genericEq
+
 newtype RpcError =
   RpcError { code     :: Int
            , message  :: String
@@ -660,6 +664,9 @@ derive instance genericRpcError :: Generic RpcError _
 instance showRpcError :: Show RpcError where
   show = genericShow
 
+instance eqRpcError :: Eq RpcError where
+  eq = genericEq
+
 instance decodeRpcError :: Decode RpcError where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
@@ -671,6 +678,9 @@ derive instance genericWeb3Error :: Generic Web3Error _
 
 instance showWeb3Error :: Show Web3Error where
   show = genericShow
+
+instance eqWeb3Error :: Eq Web3Error where
+  eq = genericEq
 
 instance decodeWeb3Error :: Decode Web3Error where
   decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
