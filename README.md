@@ -69,7 +69,7 @@ Now for the `TupleSet` event. In order to start an event watcher, we need to est
 
 ```purescript
 tupleFilter = eventFilter (Proxy :: Proxy TupleSet) tupleStorageAddress 
-           # _fromBlock ?~ BN 100
+           # _fromBlock .~ BN 100
 ```
 
 We also need to pass a callback to the event watcher that performs some action and decides whether or not to unregister the filter. For example, we could set up an event monitor starting from block 100 and continuing until the two coordinates that are set are equal:
