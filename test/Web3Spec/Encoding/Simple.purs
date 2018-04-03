@@ -3,25 +3,26 @@ module Web3Spec.Encoding.Simple (encodingSimpleSpec) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff)
+import Control.Monad.Aff (Aff, error, throwError)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Except (runExcept)
 import Data.Array (replicate)
 import Data.ByteString as BS
-import Data.Either (Either(..))
+import Data.Either (Either(Right), either, isLeft)
 import Data.Foldable (intercalate)
 import Data.Foreign (ForeignError)
 import Data.Foreign.Generic (decodeJSON, defaultOptions)
 import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
-import Data.String (toLower)
+import Data.Newtype (unwrap)
+import Data.String (Pattern(..), contains, toLower)
 import Data.Traversable (sequence)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Types (FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, pow, unHex)
+import Network.Ethereum.Web3.Types (Block, FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, pow, unHex)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
@@ -37,6 +38,7 @@ encodingSimpleSpec = describe "encoding-spec" do
   intNTests
   addressTests
   falseOrObjectTests
+  blockTests
 
 roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
 roundTrip decoded encoded = do
@@ -237,3 +239,37 @@ falseOrObjectTests =
     it "can decode FalseOrObject instances that are objects" do
       let decodedObj = runExcept $ decodeJSON "{ \"startingBlock\": 0, \"currentBlock\": 1, \"highestBlock\": 2 }"
       decodedObj `shouldEqual` (Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: embed 0, currentBlock: embed 1, highestBlock: embed 2})
+
+
+blockTests :: forall r. Spec (console :: CONSOLE | r) Unit
+blockTests =
+  describe "Block decoding tests" do
+    it "can decode normal blocks" do
+      let (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ decodeJSON blockPlaintext
+      dBlock <- unwrap <$> either (throwError <<< error <<< show) pure decodedBlockE
+      dBlock.nonce `shouldEqual` upToHex "0x539bd4979fef1ec4"
+      dBlock.hash `shouldEqual` upToHex "0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"
+      dBlock.timestamp `shouldEqual` embed 1438269988
+
+    it "can decode parity blocks (no nonce field, but does have author field)" do
+      let (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ decodeJSON blockNoNoncePlaintext
+      dBlock <- unwrap <$> either (throwError <<< error <<< show) pure decodedBlockE
+      -- nonce replaced by author
+      dBlock.nonce `shouldEqual` upToHex "0x05a56e2d52c817161883f50c441c3228cfe54d9f"
+      -- sanity check some other fields to make sure things are consistent
+      dBlock.hash `shouldEqual` upToHex "0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"
+      dBlock.timestamp `shouldEqual` embed 1438269988
+
+    it "should fail when there's no author _and_ no nonce" do
+      let (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ decodeJSON blockNoAuthOrNoncePlaintext
+      isLeft decodedBlockE `shouldEqual` true
+      -- not sure of a better way to ensure the error thrown is regarding the nonce
+      (show decodedBlockE # contains (Pattern "ErrorAtProperty \"nonce\"")) `shouldEqual` true
+
+
+  where
+    -- this is block 1 on Eth mainnet
+    blockPlaintext = "{\"author\":\"0x05a56e2d52c817161883f50c441c3228cfe54d9f\",\"difficulty\":17171480576,\"extraData\":\"0x476574682f76312e302e302f6c696e75782f676f312e342e32\",\"gasLimit\":5000,\"gasUsed\":0,\"hash\":\"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6\",\"logsBloom\":\"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"miner\":\"0x05a56e2d52c817161883f50c441c3228cfe54d9f\",\"mixHash\":\"0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"nonce\":\"0x539bd4979fef1ec4\",\"number\":1,\"parentHash\":\"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3\",\"receiptsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"sealFields\":[\"0xa0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"0x88539bd4979fef1ec4\"],\"sha3Uncles\":\"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347\",\"size\":537,\"stateRoot\":\"0xd67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3\",\"timestamp\":1438269988,\"totalDifficulty\":34351349760,\"transactions\":[],\"transactionsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"uncles\":[]}"
+    blockNoNoncePlaintext = "{\"author\":\"0x05a56e2d52c817161883f50c441c3228cfe54d9f\",\"difficulty\":17171480576,\"extraData\":\"0x476574682f76312e302e302f6c696e75782f676f312e342e32\",\"gasLimit\":5000,\"gasUsed\":0,\"hash\":\"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6\",\"logsBloom\":\"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"miner\":\"0x05a56e2d52c817161883f50c441c3228cfe54d9f\",\"mixHash\":\"0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"number\":1,\"parentHash\":\"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3\",\"receiptsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"sealFields\":[\"0xa0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"0x88539bd4979fef1ec4\"],\"sha3Uncles\":\"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347\",\"size\":537,\"stateRoot\":\"0xd67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3\",\"timestamp\":1438269988,\"totalDifficulty\":34351349760,\"transactions\":[],\"transactionsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"uncles\":[]}"
+    blockNoAuthOrNoncePlaintext = "{\"difficulty\":17171480576,\"extraData\":\"0x476574682f76312e302e302f6c696e75782f676f312e342e32\",\"gasLimit\":5000,\"gasUsed\":0,\"hash\":\"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6\",\"logsBloom\":\"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"miner\":\"0x05a56e2d52c817161883f50c441c3228cfe54d9f\",\"mixHash\":\"0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"number\":1,\"parentHash\":\"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3\",\"receiptsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"sealFields\":[\"0xa0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59\",\"0x88539bd4979fef1ec4\"],\"sha3Uncles\":\"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347\",\"size\":537,\"stateRoot\":\"0xd67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3\",\"timestamp\":1438269988,\"totalDifficulty\":34351349760,\"transactions\":[],\"transactionsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"uncles\":[]}"
+    upToHex = unsafePartial fromJust <<< mkHexString
