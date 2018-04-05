@@ -11,7 +11,7 @@ module Network.Ethereum.Web3.Types.Types
        , Address
        , unAddress
        , mkAddress
-       , BlockNumber
+       , BlockNumber(..)
        , ChainCursor(..)
        , Block(..)
        , Transaction(..)
