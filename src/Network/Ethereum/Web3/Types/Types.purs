@@ -283,9 +283,8 @@ instance decodeBlock :: Decode Block where
       decodeOpts = defaultOptions { unwrapSingleConstructors = true }
       tryKovanAuthorHack = do
         rec <- except $ read x
-        let author = rec.author
-            blockRec = Record.delete (SProxy :: SProxy "author") rec
-                     # Record.insert (SProxy :: SProxy "nonce") author
+        let blockRec = Record.delete (SProxy :: SProxy "author") rec
+                     # Record.insert (SProxy :: SProxy "nonce") rec.author
         pure $ Block blockRec
 
 
