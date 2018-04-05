@@ -16,7 +16,7 @@ import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), ETH, EventAction(..), Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:&), D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
-import Network.Ethereum.Web3.Types.Types (HexString(..))
+import Network.Ethereum.Web3.Types.Types (HexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -53,7 +53,7 @@ instance eventGenericCountSeteq :: Eq CountSet where
 
 instance eventFilterCountSet :: EventFilter CountSet where
   eventFilter _  addr = defaultFilter
-                         # _topics .~ Just [Just (HexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
+                         # _topics .~ Just [Just (unsafePartial fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
                          # _address .~ Just ssAddress
 
 -- this is the application code

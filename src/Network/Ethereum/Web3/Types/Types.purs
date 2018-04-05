@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.Types.Types
        ( Sign(..)
        , Signed(..)
        , asSigned
-       , HexString(..)
+       , HexString
        , mkHexString
        , unHex
        , hexLength
