@@ -13,10 +13,11 @@ module Network.Ethereum.Web3.Types.BigNumber
 import Prelude
 
 import Data.Foreign (Foreign)
-import Data.Foreign.Class (class Decode, class Encode, encode)
+import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Int (Radix, binary, decimal, hexadecimal, floor) as Int
 import Data.Maybe (Maybe(..))
 import Data.Module (class LeftModule, class RightModule)
+import Simple.JSON (class ReadForeign)
 
 --------------------------------------------------------------------------------
 -- * BigNumber
@@ -122,6 +123,9 @@ foreign import toBigNumber :: Foreign -> BigNumber
 
 instance decodeBigNumber :: Decode BigNumber where
   decode = pure <<< toBigNumber
+
+instance readFBigNumber :: ReadForeign BigNumber where
+  readImpl = decode
 
 instance encodeBigNumber :: Encode BigNumber where
   encode = encode <<< (append "0x") <<< toString Int.hexadecimal

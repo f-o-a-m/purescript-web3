@@ -55,13 +55,13 @@ module Network.Ethereum.Web3.Types.Types
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff, Fiber, forkAff, liftEff')
+import Control.Monad.Aff (Aff, Fiber, forkAff, liftEff', throwError)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error, throwException)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (ExceptT, except, runExceptT)
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (uncons)
@@ -79,12 +79,15 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (class Monoid)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
+import Data.Record as Record
 import Data.Set (fromFoldable, member) as Set
 import Data.String (length, take, toLower) as S
 import Data.String (stripPrefix, Pattern(..), toCharArray)
+import Data.Symbol (SProxy(..))
 import Network.Ethereum.Web3.Types.BigNumber (BigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
 import Network.Ethereum.Web3.Types.Provider (Provider)
+import Simple.JSON (class ReadForeign, read)
 
 --------------------------------------------------------------------------------
 -- * Signed Values
@@ -138,6 +141,9 @@ instance decodeHexString :: Decode HexString where
     case stripPrefix (Pattern "0x") str of
       Nothing -> pure <<< HexString $ str
       Just res -> pure <<< HexString $ res
+
+instance readFHexString :: ReadForeign HexString where
+  readImpl = decode
 
 instance encodeHexString :: Encode HexString where
   encode = encode <<< append "0x" <<< unHex
@@ -270,7 +276,18 @@ instance showBlock :: Show Block where
   show = genericShow
 
 instance decodeBlock :: Decode Block where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+  decode x = catchError (genericDecode decodeOpts x)
+                -- if this attempt fails for any reason pass back the original error
+                \origError -> catchError tryKovanAuthorHack (\_ -> throwError origError)
+    where
+      decodeOpts = defaultOptions { unwrapSingleConstructors = true }
+      tryKovanAuthorHack = do
+        rec <- except $ read x
+        let blockRec = Record.delete (SProxy :: SProxy "author") rec
+                     # Record.insert (SProxy :: SProxy "nonce") rec.author
+        pure $ Block blockRec
+
+
 
 --------------------------------------------------------------------------------
 -- * Transaction
