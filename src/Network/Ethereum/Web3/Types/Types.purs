@@ -30,6 +30,7 @@ module Network.Ethereum.Web3.Types.Types
        , forkWeb3'
        , runWeb3
        , Web3(..)
+       , Web3Par
        , throwWeb3
        , Filter
        , defaultFilter
@@ -55,7 +56,7 @@ module Network.Ethereum.Web3.Types.Types
 import Prelude
 
 import Control.Alternative ((<|>))
-import Control.Monad.Aff (Aff, Fiber, forkAff, liftEff', throwError)
+import Control.Monad.Aff (Aff, Fiber, ParAff, forkAff, liftEff', throwError)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
@@ -64,6 +65,7 @@ import Control.Monad.Error.Class (class MonadThrow, catchError)
 import Control.Monad.Except (ExceptT, except, runExceptT)
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
+import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Array (uncons)
 import Data.Either (Either(..))
 import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
@@ -71,6 +73,7 @@ import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.Index (readProp)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
+import Data.Functor.Compose (Compose)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -457,6 +460,18 @@ derive newtype instance monadAskWeb3 :: MonadAsk Provider (Web3 e)
 derive newtype instance monadReaderWeb3 :: MonadReader Provider (Web3 e)
 
 derive newtype instance monadRecWeb3 :: MonadRec (Web3 e)
+
+newtype Web3Par e a = Web3Par (ReaderT Provider (Compose (ParAff (eth :: ETH | e)) (Either Web3Error)) a)
+
+derive newtype instance functorWeb3Par :: Functor (Web3Par e)
+
+derive newtype instance applyWeb3Par :: Apply (Web3Par e)
+
+derive newtype instance applicativeWeb3Par :: Applicative (Web3Par e)
+
+instance monadParWeb3 :: Parallel (Web3Par e) (Web3 e) where
+  parallel (Web3 m) = Web3Par (parallel m)
+  sequential (Web3Par m) = Web3 (sequential m)
 
 throwWeb3 :: forall e a. Error -> Web3 e a
 throwWeb3 = liftAff <<< liftEff' <<< throwException
