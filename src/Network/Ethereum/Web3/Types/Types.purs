@@ -55,7 +55,8 @@ module Network.Ethereum.Web3.Types.Types
 
 import Prelude
 
-import Control.Alternative ((<|>))
+import Control.Alt (class Alt)
+import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Monad.Aff (Aff, Fiber, ParAff, forkAff, liftEff', throwError)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (kind Effect)
@@ -472,6 +473,12 @@ derive newtype instance applicativeWeb3Par :: Applicative (Web3Par e)
 instance monadParWeb3 :: Parallel (Web3Par e) (Web3 e) where
   parallel (Web3 m) = Web3Par (parallel m)
   sequential (Web3Par m) = Web3 (sequential m)
+
+derive newtype instance altParWeb3 :: Alt (Web3Par e)
+
+derive newtype instance plusParWeb3 :: Plus (Web3Par e)
+
+derive newtype instance alternativeParWeb3 :: Alternative (Web3Par e)
 
 throwWeb3 :: forall e a. Error -> Web3 e a
 throwWeb3 = liftAff <<< liftEff' <<< throwException
