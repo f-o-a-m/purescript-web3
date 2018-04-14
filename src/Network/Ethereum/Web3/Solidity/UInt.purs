@@ -22,6 +22,8 @@ derive newtype instance showUIntN :: Show (UIntN n)
 
 derive newtype instance eqUIntN :: Eq (UIntN n)
 
+derive newtype instance ordUIntN :: Ord (UIntN n)
+
 -- | Access the raw underlying unsigned integer
 unUIntN :: forall n . KnownSize n => UIntN n -> BigNumber
 unUIntN (UIntN a) = a
