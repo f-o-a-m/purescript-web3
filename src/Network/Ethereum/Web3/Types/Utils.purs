@@ -12,6 +12,7 @@ module Network.Ethereum.Web3.Types.Utils
   , toHexString
   , fromHexString
   , fromHexStringSigned
+  , byteStringToHexString
   ) where
 
 import Prelude
@@ -100,3 +101,7 @@ toHexString bn =
 foreign import fromHexString :: HexString -> BigNumber
 
 foreign import fromHexStringSigned :: HexString -> BigNumber
+
+byteStringToHexString :: BS.ByteString -> HexString
+byteStringToHexString bs = unsafePartial fromJust $
+  mkHexString (BS.toString bs Hex)
