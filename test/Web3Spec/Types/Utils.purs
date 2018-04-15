@@ -2,17 +2,26 @@ module Web3Spec.Types.Utils (utilsSpec) where
 
 import Prelude
 
+import Data.ByteString as BS
 import Data.Maybe (Maybe(Just), fromJust)
 import Network.Ethereum.Web3.Types.BigNumber (decimal, embed, parseBigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (convert, Value, mkValue, toWei, Ether, Wei)
 import Network.Ethereum.Web3.Types.Types (mkHexString)
-import Network.Ethereum.Web3.Types.Utils (toUtf8, toAscii, fromUtf8, fromAscii)
+import Network.Ethereum.Web3.Types.Utils (byteStringToHexString, toUtf8, toAscii, fromUtf8, fromAscii)
+import Node.Encoding (Encoding(UTF8))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 utilsSpec :: forall r . Spec r Unit
 utilsSpec = describe "utils-spec" do
+
+    describe "bytestringToHexString" do
+
+      it "can convert byteStrings to HexString" do
+        let utf = fromUtf8 "hello"
+            utf' = byteStringToHexString $ unsafePartial fromJust $ BS.fromString "hello" UTF8
+        utf `shouldEqual` utf'
 
     describe "utf tests" do
 
