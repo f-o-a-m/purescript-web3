@@ -7,8 +7,8 @@ import Data.Maybe (Maybe(Just), fromJust)
 import Network.Ethereum.Web3.Types.BigNumber (decimal, embed, parseBigNumber)
 import Network.Ethereum.Web3.Types.EtherUnit (convert, Value, mkValue, toWei, Ether, Wei)
 import Network.Ethereum.Web3.Types.Types (mkHexString)
-import Network.Ethereum.Web3.Types.Utils (byteStringToHexString, toUtf8, toAscii, fromUtf8, fromAscii)
-import Node.Encoding (Encoding(UTF8))
+import Network.Ethereum.Web3.Types.Utils (byteStringFromHexString, toUtf8, toAscii, fromUtf8, fromAscii)
+import Node.Encoding (Encoding(Hex))
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -16,12 +16,13 @@ import Test.Spec.Assertions (shouldEqual)
 utilsSpec :: forall r . Spec r Unit
 utilsSpec = describe "utils-spec" do
 
-    describe "bytestringToHexString" do
+    describe "bytestringFromHexString" do
 
       it "can convert byteStrings to HexString" do
-        let utf = fromUtf8 "hello"
-            utf' = byteStringToHexString $ unsafePartial fromJust $ BS.fromString "hello" UTF8
-        utf `shouldEqual` utf'
+        let hx = unsafePartial fromJust $ mkHexString "1234"
+            bs1 = byteStringFromHexString $ hx
+            bs2 = BS.fromString "1234" Hex
+        Just bs1 `shouldEqual` bs2
 
     describe "utf tests" do
 
