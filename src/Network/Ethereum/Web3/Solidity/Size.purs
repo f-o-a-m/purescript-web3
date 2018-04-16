@@ -70,6 +70,8 @@ foreign import kind Carrying
 foreign import data Carry :: Carrying
 foreign import data NoCarry :: Carrying
 
+data CProxy (c :: Carrying) = CProxy
+
 class IncD
   (input :: Digit)
   (output :: Digit)
@@ -88,27 +90,19 @@ instance incD9 :: IncD D9 D0 Carry
 
 class OnCarrying
   (carry :: Carrying)
-  (onCarry :: DigitList)
-  (onNoCarry :: DigitList)
-  (output :: DigitList) | carry onCarry onNoCarry -> output
+  (onCarry :: Type)
+  (onNoCarry :: Type)
+  output | carry onCarry onNoCarry -> output
 
 instance onCarry :: OnCarrying Carry a b a
 instance onNoCarry :: OnCarrying NoCarry a b b
-
-class OnCarrying_
-  (carry :: Carrying)
-  (onCarry :: Carrying)
-  (onNoCarry :: Carrying)
-  (output :: Carrying) | carry onCarry onNoCarry -> output
-
-instance onCarry_ :: OnCarrying_ Carry a b a
-instance onNoCarry_ :: OnCarrying_ NoCarry a b b
 
 class Inc (input :: DigitList) (output :: DigitList) | input -> output
 
 instance inc :: 
   ( IncP a aInc carry
-  , OnCarrying carry (D1 :& aInc) aInc out) => Inc a out
+  , OnCarrying carry (DLProxy (D1 :& aInc)) (DLProxy aInc) (DLProxy pout)
+  ) => Inc a out
 
 class IncP
   (input :: DigitList)
@@ -122,8 +116,8 @@ instance incPNil1 ::
 instance incPLoop1 ::
   ( IncP (b :& rest) bRestIncOut bRestIncCarry
   , IncD a aInc aCarry
-  , OnCarrying_ bRestIncCarry aCarry NoCarry carryOut
-  , OnCarrying bRestIncCarry (aInc :& bRestIncOut) (a :& bRestIncOut) out
+  , OnCarrying bRestIncCarry (CProxy aCarry) (CProxy NoCarry) (CProxy carryOut)
+  , OnCarrying bRestIncCarry (DLProxy (aInc :& bRestIncOut)) (DLProxy (a :& bRestIncOut)) (DLProxy pOut)
   ) => IncP (a :& b :& rest) out carryOut
 
 newtype Vector (n :: DigitList) a = Vector (Array a)
