@@ -8,3 +8,4 @@
 /.psa*
 *.swp
 *#*
+package-lock.json
