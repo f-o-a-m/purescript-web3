@@ -5,7 +5,7 @@
   "authors": [
     "Blinky <blinky3713@gmail.com>"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/f-o-a-m/purescript-web3",
   "repository": {
     "type": "git",
