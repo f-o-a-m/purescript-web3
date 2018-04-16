@@ -1,168 +1,170 @@
 module Network.Ethereum.Web3.Solidity.Size where
 
 import Prelude
-import Type.Proxy (Proxy(..))
+
 import Data.Int (pow)
-import Data.String (length)
 
---------------------------------------------------------------------------------
--- * Type level byte array lengths
---------------------------------------------------------------------------------
+foreign import kind Digit
+foreign import data D0 :: Digit
+foreign import data D1 :: Digit
+foreign import data D2 :: Digit
+foreign import data D3 :: Digit
+foreign import data D4 :: Digit
+foreign import data D5 :: Digit
+foreign import data D6 :: Digit
+foreign import data D7 :: Digit
+foreign import data D8 :: Digit
+foreign import data D9 :: Digit
 
-data D0
-data D1
-data D2
-data D3
-data D4
-data D5
-data D6
-data D7
-data D8
-data D9
+foreign import kind DigitList
+foreign import data DCons ∷ Digit → DigitList → DigitList
+foreign import data DNil ∷ DigitList
 
-data NumCons a b
-infixr 6 type NumCons as :&
+infixr 6 type DCons as :&
 
-class KnownSize d where
-  sizeVal :: Proxy d -> Int
+data DProxy (d :: Digit) = DProxy
+data DLProxy (d :: DigitList) = DLProxy
 
-instance sizeD0 :: KnownSize D0 where
-  sizeVal _ = 0
+class DigitCount (d :: DigitList) where
+  digitCount :: DLProxy d -> Int
 
-instance sizeD1 :: KnownSize D1 where
-  sizeVal _ = 1
+instance countBase :: DigitCount (a :& DNil) where
+  digitCount _ = 1
 
-instance sizeN2 :: KnownSize D2 where
-  sizeVal _ = 2
+instance countLoop :: DigitCount (b :& rest) => DigitCount (a :& b :& rest) where
+  digitCount _ = digitCount (DLProxy :: DLProxy (b :& rest)) + 1
 
-instance sizeN3 :: KnownSize D3 where
-  sizeVal _ = 3
+class KnownDigit (d :: Digit) where
+  digitVal :: DProxy d -> Int
 
-instance sizeN4 :: KnownSize D4 where
-  sizeVal _ = 4
+instance sizeD0 :: KnownDigit D0 where digitVal _ = 0
+instance sizeD1 :: KnownDigit D1 where digitVal _ = 1
+instance sizeN2 :: KnownDigit D2 where digitVal _ = 2
+instance sizeN3 :: KnownDigit D3 where digitVal _ = 3
+instance sizeN4 :: KnownDigit D4 where digitVal _ = 4
+instance sizeN5 :: KnownDigit D5 where digitVal _ = 5
+instance sizeN6 :: KnownDigit D6 where digitVal _ = 6
+instance sizeN7 :: KnownDigit D7 where digitVal _ = 7
+instance sizeN8 :: KnownDigit D8 where digitVal _ = 8
+instance sizeN9 :: KnownDigit D9 where digitVal _ = 9
 
-instance sizeN5 :: KnownSize D5 where
-  sizeVal _ = 5
+class KnownSize (d :: DigitList) where
+  sizeVal :: DLProxy d -> Int
 
-instance sizeN6 :: KnownSize D6 where
-  sizeVal _ = 6
+instance sizedg1 :: KnownDigit head => KnownSize (head :& DNil) where
+  sizeVal p = digitVal (DProxy :: DProxy head)
 
-instance sizeN7 :: KnownSize D7 where
-  sizeVal _ = 7
+instance sizedg2 :: 
+  ( DigitCount (b :& rest)
+  , KnownSize (b :& rest)
+  , KnownDigit a
+  ) => KnownSize (a :& b :& rest) where
+  sizeVal _ =
+    let
+      currentPow = digitCount (DLProxy :: DLProxy (b :& rest))
+      head = (10 `pow` currentPow) * (digitVal (DProxy :: DProxy a))
+    in head + sizeVal (DLProxy :: DLProxy (b :& rest))
 
-instance sizeN8 :: KnownSize D8 where
-  sizeVal _ = 8
 
-instance sizeN9 :: KnownSize D9 where
-  sizeVal _ = 9
+foreign import kind Carrying
+foreign import data Carry :: Carrying
+foreign import data NoCarry :: Carrying
 
-instance sizeCons :: (KnownSize new, KnownSize old) => KnownSize (new :& old) where
-  sizeVal _ = let currentPow = (length <<< show <<< sizeVal $ (Proxy :: Proxy old)) - 1
-              in (10 `pow` (currentPow + 1)) * (sizeVal (Proxy :: Proxy new)) + sizeVal (Proxy :: Proxy old)
+class IncD
+  (input :: Digit)
+  (output :: Digit)
+  (carryOut :: Carrying) | input -> output carryOut, output carryOut -> input
 
-class KnownSize n <= IntSize n
-instance intSize8 :: IntSize D8
-instance intSize16 :: IntSize (D1 :& D6)
-instance intSize24 :: IntSize (D2 :& D4)
-instance intSize32 :: IntSize (D3 :& D2)
-instance intSize40 :: IntSize (D4 :& D0)
-instance intSize48 :: IntSize (D4 :& D8)
-instance intSize56 :: IntSize (D5 :& D6)
-instance intSize64 :: IntSize (D6 :& D4)
-instance intSize72 :: IntSize (D7 :& D2)
-instance intSize80 :: IntSize (D8 :& D0)
-instance intSize88 :: IntSize (D8 :& D8)
-instance intSize96 :: IntSize (D9 :& D6)
-instance intSize104 :: IntSize (D1 :& D0 :& D4)
-instance intSize112 :: IntSize (D1 :& D1 :& D2)
-instance intSize120 :: IntSize (D1 :& D2 :& D0)
-instance intSize128 :: IntSize (D1 :& D2 :& D8)
-instance intSize136 :: IntSize (D1 :& D3 :& D6)
-instance intSize144 :: IntSize (D1 :& D4 :& D4)
-instance intSize152 :: IntSize (D1 :& D5 :& D2)
-instance intSize160 :: IntSize (D1 :& D6 :& D0)
-instance intSize168 :: IntSize (D1 :& D6 :& D8)
-instance intSize176 :: IntSize (D1 :& D7 :& D6)
-instance intSize184 :: IntSize (D1 :& D8 :& D4)
-instance intSize192 :: IntSize (D1 :& D9 :& D2)
-instance intSize200 :: IntSize (D2 :& D0 :& D0)
-instance intSize208 :: IntSize (D2 :& D0 :& D8)
-instance intSize216 :: IntSize (D2 :& D1 :& D6)
-instance intSize224 :: IntSize (D2 :& D2 :& D4)
-instance intSize232 :: IntSize (D2 :& D3 :& D2)
-instance intSize240 :: IntSize (D2 :& D4 :& D0)
-instance intSize248 :: IntSize (D2 :& D4 :& D8)
-instance intSize256 :: IntSize (D2 :& D5 :& D6)
+instance incD0 :: IncD D0 D1 NoCarry
+instance incD1 :: IncD D1 D2 NoCarry
+instance incD2 :: IncD D2 D3 NoCarry
+instance incD3 :: IncD D3 D4 NoCarry
+instance incD4 :: IncD D4 D5 NoCarry
+instance incD5 :: IncD D5 D6 NoCarry
+instance incD6 :: IncD D6 D7 NoCarry
+instance incD7 :: IncD D7 D8 NoCarry
+instance incD8 :: IncD D8 D9 NoCarry
+instance incD9 :: IncD D9 D0 Carry
 
-class KnownSize n <= ByteSize n
-instance byteSize1 :: ByteSize D1
-instance byteSize2 :: ByteSize D2
-instance byteSize3 :: ByteSize D3
-instance byteSize4 :: ByteSize D4
-instance byteSize5 :: ByteSize D5
-instance byteSize6 :: ByteSize D6
-instance byteSize7 :: ByteSize D7
-instance byteSize8 :: ByteSize D8
-instance byteSize9 :: ByteSize D9
-instance byteSize10 :: ByteSize (D1 :& D0)
-instance byteSize11 :: ByteSize (D1 :& D1)
-instance byteSize12 :: ByteSize (D1 :& D2)
-instance byteSize13 :: ByteSize (D1 :& D3)
-instance byteSize14 :: ByteSize (D1 :& D4)
-instance byteSize15 :: ByteSize (D1 :& D5)
-instance byteSize16 :: ByteSize (D1 :& D6)
-instance byteSize17 :: ByteSize (D1 :& D7)
-instance byteSize18 :: ByteSize (D1 :& D8)
-instance byteSize19 :: ByteSize (D1 :& D9)
-instance byteSize20 :: ByteSize (D2 :& D0)
-instance byteSize21 :: ByteSize (D2 :& D1)
-instance byteSize22 :: ByteSize (D2 :& D2)
-instance byteSize23 :: ByteSize (D2 :& D3)
-instance byteSize24 :: ByteSize (D2 :& D4)
-instance byteSize25 :: ByteSize (D2 :& D5)
-instance byteSize26 :: ByteSize (D2 :& D6)
-instance byteSize27 :: ByteSize (D2 :& D7)
-instance byteSize28 :: ByteSize (D2 :& D8)
-instance byteSize29 :: ByteSize (D2 :& D9)
-instance byteSize30 :: ByteSize (D3 :& D0)
-instance byteSize31 :: ByteSize (D3 :& D1)
-instance byteSize32 :: ByteSize (D3 :& D2)
+class OnCarrying
+  (carry :: Carrying)
+  (onCarry :: DigitList)
+  (onNoCarry :: DigitList)
+  (output :: DigitList) | carry onCarry onNoCarry -> output
 
---------------------------------------------------------------------------------
--- | Naturals
---------------------------------------------------------------------------------
+instance onCarry :: OnCarrying Carry a b a
+instance onNoCarry :: OnCarrying NoCarry a b b
 
-data Z
+class OnCarrying_
+  (carry :: Carrying)
+  (onCarry :: Carrying)
+  (onNoCarry :: Carrying)
+  (output :: Carrying) | carry onCarry onNoCarry -> output
 
-data S n
+instance onCarry_ :: OnCarrying_ Carry a b a
+instance onNoCarry_ :: OnCarrying_ NoCarry a b b
 
-class Succ n m | n -> m, m -> n
+class Inc (input :: DigitList) (output :: DigitList) | input -> output
 
-instance inductiveSucc :: Succ (S n) n
+instance inc :: 
+  ( IncP a aInc carry
+  , OnCarrying carry (D1 :& aInc) aInc out) => Inc a out
 
-class KnownNat n where
-  natVal :: Proxy n -> Int
+class IncP
+  (input :: DigitList)
+  (output :: DigitList)
+  (carryOut :: Carrying) | input -> output carryOut
 
-instance natZ :: KnownNat Z where
-  natVal _ = 0
+instance incPNil1 ::
+  ( IncD d dInc dcarry
+  ) => IncP (d :& DNil) (dInc :& DNil) dcarry
 
-instance natInd :: KnownNat n => KnownNat (S n) where
-  natVal _ = 1 + natVal (Proxy :: Proxy n)
+instance incPLoop1 ::
+  ( IncP (b :& rest) bRestIncOut bRestIncCarry
+  , IncD a aInc aCarry
+  , OnCarrying_ bRestIncCarry aCarry NoCarry carryOut
+  , OnCarrying bRestIncCarry (aInc :& bRestIncOut) (a :& bRestIncOut) out
+  ) => IncP (a :& b :& rest) out carryOut
 
-type N0 = Z
-type N1 = S N0
-type N2 = S N1
-type N3 = S N2
-type N4 = S N3
-type N5 = S N4
-type N6 = S N5
-type N7 = S N6
-type N8 = S N7
-type N9 = S N8
-type N10 = S N9
-type N11 = S N10
-type N12 = S N11
-type N13 = S N12
-type N14 = S N13
-type N15 = S N14
-type N16 = S N15
+newtype Vector (n :: DigitList) a = Vector (Array a)
+
+vCons :: forall a n nInc. Inc n nInc => a -> Vector n a -> Vector nInc a
+vCons a (Vector as) = Vector ([a] <> as)
+
+test1 :: Vector (D1 :& D0 :& DNil) Int
+test1 = vCons 1 a
+  where
+  a :: Vector (D9 :& DNil) Int
+  a = Vector []
+
+test2 :: Vector (D1 :& D0 :& D0 :& D0 :& DNil) Int
+test2 = vCons 1 a
+  where
+  a :: Vector (D9 :& D9 :& D9 :& DNil) Int
+  a = Vector []
+
+test3 :: Vector (D2 :& D0 :& D0 :& DNil) Int
+test3 = vCons 1 a
+  where
+  a :: Vector (D1 :& D9 :& D9 :& DNil) Int
+  a = Vector []
+
+test4 :: Vector (D9 :& D9 :& DNil) Int
+test4 = vCons 1 a
+  where
+  a :: Vector (D9 :& D8 :& DNil) Int
+  a = Vector []
+
+
+test5 :: Vector (D2 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& D0 :& DNil) Int
+test5 = vCons 1 a
+  where
+  a :: Vector (D1 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& DNil) Int
+  a = Vector []
+
+
+test6 :: Vector (D1 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& DNil) Int
+test6 = vCons 1 a
+  where
+  a :: Vector (D1 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D8 :& DNil) Int
+  a = Vector []
