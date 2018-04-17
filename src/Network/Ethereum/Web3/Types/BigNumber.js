@@ -1,8 +1,6 @@
 "use strict";
 
-var BigNumber = require('bignumber.js');
-
-BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN});
+var BigNumber = require('ethereumjs-util').BN;
 
 exports._intToBigNumber = function(value) {
   return new BigNumber(value.toString(10), 10);
@@ -13,7 +11,7 @@ exports._numberToBigNumber = function(value) {
 };
 
 exports._eqBigNumber = function(n) {
-    return function(m) { return m.equals(n); };
+    return function(m) { return m.eq(n); };
 };
 
 exports._addBigNumber = function(n) {
@@ -21,16 +19,16 @@ exports._addBigNumber = function(n) {
 };
 
 exports._mulBigNumber = function(n) {
-    return function (m) { return n.times(m); };
+    return function (m) { return n.mul(m); };
 };
 
 exports._subBigNumber = function(n) {
-    return function (m) { return n.minus(m); };
+    return function (m) { return n.sub(m); };
 };
 
 exports.comparedTo = function (a) {
   return function (b) {
-    return a.comparedTo(b);
+    return a.cmp(b);
   };
 };
 
@@ -64,26 +62,28 @@ exports.toString = function (radix) {
 
 exports.reciprical = function (bn) {
   var one = new BigNumber(1, 10);
-  return one.dividedBy(bn);
+  return one.div(bn);
 };
 
 exports.toTwosComplement = function (bn) {
-  var bigNumber = bn.round();
-  if (bigNumber.lessThan(0)) {
-      return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bigNumber).plus(1);
+  if (bn.ltn(0)) {
+      return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).add(bn).addn(1);
   } else {
-    return bigNumber;
+    return bn;
   }
 };
 
 exports.floorBigNumber = function(bn) {
     var bnStr = bn.toString(10);
     var newBn = new BigNumber(bnStr, 10);
-    return newBn.floor();
+    return newBn;
 };
 
 exports.pow = function(n) {
-    return function (m) { return n.pow(m); };
+    return function (m) {
+        var exp = new BigNumber(m, 10);
+        return n.pow(exp);
+    };
 };
 
 exports.toNumber = function (n) {

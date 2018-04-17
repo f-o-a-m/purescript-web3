@@ -5,7 +5,11 @@ module Network.Ethereum.Web3.Types.Sha3
   ) where
 
 import Prelude
-import Network.Ethereum.Web3.Types.Types (HexString, takeHex)
+import Data.ByteString (ByteString, fromString, toString)
+import Data.Maybe (fromJust)
+import Network.Ethereum.Web3.Types.Types (HexString, takeHex, unHex, mkHexString)
+import Node.Encoding (Encoding(Hex, UTF8))
+import Partial.Unsafe (unsafePartial)
 
 --------------------------------------------------------------------------------
 
@@ -14,14 +18,13 @@ import Network.Ethereum.Web3.Types.Types (HexString, takeHex)
 class SHA3 a where
   sha3 :: a -> HexString
 
+foreign import _sha3 :: ByteString -> ByteString
+
 instance stringSha3 :: SHA3 String where
-  sha3 = sha3StringImpl
+  sha3 = unsafePartial fromJust <<< mkHexString <<< flip toString Hex <<< _sha3 <<< unsafePartial fromJust <<< flip fromString UTF8
 
 instance hexStringSha3 :: SHA3 HexString where
-  sha3 = sha3HexImpl
-
-foreign import sha3StringImpl :: String -> HexString
-foreign import sha3HexImpl :: HexString -> HexString
+  sha3 = unsafePartial fromJust <<< mkHexString <<< flip toString Hex <<< _sha3 <<< unsafePartial fromJust <<< flip fromString Hex <<< unHex
 
 -- | convert a string representing a type signature into a selector
 toSelector :: String -> HexString

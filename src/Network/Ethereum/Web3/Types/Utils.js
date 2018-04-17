@@ -1,8 +1,6 @@
 "use strict";
 
-var BigNumber = require('bignumber.js');
-
-BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN});
+var BigNumber = require('ethereumjs-util').BN;
 
 exports.fromHexString = function(str) {
     return new BigNumber(str, 16);
@@ -21,7 +19,7 @@ var signedIsNegative = function (value) {
 
 exports.fromHexStringSigned = function (value) {
     if (signedIsNegative(value)) {
-        return new BigNumber(value, 16).minus(new BigNumber('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)).minus(1);
+        return new BigNumber(value, 16).sub(new BigNumber('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)).subn(1);
     }
     return new BigNumber(value, 16);
 };
