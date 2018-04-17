@@ -26,9 +26,10 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
 import Type.Row (class RowLacks)
+import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, embed, Web3)
+import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
 
 
 -- | `reduceEventStream` takes a handler and an initial state and attempts to run

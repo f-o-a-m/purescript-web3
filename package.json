@@ -4,14 +4,16 @@
     "build": "pulp build -- --strict",
     "test": "pulp test"
   },
+  "dependencies": {
+    "ethjs-provider-http": "^0.1.6",
+    "bn.js": "^4.11.0",
+    "keccak": "^1.0.2",
+    "rlp": "^2.0.0",
+    "secp256k1": "^3.0.1"
+  },
   "devDependencies": {
     "pulp": "^12.0.0",
     "purescript": "^0.11.7",
     "purescript-psa": "^0.6.0"
-  },
-  "dependencies": {
-    "bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
-    "crypto-js": "^3.1.8",
-    "ethjs-provider-http": "^0.1.6"
   }
 }

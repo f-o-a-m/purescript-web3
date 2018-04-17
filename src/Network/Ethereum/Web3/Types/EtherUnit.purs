@@ -23,7 +23,7 @@ import Data.Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
 import Data.Module (class LeftModule, (^*))
 import Data.Monoid (class Monoid)
-import Network.Ethereum.Web3.Types.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
+import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 

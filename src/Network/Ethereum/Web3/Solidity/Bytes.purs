@@ -12,7 +12,7 @@ import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
-import Network.Ethereum.Web3.Types (mkHexString)
+import Network.Ethereum.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 

@@ -22,6 +22,7 @@
     "purescript-foreign-generic": "v5.0.0",
     "purescript-proxy": "v2.1.0",
     "purescript-bytestrings": "v6.0.0",
+    "purescript-eth-core": "^0.0.1",
     "purescript-partial": "v1.2.1",
     "purescript-parsing": "v4.3.1",
     "purescript-transformers": "v3.4.0",

@@ -1,7 +1,8 @@
 module Network.Ethereum.Web3.Api where
 
 import Network.Ethereum.Web3.JsonRPC (remote)
-import Network.Ethereum.Web3.Types (Address, BigNumber, Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, HexString, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
+import Network.Ethereum.Types (Address, HexString, BigNumber)
+import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
 import Type.Data.Boolean (kind Boolean)
 
 -- | Returns current node version string.
