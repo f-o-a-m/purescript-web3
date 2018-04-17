@@ -51,11 +51,10 @@ contract TupleStorage {
 If we used [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator), we are given a function with the following signature:
 
 ```purescript
-setTuple :: forall p e.
-            IsAsyncProvider p
-         => TransactionOptions NoPay 
+setTuple :: forall e.
+            TransactionOptions NoPay 
          -> {_x :: UInt (D2 :& D5 :& D6), _y :: UInt (D2 :& D5 :& D6)} 
-         -> Web3 p e HexString 
+         -> Web3 e HexString 
 ```
 
 It's pretty clear what this function is doing, but let's look at the `TransactionOptions`. This record keeps track of, for example, who is the transaction from, what contract address is it going to, is there ether being sent, etc. In this case, the function is not "payable", so this is indicated in the type of the `TransactionOptions`. It is set using lenses like:
