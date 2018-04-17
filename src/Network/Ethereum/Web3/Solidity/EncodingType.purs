@@ -11,7 +11,7 @@ import Network.Ethereum.Web3.Solidity.Int (IntN)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
-import Network.Ethereum.Web3.Types (Address, BigNumber)
+import Network.Ethereum.Types (Address, BigNumber)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------

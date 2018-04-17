@@ -6,7 +6,7 @@ module Network.Ethereum.Web3.Solidity.UInt
 
 import Prelude
 import Data.Maybe (Maybe(..))
-import Network.Ethereum.Web3.Types (BigNumber, embed, pow)
+import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Type.Proxy (Proxy(..))
 

@@ -11,12 +11,14 @@ import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (maybe, fromJust)
 import Data.String (fromCharArray)
 import Data.Unfoldable (replicateA)
+import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
+import Network.Ethereum.Core.HexString (HexString, Signed(..), getPadLength, mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex)
+import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
-import Network.Ethereum.Web3.Types (Address, BigNumber, HexString, Signed(..), embed, fromHexString, fromHexStringSigned, getPadLength, mkAddress, mkHexString, padLeft, padLeftSigned, padRight, toSignedHexString, toTwosComplement, unAddress, unHex, unsafeToInt)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (ParseError, Parser, ParserT, fail, runParser)
 import Text.Parsing.Parser.Token (hexDigit)
@@ -156,11 +158,11 @@ uInt256HexBuilder x =
 
 -- | Parse as a signed `BigNumber`
 int256HexParser :: forall m . Monad m => ParserT String m BigNumber
-int256HexParser = fromHexStringSigned <$> take 64
+int256HexParser = toBigNumberFromSignedHexString <$> take 64
 
 -- | Parse an unsigned `BigNumber`
 uInt256HexParser :: forall m . Monad m => ParserT String m BigNumber
-uInt256HexParser = fromHexString <$> take 64
+uInt256HexParser = toBigNumber <$> take 64
 
 -- | Decode a `Boolean` as a BigNumber
 fromBool :: Boolean -> BigNumber
