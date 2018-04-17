@@ -5,7 +5,8 @@ import Prelude
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Module (mzeroL, (^*), (^+), (^-))
-import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromWei, mkValue, pow)
+import Network.Ethereum.Core.BigNumber (pow)
+import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromWei, mkValue)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
