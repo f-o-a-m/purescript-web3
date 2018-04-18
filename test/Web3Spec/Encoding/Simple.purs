@@ -19,10 +19,10 @@ import Data.String (Pattern(..), contains, toLower)
 import Data.Traversable (sequence)
 import Network.Ethereum.Core.BigNumber (pow)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
-import Network.Ethereum.Web3.Solidity.Bytes (BytesN, fromByteString)
-import Network.Ethereum.Web3.Solidity.Int (IntN, intNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&))
-import Network.Ethereum.Web3.Solidity.UInt (UIntN, uIntNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.Bytes (fromByteString)
+import Network.Ethereum.Web3.Solidity.Size (D1, D2, D3, D4, D5, D6, D8, type (:&), type (:%), type (:&), D1, D2, D3, D4, D5, D6, D8, DLProxy(..), DOne)
+import Network.Ethereum.Web3.Solidity.Int (intNFromBigNumber)
+import Network.Ethereum.Web3.Solidity.UInt (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Types (Block, FalseOrObject(..), HexString, SyncStatus(..), embed, mkAddress, mkHexString, unHex)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -135,20 +135,20 @@ bytesNTests =
     describe "byteN tests" do
 
       it "can encode Bytes1" do
-         let mgiven = (fromByteString <<<  unsafePartial fromJust $ flip BS.fromString BS.Hex $ "cf") :: Maybe (BytesN D1)
+         let mgiven = fromByteString (DLProxy :: DLProxy (DOne D1)) <<<  unsafePartial fromJust $ flip BS.fromString BS.Hex $ "cf"
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "cf00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode Bytes3" do
-         let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf0011") :: Maybe (BytesN D3)
+         let mgiven = fromByteString (DLProxy :: DLProxy (DOne D3)) $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "cf0011"
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "cf00110000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
 
       it "can encode Bytes12" do
-         let mgiven =  (fromByteString $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "6761766f66796f726b000000") :: Maybe (BytesN (D1 :& D2))
+         let mgiven = fromByteString (DLProxy :: DLProxy (D1 :% D2)) $ unsafePartial $ fromJust $ flip BS.fromString BS.Hex $ "6761766f66796f726b000000"
              given = unsafePartial $ fromJust mgiven
              expected =  unsafePartial fromJust <<< mkHexString $ "6761766f66796f726b0000000000000000000000000000000000000000000000"
          roundTrip given expected
@@ -188,19 +188,19 @@ uintNTests =
     describe "uint tests" do
 
       it "can encode uint8" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 8 - one) :: Maybe (UIntN D8)
+         let mgiven =  uIntNFromBigNumber (DLProxy :: DLProxy (DOne D8)) $ (embed 2) `pow` 8 - one
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "00000000000000000000000000000000000000000000000000000000000000ff"
          roundTrip given expected
 
       it "can encode larger uint256" do
-         let mgiven =  (uIntNFromBigNumber $ ((embed $ 2) `pow` 256) - one) :: Maybe (UIntN (D2 :& (D5 :& D6)))
+         let mgiven = uIntNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) $ ((embed $ 2) `pow` 256) - one
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger uin248" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 256 - one) :: Maybe (UIntN (D2 :& (D4 :& D8)))
+         let mgiven =  (uIntNFromBigNumber (DLProxy :: DLProxy (D2 :& D4 :% D8)) $ (embed $ 2) `pow` 256 - one)
          mgiven `shouldEqual` Nothing
 
 intNTests :: forall r . Spec r Unit
@@ -208,23 +208,23 @@ intNTests =
     describe "uint tests" do
 
       it "can encode int16" do
-         let mgiven =  (intNFromBigNumber $ (embed $ negate 1)) :: Maybe (IntN (D1 :& D6))
+         let mgiven = intNFromBigNumber (DLProxy :: DLProxy (D1 :% D6)) $ embed $ negate 1
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can encode larger uint256" do
-         let mgiven =  (intNFromBigNumber $ ((embed $ 2) `pow` 255) - one) :: Maybe (IntN (D2 :& D5 :& D6))
+         let mgiven = intNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) $ ((embed $ 2) `pow` 255) - one
              given = unsafePartial $ fromJust mgiven
              expected = unsafePartial fromJust <<< mkHexString $ "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
          roundTrip given expected
 
       it "can fail to encode larger int248" do
-         let mgiven =  (uIntNFromBigNumber $ (embed $ 2) `pow` 255 - one) :: Maybe (UIntN (D2 :& D4 :& D8))
+         let mgiven = uIntNFromBigNumber (DLProxy :: DLProxy (D2 :& D4 :% D8)) $ (embed $ 2) `pow` 255 - one
          mgiven `shouldEqual` Nothing
 
       it "can fail to encode larger negative int248" do
-         let mgiven =  (uIntNFromBigNumber $ negate $ (embed $ 2) `pow` 255 + one) :: Maybe (UIntN (D2 :& D4 :& D8))
+         let mgiven = uIntNFromBigNumber (DLProxy :: DLProxy (D2 :& D4 :% D8)) $ negate $ (embed $ 2) `pow` 255 + one
          mgiven `shouldEqual` Nothing
 
 

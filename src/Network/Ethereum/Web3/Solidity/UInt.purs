@@ -5,17 +5,17 @@ module Network.Ethereum.Web3.Solidity.UInt
   ) where
 
 import Prelude
+
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
-import Type.Proxy (Proxy(..))
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, kind DigitList)
 
 --------------------------------------------------------------------------------
 -- * Statically sized unsigned integers
 --------------------------------------------------------------------------------
 
 -- | Represents a statically sized unsigned integer of size `n`
-newtype UIntN n = UIntN BigNumber
+newtype UIntN (n :: DigitList) = UIntN BigNumber
 
 
 derive newtype instance showUIntN :: Show (UIntN n)
@@ -29,8 +29,8 @@ unUIntN :: forall n . KnownSize n => UIntN n -> BigNumber
 unUIntN (UIntN a) = a
 
 -- | Attempt to coerce an unsigned integer into a statically sized one
-uIntNFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (UIntN n)
-uIntNFromBigNumber a
+uIntNFromBigNumber :: forall n . KnownSize n => DLProxy n -> BigNumber -> Maybe (UIntN n)
+uIntNFromBigNumber _ a
   | a < zero = Nothing
-  | otherwise = let maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n)) - one
+  | otherwise = let maxVal = (embed 2) `pow` (sizeVal (DLProxy :: DLProxy n)) - one
                 in if a > maxVal then Nothing else Just <<< UIntN $ a

@@ -8,9 +8,10 @@ import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (fromJust)
-import Network.Ethereum.Web3.Solidity (type (:&), BytesN, D1, D2, D4, D5, D6, IntN, N1, N2, N4, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
+import Network.Ethereum.Web3.Solidity (type (:&), type (:%), BytesN, D1, D2, D4, D5, D6, DLProxy(..), IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
+import Network.Ethereum.Web3.Solidity.Size (DOne)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
@@ -47,28 +48,28 @@ staticArraysTests =
     describe "statically sized array tests" do
 
       it "can encode statically sized vectors of addresses" do
-         let mgivenElement = toVector $ [false]
-             givenElement = (unsafePartial fromJust $ mgivenElement) :: Vector N1 Boolean
-             given = (unsafePartial fromJust $ toVector [givenElement, givenElement]) :: Vector N2 (Vector N1 Boolean)
+         let mgivenElement = toVector (DLProxy :: DLProxy (DOne D1)) $ [false]
+             givenElement = (unsafePartial fromJust $ mgivenElement)
+             given = (unsafePartial fromJust $ toVector (DLProxy :: DLProxy (DOne D2)) [givenElement, givenElement])
              expected = unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000000"
                                   <> "0000000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
       it "can encode statically sized vectors of statically sized vectors of type bool" do
-         let mgiven = toVector $ map (\a -> unsafePartial fromJust $ mkAddress =<< mkHexString a) [ "407d73d8a49eeb85d32cf465507dd71d507100c1"
+         let mgiven = toVector (DLProxy :: DLProxy (DOne D2)) $ map (\a -> unsafePartial fromJust $ mkAddress =<< mkHexString a) [ "407d73d8a49eeb85d32cf465507dd71d507100c1"
                                                                                                   , "407d73d8a49eeb85d32cf465507dd71d507100c3"
                                                                                                   ]
-             given = (unsafePartial $ fromJust $ mgiven) :: Vector N2 Address
+             given = (unsafePartial $ fromJust $ mgiven) :: Vector (DOne D2) Address
              expected = unsafePartial (fromJust <<< mkHexString) $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
                                   <> "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c3"
          roundTrip given expected
 
       it "can encode statically sized vectors of statically sized bytes" do
-         let elem1 = unsafePartial fromJust (fromByteString =<< flip BS.fromString BS.Hex "cf") :: BytesN D1
-             elem2 = unsafePartial fromJust (fromByteString =<< flip BS.fromString BS.Hex "68") :: BytesN D1
-             elem3 = unsafePartial fromJust (fromByteString =<< flip BS.fromString BS.Hex "4d") :: BytesN D1
-             elem4 = unsafePartial fromJust (fromByteString =<< flip BS.fromString BS.Hex "fb") :: BytesN D1
-             given = unsafePartial fromJust (toVector $ [elem1, elem2, elem3, elem4]) :: Vector N4 (BytesN D1)
+         let elem1 = unsafePartial fromJust (fromByteString (DLProxy :: DLProxy (DOne D1)) =<< flip BS.fromString BS.Hex "cf")
+             elem2 = unsafePartial fromJust (fromByteString (DLProxy :: DLProxy (DOne D1)) =<< flip BS.fromString BS.Hex "68")
+             elem3 = unsafePartial fromJust (fromByteString (DLProxy :: DLProxy (DOne D1)) =<< flip BS.fromString BS.Hex "4d")
+             elem4 = unsafePartial fromJust (fromByteString (DLProxy :: DLProxy (DOne D1)) =<< flip BS.fromString BS.Hex "fb")
+             given = unsafePartial fromJust (toVector (DLProxy :: DLProxy (DOne D4)) $ [elem1, elem2, elem3, elem4]) :: Vector (DOne D4) (BytesN (DOne D1))
              expected = unsafePartial (fromJust <<< mkHexString) $ "cf00000000000000000000000000000000000000000000000000000000000000"
                                   <> "6800000000000000000000000000000000000000000000000000000000000000"
                                   <> "4d00000000000000000000000000000000000000000000000000000000000000"
@@ -121,31 +122,29 @@ tuplesTest =
       roundTripGeneric given expected
 
     it "can do something really complicated" do
-      let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber <<< embed $ 1
-          int = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $ (negate 1)
+      let uint = unsafePartial $ fromJust <<< uIntNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) <<< embed $ 1
+          int = unsafePartial $ fromJust <<< intNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) <<< embed $ (negate 1)
           bool = true
-          int224 = unsafePartial $ fromJust <<< intNFromBigNumber <<< embed $  221
+          int224 = unsafePartial $ fromJust <<< intNFromBigNumber (DLProxy :: DLProxy (D2 :& D2 :% D4)) <<< embed $  221
           bools = true :< false :< nilVector
-          ints = [ unsafePartial fromJust <<< intNFromBigNumber <<< embed $ 1
-                 , unsafePartial fromJust <<< intNFromBigNumber <<< embed $ negate 1
-                 , unsafePartial fromJust <<< intNFromBigNumber <<< embed $  3
+          ints = [ unsafePartial fromJust <<< intNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) <<< embed $ 1
+                 , unsafePartial fromJust <<< intNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) <<< embed $ negate 1
+                 , unsafePartial fromJust <<< intNFromBigNumber (DLProxy :: DLProxy (D2 :& D5 :% D6)) <<< embed $  3
                  ]
           string = "hello"
-          bytes16 = unsafePartial fromJust $ fromByteString =<< flip BS.fromString BS.Hex "12345678123456781234567812345678"
-          elem = unsafePartial fromJust $ fromByteString =<< flip BS.fromString BS.Hex "1234"
-          bytes2s = [ elem :< elem :< elem :< elem :< nilVector
-                    , elem :< elem :< elem :< elem :< nilVector
-                    ]
-
-          given = Tuple9 uint int bool int224 bools ints string bytes16 bytes2s :: Tuple9 (UIntN (D2 :& D5 :& D6))
-                                                                                          (IntN (D2 :& D5 :& D6))
+          bytes16 = unsafePartial fromJust $ fromByteString (DLProxy :: DLProxy (D1 :% D6))=<< flip BS.fromString BS.Hex "12345678123456781234567812345678"
+          elem = unsafePartial fromJust $ fromByteString (DLProxy :: DLProxy (DOne D2))=<< flip BS.fromString BS.Hex "1234"
+          vector4 = (elem :< elem :< elem :< elem :< nilVector) :: (Vector (DOne D4) (BytesN (DOne D2)))
+          bytes2s = [ vector4, vector4 ]
+          given = Tuple9 uint int bool int224 bools ints string bytes16 bytes2s :: Tuple9 (UIntN (D2 :& D5 :% D6))
+                                                                                          (IntN (D2 :& D5 :% D6))
                                                                                           Boolean
-                                                                                          (IntN (D2 :& D2 :& D4))
-                                                                                          (Vector N2 Boolean)
-                                                                                          (Array (IntN (D2 :& D5 :& D6)))
+                                                                                          (IntN (D2 :& D2 :% D4))
+                                                                                          (Vector (DOne D2) Boolean)
+                                                                                          (Array (IntN (D2 :& D5 :% D6)))
                                                                                           String
-                                                                                          (BytesN (D1 :& D6))
-                                                                                          (Array (Vector N4 (BytesN D2)))
+                                                                                          (BytesN (D1 :% D6))
+                                                                                          (Array (Vector (DOne D4) (BytesN (DOne D2))))
 
           expected = unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
                               <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"

@@ -5,17 +5,18 @@ module Network.Ethereum.Web3.Solidity.Int
   ) where
 
 import Prelude
+
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
-import Type.Proxy (Proxy(..))
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, kind DigitList, DLProxy(..))
 
 --------------------------------------------------------------------------------
 -- * Statically sized signed integers
 --------------------------------------------------------------------------------
 
 -- | Represents a statically sized signed integer of size `n` bytes
-newtype IntN n = IntN BigNumber
+newtype IntN (n :: DigitList) = IntN BigNumber
+
 
 derive newtype instance showIntN :: Show (IntN n)
 
@@ -28,9 +29,9 @@ unIntN :: forall n . KnownSize n => IntN n -> BigNumber
 unIntN (IntN a) = a
 
 -- | Attempt to coerce an signed `BigNumber` into a statically sized one
-intNFromBigNumber :: forall n . KnownSize n => BigNumber -> Maybe (IntN n)
-intNFromBigNumber a
-  | a < zero = let minVal = negate $ (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - one)
+intNFromBigNumber :: forall n . KnownSize n => DLProxy n -> BigNumber -> Maybe (IntN n)
+intNFromBigNumber _ a
+  | a < zero = let minVal = negate $ (embed 2) `pow` (sizeVal (DLProxy :: DLProxy n) - one)
             in if a < minVal then Nothing else Just <<< IntN $ a
-  | otherwise = let maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n) - one) - one
+  | otherwise = let maxVal = (embed 2) `pow` (sizeVal (DLProxy :: DLProxy n) - one) - one
                 in if a > maxVal then Nothing else Just <<< IntN $ a

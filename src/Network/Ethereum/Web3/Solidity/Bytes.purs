@@ -11,17 +11,16 @@ import Prelude
 import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, kind DigitList)
 import Network.Ethereum.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
-import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
 -- * Statically sized byte array
 --------------------------------------------------------------------------------
 
 -- Represents a statically sized bytestring of size `n` bytes
-newtype BytesN n = BytesN ByteString
+newtype BytesN (n :: DigitList) = BytesN ByteString
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
 
@@ -38,9 +37,10 @@ proxyBytesN = BytesN empty
 update :: forall n . KnownSize n => BytesN n -> ByteString -> BytesN n
 update _ = BytesN
 
+
 -- | Attempt to coerce a bytestring into one of the appropriate size
-fromByteString :: forall n . KnownSize n => ByteString -> Maybe (BytesN n)
-fromByteString bs = if not $ BS.length bs == sizeVal (Proxy :: Proxy n)
+fromByteString :: forall n . KnownSize n => DLProxy n -> ByteString -> Maybe (BytesN n)
+fromByteString _ bs = if not $ BS.length bs == sizeVal (DLProxy :: DLProxy n)
                        then Nothing
                        else Just $ BytesN bs
 
