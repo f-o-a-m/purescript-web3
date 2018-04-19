@@ -16,13 +16,12 @@ import Network.Ethereum.Core.HexString (HexString, Signed(..), getPadLength, mkH
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Size (class KnownNat, class ByteSize, class IntSize, sizeVal, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, DLProxy(..), sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (ParseError, Parser, ParserT, fail, runParser)
 import Text.Parsing.Parser.Token (hexDigit)
-import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
@@ -82,17 +81,17 @@ instance abiEncodeBytesN :: ByteSize n => ABIEncode (BytesN n) where
 
 instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
   fromDataParser = do
-    let len = sizeVal (Proxy :: Proxy n)
+    let len = sizeVal (DLProxy :: DLProxy n)
         zeroBytes = getPadLength (len * 2)
     raw <- take $ len * 2
     _ <- take $ zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
-instance abiEncodeVector :: (ABIEncode a, KnownNat n) => ABIEncode (Vector n a) where
+instance abiEncodeVector :: (ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
     toDataBuilder as = foldMap toDataBuilder as
 
-instance abiDecodeVector :: (ABIDecode a, KnownNat n) => ABIDecode (Vector n a) where
-    fromDataParser = let len = natVal (Proxy :: Proxy n)
+instance abiDecodeVector :: (ABIDecode a, KnownSize n) => ABIDecode (Vector n a) where
+    fromDataParser = let len = sizeVal (DLProxy :: DLProxy n)
                      in replicateA len fromDataParser
 
 instance abiEncodeArray :: ABIEncode a => ABIEncode (Array a) where
@@ -109,9 +108,9 @@ instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
 instance abiDecodeUint :: IntSize n => ABIDecode (UIntN n) where
   fromDataParser = do
     a <- uInt256HexParser
-    maybe (fail $ msg a) pure <<< uIntNFromBigNumber $ a
+    maybe (fail $ msg a) pure <<< uIntNFromBigNumber (DLProxy :: DLProxy n) $ a
     where
-      msg n = let size = sizeVal (Proxy :: Proxy n)
+      msg n = let size = sizeVal (DLProxy :: DLProxy n)
               in "Couldn't parse as uint" <> show size <> " : " <> show n
 
 instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
@@ -120,9 +119,9 @@ instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
 instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
   fromDataParser = do
     a <- int256HexParser
-    maybe (fail $ msg a) pure <<< intNFromBigNumber $ a
+    maybe (fail $ msg a) pure <<< intNFromBigNumber (DLProxy :: DLProxy n) $ a
     where
-      msg n = let size = sizeVal (Proxy :: Proxy n)
+      msg n = let size = sizeVal (DLProxy :: DLProxy n)
               in "Couldn't parse as int" <> show size <> " : " <> show n
 
 instance abiEncodeTagged :: ABIEncode a => ABIEncode (Tagged s a) where

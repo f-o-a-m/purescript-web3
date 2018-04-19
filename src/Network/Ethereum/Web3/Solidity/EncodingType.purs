@@ -8,7 +8,7 @@ import Data.ByteString (ByteString)
 import Data.Functor.Tagged (Tagged)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, class IntSize, class KnownNat, natVal)
+import Network.Ethereum.Web3.Solidity.Size (class IntSize, class KnownSize, DLProxy(..), sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Network.Ethereum.Types (Address, BigNumber)
@@ -36,11 +36,11 @@ instance encodingTypeBigNumber:: EncodingType BigNumber where
     isDynamic = const false
 
 instance encodingTypeUIntN:: IntSize n => EncodingType (UIntN n) where
-    typeName  = const $ "uint" <> (show <<< sizeVal $ Proxy :: Proxy n)
+    typeName  = const $ "uint" <> (show <<< sizeVal $ DLProxy :: DLProxy n)
     isDynamic = const false
 
 instance encodingTypeIntN :: IntSize n => EncodingType (IntN n) where
-    typeName  = const $ "int" <> (show <<< sizeVal $ Proxy :: Proxy n)
+    typeName  = const $ "int" <> (show <<< sizeVal $ DLProxy :: DLProxy n)
     isDynamic = const false
 
 instance encodingTypeString :: EncodingType String where
@@ -56,12 +56,12 @@ instance encodingTypeArray :: EncodingType a => EncodingType (Array a) where
     isDynamic = const true
 
 instance encodingTypeBytes :: KnownSize n => EncodingType (BytesN n) where
-    typeName  = let n = show (sizeVal (Proxy :: Proxy n))
+    typeName  = let n = show (sizeVal (DLProxy :: DLProxy n))
                 in const $ "bytes[" <> n <> "]"
     isDynamic = const false
 
-instance encodingTypeVector :: (KnownNat n, EncodingType a) => EncodingType (Vector n a) where
-    typeName  = let n = show (natVal (Proxy :: Proxy n))
+instance encodingTypeVector :: (KnownSize n, EncodingType a) => EncodingType (Vector n a) where
+    typeName  = let n = show (sizeVal (DLProxy :: DLProxy n))
                     baseTypeName = typeName (Proxy :: Proxy a)
                 in const $ baseTypeName <> "[" <> n <> "]"
     isDynamic = const $ isDynamic (Proxy :: Proxy a)

@@ -13,9 +13,10 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
+import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
+import Network.Ethereum.Web3.Solidity.Size (type (:%))
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -84,18 +85,18 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 
-newtype Transfer = Transfer {to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& D6)}
+newtype Transfer = Transfer {to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :% D6)}
 
-instance newtypeTransfer :: Newtype Transfer (Record (to :: Address, from :: Address, amount ::UIntN (D2 :& D5 :& D6) )) where
+instance newtypeTransfer :: Newtype Transfer (Record (to :: Address, from :: Address, amount ::UIntN (D2 :& D5 :& DOne D6) )) where
   wrap = Transfer
   unwrap (Transfer t) = t
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& D6)))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
   isAnonymous _ = false
 
-instance showTranfer :: Show Transfer where
+instance showTransfer :: Show Transfer where
   show = genericShow
 
 instance eqTransfer :: Eq Transfer where

@@ -12,7 +12,11 @@ module Network.Ethereum.Web3.Solidity
   , module Data.ByteString
   ) where
 
-import Network.Ethereum.Web3.Solidity.Size (NumCons, type (:&), D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, Z, S, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9)
+import Network.Ethereum.Web3.Solidity.Size
+  ( D0, D1, D2, D3, D4, D5, D6, D7, D8, D9
+  , type (:&), type (:%), DOne, DCons
+  , class KnownSize, sizeVal, DLProxy(..), class IntSize, class ByteSize, class Inc
+  )
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector, nilVector, vCons, (:<), vectorLength, toVector)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromByteString)
 import Network.Ethereum.Web3.Solidity.Tuple ( Tuple0(..)

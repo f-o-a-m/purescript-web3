@@ -14,8 +14,8 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class EventFilter, Address, HexString, ChainCursor(..), ETH, EventAction(..), Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
-import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:&), D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
+import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), ETH, EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
+import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:%), type (:&), DOne, D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -27,7 +27,7 @@ ssAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "c29313014a78b440
 adminAddress :: Address
 adminAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "44cba02c089789b3299069c93832b7a8b8723b3e"
 
-type FnSet = Tagged (SProxy "(int256)") (Tuple1 (IntN (D2 :& D5 :& D6)))
+type FnSet = Tagged (SProxy "(int256)") (Tuple1 (IntN (D2 :& D5 :% D6)))
 
 --------------------------------------------------------------------------------
 -- | CountSet
@@ -35,11 +35,11 @@ type FnSet = Tagged (SProxy "(int256)") (Tuple1 (IntN (D2 :& D5 :& D6)))
 
 -- This is what the auto-generated code should look like
 
-newtype CountSet = CountSet {_count :: (UIntN (D2 :& D5 :& D6))}
+newtype CountSet = CountSet {_count :: (UIntN (D2 :& D5 :% D6))}
 
 derive instance newtypeCountSet :: Newtype CountSet _
 
-instance indexedEventCountSet :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_count") (UIntN (D2 :& D5 :& D6)))) CountSet where
+instance indexedEventCountSet :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_count") (UIntN (D2 :& D5 :& DOne D6)))) CountSet where
   isAnonymous _ = false
 
 derive instance genericCountSet :: Generic CountSet _
@@ -57,7 +57,7 @@ instance eventFilterCountSet :: EventFilter CountSet where
 
 -- this is the application code
 
-setA :: forall e. IntN (D2 :& D5 :& D6) -> Web3 e HexString
+setA :: forall e. IntN (D2 :& D5 :% D6) -> Web3 e HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
 countMonitor :: forall e. Web3 (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
