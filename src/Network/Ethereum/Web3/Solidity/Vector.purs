@@ -18,7 +18,8 @@ import Data.Traversable (class Traversable)
 import Data.Unfoldable (class Unfoldable)
 import Network.Ethereum.Web3.Solidity.Size (class Inc, class KnownSize, D0, DLProxy(DLProxy), DOne, sizeVal, kind DigitList)
 
--- | Represents a statically sized vector of length `n`
+-- | Represents a statically sized vector of length `n`.
+-- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
 newtype Vector (n :: DigitList) a = Vector (Array a)
 
 derive newtype instance showVector :: Show a => Show (Vector n a)
@@ -53,7 +54,8 @@ vectorLength (Vector as) =
   -- NOTE: sizeVal could be used instead
   A.length as
 
--- | Attempt to coerce an array into a statically sized array
+-- | Attempt to coerce an array into a statically sized array.
+-- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
 toVector :: forall a n . KnownSize n => DLProxy n -> Array a -> Maybe (Vector n a)
 toVector _ as = if sizeVal (DLProxy :: DLProxy n) /= A.length as
                  then Nothing

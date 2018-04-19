@@ -19,7 +19,8 @@ import Partial.Unsafe (unsafePartial)
 -- * Statically sized byte array
 --------------------------------------------------------------------------------
 
--- Represents a statically sized bytestring of size `n` bytes
+-- Represents a statically sized bytestring of size `n` bytes.
+-- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
 newtype BytesN (n :: DigitList) = BytesN ByteString
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
@@ -38,7 +39,8 @@ update :: forall n . KnownSize n => BytesN n -> ByteString -> BytesN n
 update _ = BytesN
 
 
--- | Attempt to coerce a bytestring into one of the appropriate size
+-- | Attempt to coerce a bytestring into one of the appropriate size.
+-- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
 fromByteString :: forall n . KnownSize n => DLProxy n -> ByteString -> Maybe (BytesN n)
 fromByteString _ bs = if not $ BS.length bs == sizeVal (DLProxy :: DLProxy n)
                        then Nothing
