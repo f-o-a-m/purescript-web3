@@ -583,6 +583,8 @@ instance decodeRpcError :: Decode RpcError where
 
 data Web3Error =
     Rpc RpcError
+  | RemoteError String
+  | ParserError String
   | NullError
 
 derive instance genericWeb3Error :: Generic Web3Error _
