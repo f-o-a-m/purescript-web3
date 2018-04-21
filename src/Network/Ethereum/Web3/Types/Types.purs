@@ -212,7 +212,7 @@ instance decodeTransactionStatus :: Decode TransactionStatus where
     case str of
       "0x1" -> pure Succeeded
       "0x0" -> pure Failed
-      otherwise -> fail $ TypeMismatch "TransactionStatusStatus" str
+      otherwise -> fail $ TypeMismatch "TransactionStatus" str
 
 newtype TransactionReceipt =
   TransactionReceipt { transactionHash :: HexString
