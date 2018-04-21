@@ -4,6 +4,7 @@ module Network.Ethereum.Web3.Types.Types
        , Block(..)
        , Transaction(..)
        , TransactionReceipt(..)
+       , TransactionStatus(..)
        , TransactionOptions(..)
        , defaultTransactionOptions
        , _from
@@ -197,6 +198,22 @@ instance decodeTransaction :: Decode Transaction where
 -- * TransactionReceipt
 --------------------------------------------------------------------------------
 
+data TransactionStatus = Succeeded | Failed
+
+derive instance genericTransactionStatus :: Generic TransactionStatus _
+derive instance eqTransactionStatus :: Eq TransactionStatus
+
+instance showTransactionStatus :: Show TransactionStatus where
+  show = genericShow
+
+instance decodeTransactionStatus :: Decode TransactionStatus where
+  decode x = do
+    str <- readString x
+    case str of
+      "0x1" -> pure Succeeded
+      "0x0" -> pure Failed
+      otherwise -> fail $ TypeMismatch "TransactionStatusStatus" str
+
 newtype TransactionReceipt =
   TransactionReceipt { transactionHash :: HexString
                      , transactionIndex :: BigNumber
@@ -206,7 +223,7 @@ newtype TransactionReceipt =
                      , gasUsed :: BigNumber
                      , contractAddress :: NullOrUndefined Address
                      , logs :: Array Change
-                     , status :: String -- 0x0 for fail, 0x1 for success
+                     , status :: TransactionStatus
                      }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
