@@ -36,12 +36,12 @@ import Type.Proxy (Proxy)
 
 class EventFilter a where
     -- | Event filter structure used by low-level subscription methods
-    eventFilter :: Proxy a -> Address -> Filter
+    eventFilter :: Proxy a -> Address -> Filter a
 
 -- | run `event'` one block at a time.
 event :: forall e a i ni.
          DecodeEvent i ni a
-      => Filter
+      => Filter a
       -> (a -> ReaderT Change (Web3 e) EventAction)
       -> Web3 e Unit
 event fltr handler = event' fltr zero handler
@@ -52,7 +52,7 @@ event fltr handler = event' fltr zero handler
 -- | `TerminateEvent` is thrown, it then transitions to polling.
 event' :: forall e a i ni.
           DecodeEvent i ni a
-       => Filter
+       => Filter a
        -> Int
        -> (a -> ReaderT Change (Web3 e) EventAction)
        -> Web3 e Unit
