@@ -156,7 +156,7 @@ eth_getAccounts = remote "eth_accounts"
 
 -- | Creates a filter object, based on filter options, to notify when the
 -- | state changes (logs). To check if the state has changed, call 'eth_getFilterChanges'.
-eth_newFilter :: forall e . Filter -> Web3 e FilterId
+eth_newFilter :: forall a e . Filter a -> Web3 e FilterId
 eth_newFilter f = remote "eth_newFilter" f
 
 -- | Creates a filter in the node, to notify when a new block arrives.
@@ -173,7 +173,7 @@ eth_getFilterLogs :: forall e. FilterId -> Web3 e (Array Change)
 eth_getFilterLogs fid = remote "eth_getFilterLogs" fid
 
 -- | Returns an array of all logs matching a given filter object
-eth_getLogs :: forall e. Filter -> Web3 e (Array Change)
+eth_getLogs :: forall a e. Filter a -> Web3 e (Array Change)
 eth_getLogs filter = remote "eth_getLogs" filter
 
 -- | Uninstalls a filter with given id. Should always be called when watch is no longer needed.

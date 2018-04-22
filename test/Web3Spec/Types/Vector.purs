@@ -3,9 +3,8 @@ module Web3Spec.Types.Vector (vectorSpec) where
 import Prelude
 
 import Data.Array (uncons)
-import Data.Maybe (Maybe(..), fromJust)
+import Data.Maybe (Maybe(..))
 import Network.Ethereum.Web3 (Vector, nilVector, (:<))
-import Network.Ethereum.Web3.Solidity (unVector)
 import Network.Ethereum.Web3.Solidity.Size (class Inc, type (:%), type (:&), D0, D1, D2, D3, D4, D8, D9, DOne)
 import Partial.Unsafe (unsafeCrashWith)
 import Test.Spec (Spec, describe, it)

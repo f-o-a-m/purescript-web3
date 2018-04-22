@@ -101,15 +101,15 @@ processChanges handler changes = for changes \c -> do
 
 -- * Filter Stream
 
-type FilterStreamState =
+type FilterStreamState a =
   { currentBlock :: BlockNumber
-  , initialFilter :: Filter
+  , initialFilter :: Filter a
   , windowSize :: Int
   }
 
 logsStream :: forall e i ni a.
               DecodeEvent i ni a
-           => FilterStreamState
+           => FilterStreamState a
            -> Producer (Array (FilterChange a)) (Web3 e) BlockNumber
 logsStream currentState = do
     end <- lift <<< mkBlockNumber $ currentState.initialFilter ^. _toBlock

@@ -394,45 +394,45 @@ forkWeb3' web3Action = do
 --------------------------------------------------------------------------------
 
 -- | Low-level event filter data structure
-newtype Filter = Filter
+newtype Filter a = Filter
   { address   :: NullOrUndefined Address
   , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
   , fromBlock :: ChainCursor
   , toBlock   :: ChainCursor
   }
 
-derive instance genericFilter :: Generic Filter _
-derive instance newtypeFilter :: Newtype Filter _
+derive instance genericFilter :: Generic (Filter a) _
+derive instance newtypeFilter :: Newtype (Filter a) _
 
-instance showFilter :: Show Filter where
+instance showFilter :: Show (Filter a) where
   show = genericShow
 
-instance eqFilter :: Eq Filter where
+instance eqFilter :: Eq (Filter a) where
   eq = genericEq
 
-instance encodeFilter :: Encode Filter where
+instance encodeFilter :: Encode (Filter a) where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
-defaultFilter :: Filter
+defaultFilter :: forall a. Filter a
 defaultFilter = Filter { address: NullOrUndefined Nothing
                        , topics: NullOrUndefined Nothing
                        , fromBlock: Latest
                        , toBlock: Latest
                        }
 
-_address :: Lens' Filter (Maybe Address)
+_address :: forall a. Lens' (Filter a) (Maybe Address)
 _address = lens (\(Filter f) -> unNullOrUndefined f.address)
           (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
 
-_topics :: Lens' Filter (Maybe (Array (Maybe HexString)))
+_topics :: forall a. Lens' (Filter a) (Maybe (Array (Maybe HexString)))
 _topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
           (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
 
-_fromBlock :: Lens' Filter ChainCursor
+_fromBlock :: forall a. Lens' (Filter a) ChainCursor
 _fromBlock = lens (\(Filter f) -> f.fromBlock)
           (\(Filter f) b -> Filter $ f {fromBlock = b})
 
-_toBlock :: Lens' Filter ChainCursor
+_toBlock :: forall a. Lens' (Filter a) ChainCursor
 _toBlock = lens (\(Filter f) -> f.toBlock)
           (\(Filter f) b -> Filter $ f {toBlock = b})
 
