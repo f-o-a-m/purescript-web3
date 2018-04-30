@@ -25,7 +25,7 @@
     "purescript-eth-core": "^0.0.1",
     "purescript-partial": "v1.2.1",
     "purescript-parsing": "v4.3.1",
-    "purescript-transformers": "v3.4.0",
+    "purescript-transformers": "^3.6.0",
     "purescript-identity": "v3.1.0",
     "purescript-aff": "v4.0.0",
     "purescript-tagged": "v2.0.0",
