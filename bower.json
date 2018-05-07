@@ -32,8 +32,7 @@
     "purescript-free": "^4.3.0",
     "purescript-coroutines": "^4.0.0",
     "purescript-typelevel-prelude": "^2.7.0",
-    "purescript-modules": "^3.0.0",
-    "purescript-simple-json": "^3.0.0"
+    "purescript-modules": "^3.0.0"
   },
   "devDependencies": {
     "purescript-debug": "v3.0.0",
