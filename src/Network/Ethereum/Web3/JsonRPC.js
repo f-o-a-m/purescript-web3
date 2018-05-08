@@ -4,7 +4,7 @@
 exports._sendAsync = function (provider) {
     return function (request) {
         return function(onError, onSuccess) {
-            var cancel = provider.sendAsync(request, function(err, succ) {
+            provider.sendAsync(request, function(err, succ) {
                 if (err) {
                     onError(err);
                 } else {
@@ -12,7 +12,6 @@ exports._sendAsync = function (provider) {
                 }
             });
             return function (cancelError, onCancelerError, onCancelerSuccess) {
-                cancel();
                 onCancelerSuccess();
             };
         };
