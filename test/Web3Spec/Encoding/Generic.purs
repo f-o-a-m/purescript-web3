@@ -125,16 +125,15 @@ amount = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000
 change :: Change
 change = Change { data: amount
                 , topics: addressArray
-                , logIndex: li
+                , logIndex: zero
                 , transactionHash: tx
-                , transactionIndex: txi
+                , transactionIndex: zero
                 , blockNumber: wrap $ embed 0
                 , blockHash: bh
                 , address: a
+                , removed: false
                 }
   where
-    li = unsafePartial fromJust $ mkHexString "00"
     bh = unsafePartial fromJust $ mkHexString "00"
     tx = unsafePartial fromJust $ mkHexString "00"
-    txi = unsafePartial fromJust $ mkHexString "00"
     a = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000000"

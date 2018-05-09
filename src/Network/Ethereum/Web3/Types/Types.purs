@@ -46,13 +46,13 @@ import Prelude
 
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
-import Control.Monad.Aff (Aff, Fiber, ParAff, forkAff, liftEff', throwError)
+import Control.Monad.Aff (Aff, Fiber, ParAff, forkAff, liftEff')
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error, throwException)
 import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Except (ExceptT, except, runExceptT)
+import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
@@ -61,7 +61,6 @@ import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, re
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
 import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
 import Data.Foreign.Index (readProp)
-import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Functor.Compose (Compose)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -70,12 +69,9 @@ import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
-import Data.Record as Record
-import Data.Symbol (SProxy(..))
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
 import Network.Ethereum.Web3.Types.Provider (Provider)
-import Simple.JSON (read)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -128,11 +124,11 @@ newtype Block
           , extraData :: HexString
           , gasLimit :: BigNumber
           , gasUsed :: BigNumber
-          , hash :: HexString
-          , logsBloom :: HexString
+          , hash :: Maybe HexString
+          , logsBloom :: Maybe HexString
           , miner :: HexString
-          , nonce :: HexString
-          , number :: BigNumber
+          , nonce :: Maybe HexString
+          , number :: Maybe BigNumber
           , parentHash :: HexString
           , receiptsRoot :: HexString
           , sha3Uncles :: HexString
@@ -153,18 +149,7 @@ instance showBlock :: Show Block where
   show = genericShow
 
 instance decodeBlock :: Decode Block where
-  decode x = catchError (genericDecode decodeOpts x)
-                -- if this attempt fails for any reason pass back the original error
-                \origError -> catchError tryKovanAuthorHack (\_ -> throwError origError)
-    where
-      decodeOpts = defaultOptions { unwrapSingleConstructors = true }
-      tryKovanAuthorHack = do
-        rec <- except $ read x
-        let blockRec = Record.delete (SProxy :: SProxy "author") rec
-                     # Record.insert (SProxy :: SProxy "nonce") rec.author
-        pure $ Block blockRec
-
-
+  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
 -- * Transaction
@@ -173,11 +158,11 @@ instance decodeBlock :: Decode Block where
 newtype Transaction =
   Transaction { hash :: HexString
               , nonce :: BigNumber
-              , blockHash :: HexString
-              , blockNumber :: BlockNumber
-              , transactionIndex :: BigNumber
+              , blockHash :: Maybe HexString
+              , blockNumber :: Maybe BlockNumber
+              , transactionIndex :: Maybe BigNumber
               , from :: Address
-              , to :: NullOrUndefined Address
+              , to :: Maybe Address
               , value :: Value Wei
               , gas :: BigNumber
               , gasPrice :: BigNumber
@@ -221,7 +206,7 @@ newtype TransactionReceipt =
                      , blockNumber :: BlockNumber
                      , cumulativeGasUsed :: BigNumber
                      , gasUsed :: BigNumber
-                     , contractAddress :: NullOrUndefined Address
+                     , contractAddress :: Maybe Address
                      , logs :: Array Change
                      , status :: TransactionStatus
                      }
@@ -241,13 +226,13 @@ instance decodeTxReceipt :: Decode TransactionReceipt where
 --------------------------------------------------------------------------------
 
 newtype TransactionOptions u =
-  TransactionOptions { from :: NullOrUndefined Address
-                     , to :: NullOrUndefined Address
-                     , value :: NullOrUndefined (Value u)
-                     , gas :: NullOrUndefined BigNumber
-                     , gasPrice :: NullOrUndefined BigNumber
-                     , data :: NullOrUndefined HexString
-                     , nonce :: NullOrUndefined BigNumber
+  TransactionOptions { from :: Maybe Address
+                     , to :: Maybe Address
+                     , value :: Maybe (Value u)
+                     , gas :: Maybe BigNumber
+                     , gasPrice :: Maybe BigNumber
+                     , data :: Maybe HexString
+                     , nonce :: Maybe BigNumber
                      }
 
 derive instance genericTransactionOptions :: Generic (TransactionOptions u) _
@@ -262,42 +247,42 @@ instance encodeTransactionOptions :: Encode (TransactionOptions u) where
 
 defaultTransactionOptions :: TransactionOptions NoPay
 defaultTransactionOptions =
-  TransactionOptions { from : NullOrUndefined Nothing
-                     , to : NullOrUndefined Nothing
-                     , value : NullOrUndefined Nothing
-                     , gas : NullOrUndefined Nothing
-                     , gasPrice : NullOrUndefined Nothing
-                     , data : NullOrUndefined Nothing
-                     , nonce : NullOrUndefined Nothing
+  TransactionOptions { from: Nothing
+                     , to: Nothing
+                     , value: Nothing
+                     , gas: Nothing
+                     , gasPrice: Nothing
+                     , data: Nothing
+                     , nonce: Nothing
                      }
 -- * Lens Boilerplate
 _from :: forall u. Lens' (TransactionOptions u) (Maybe Address)
-_from = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.from)
-          (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {from = NullOrUndefined addr})
+_from = lens (\(TransactionOptions txOpt) -> txOpt.from)
+          (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {from = addr})
 
 _to :: forall u. Lens' (TransactionOptions u) (Maybe Address)
-_to = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.to)
-           (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {to = NullOrUndefined addr})
+_to = lens (\(TransactionOptions txOpt) -> txOpt.to)
+           (\(TransactionOptions txOpts) addr -> TransactionOptions $ txOpts {to = addr})
 
 _data :: forall u. Lens' (TransactionOptions u) (Maybe HexString)
-_data = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.data)
-           (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = NullOrUndefined dat})
+_data = lens (\(TransactionOptions txOpt) -> txOpt.data)
+           (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = dat})
 
 _value :: forall u. EtherUnit (Value u) => Lens (TransactionOptions u) (TransactionOptions Wei) (Maybe (Value u)) (Maybe (Value Wei))
-_value = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.value)
-           (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = NullOrUndefined $ map convert val})
+_value = lens (\(TransactionOptions txOpt) -> txOpt.value)
+           (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = map convert val})
 
 _gas :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
-_gas = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gas)
-           (\(TransactionOptions txOpts) g -> TransactionOptions $ txOpts {gas = NullOrUndefined g})
+_gas = lens (\(TransactionOptions txOpt) -> txOpt.gas)
+           (\(TransactionOptions txOpts) g -> TransactionOptions $ txOpts {gas = g})
 
 _gasPrice :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
-_gasPrice = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.gasPrice)
-              (\(TransactionOptions txOpts) gp -> TransactionOptions $ txOpts {gasPrice = NullOrUndefined gp})
+_gasPrice = lens (\(TransactionOptions txOpt) -> txOpt.gasPrice)
+              (\(TransactionOptions txOpts) gp -> TransactionOptions $ txOpts {gasPrice = gp})
 
 _nonce :: forall u. Lens' (TransactionOptions u) (Maybe BigNumber)
-_nonce = lens (\(TransactionOptions txOpt) -> unNullOrUndefined $ txOpt.nonce)
-           (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = NullOrUndefined n})
+_nonce = lens (\(TransactionOptions txOpt) -> txOpt.nonce)
+           (\(TransactionOptions txOpts) n -> TransactionOptions $ txOpts {nonce = n})
 
 --------------------------------------------------------------------------------
 -- * Node Synchronisation
@@ -395,8 +380,8 @@ forkWeb3' web3Action = do
 
 -- | Low-level event filter data structure
 newtype Filter a = Filter
-  { address   :: NullOrUndefined Address
-  , topics    :: NullOrUndefined (Array (NullOrUndefined HexString))
+  { address   :: Maybe Address
+  , topics    :: Maybe (Array (Maybe HexString))
   , fromBlock :: ChainCursor
   , toBlock   :: ChainCursor
   }
@@ -414,19 +399,19 @@ instance encodeFilter :: Encode (Filter a) where
   encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
 defaultFilter :: forall a. Filter a
-defaultFilter = Filter { address: NullOrUndefined Nothing
-                       , topics: NullOrUndefined Nothing
+defaultFilter = Filter { address: Nothing
+                       , topics: Nothing
                        , fromBlock: Latest
                        , toBlock: Latest
                        }
 
 _address :: forall a. Lens' (Filter a) (Maybe Address)
-_address = lens (\(Filter f) -> unNullOrUndefined f.address)
-          (\(Filter f) addr -> Filter $ f {address = NullOrUndefined addr})
+_address = lens (\(Filter f) -> f.address)
+          (\(Filter f) addr -> Filter $ f {address = addr})
 
 _topics :: forall a. Lens' (Filter a) (Maybe (Array (Maybe HexString)))
-_topics = lens (\(Filter f) -> map unNullOrUndefined <$> unNullOrUndefined f.topics)
-          (\(Filter f) ts -> Filter $ f {topics = NullOrUndefined (map NullOrUndefined <$> ts)})
+_topics = lens (\(Filter f) -> f.topics)
+          (\(Filter f) ts -> Filter $ f {topics = ts})
 
 _fromBlock :: forall a. Lens' (Filter a) ChainCursor
 _fromBlock = lens (\(Filter f) -> f.fromBlock)
@@ -437,7 +422,7 @@ _toBlock = lens (\(Filter f) -> f.toBlock)
           (\(Filter f) b -> Filter $ f {toBlock = b})
 
 -- | Used by the ethereum client to identify the filter you are querying
-newtype FilterId = FilterId HexString
+newtype FilterId = FilterId BigNumber
 
 derive instance genericFilterId :: Generic FilterId _
 
@@ -480,9 +465,10 @@ instance eqEventAction :: Eq EventAction where
 -- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
 -- | and 'eth_getFilterLogs'
 newtype Change = Change
-  { logIndex         :: HexString
-  , transactionIndex :: HexString
+  { logIndex         :: BigNumber
+  , transactionIndex :: BigNumber
   , transactionHash  :: HexString
+  , removed          :: Boolean
   , blockHash        :: HexString
   , blockNumber      :: BlockNumber
   , address          :: Address

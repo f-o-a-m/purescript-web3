@@ -2,6 +2,8 @@ language: node_js
 dist: trusty
 sudo: required
 node_js: stable
+services:
+  - docker
 install:
   - npm install -g bower
   - npm install
@@ -9,6 +11,8 @@ script:
   - bower install --production
   - npm run -s build
   - bower install
+  - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:latest
+  - sleep 10
   - npm -s test
 after_success:
 - >-
