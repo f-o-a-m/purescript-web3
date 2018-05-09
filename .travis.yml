@@ -11,7 +11,7 @@ script:
   - bower install --production
   - npm run -s build
   - bower install
-  - docker run -d -p 8545:8545 foamspace/cliquebait:latest
+  - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:latest
   - sleep 10
   - npm -s test
 after_success:
