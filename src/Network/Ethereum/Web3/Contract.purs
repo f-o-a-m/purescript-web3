@@ -121,7 +121,7 @@ _sendTransaction :: forall a u rep e selector .
                  -> Web3 e HexString
 _sendTransaction txOptions dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
-    eth_sendTransaction <<< txdata $ sel <> (genericABIEncode <<< untagged $ dat)
+    eth_sendTransaction $ txdata $ sel <> (genericABIEncode <<< untagged $ dat)
   where
     txdata d = txOptions # _data .~ Just d
                          # _value %~ map convert

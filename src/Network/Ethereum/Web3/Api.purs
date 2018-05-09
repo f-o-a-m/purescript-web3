@@ -1,20 +1,21 @@
 module Network.Ethereum.Web3.Api where
 
+import Data.Maybe (Maybe, fromMaybe)
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Types (Address, HexString, BigNumber)
 import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
 import Type.Data.Boolean (kind Boolean)
 
 -- | Returns current node version string.
-web3_clientVersion :: forall e . Web3 e String
+web3_clientVersion :: forall e . Partial => Web3 e String
 web3_clientVersion = remote "web3_clientVersion"
 
 -- | Returns Keccak-256 (*not* the standardized SHA3-256) of the given data.
-web3_sha3 :: forall e. HexString -> Web3 e HexString
+web3_sha3 :: forall e. Partial => HexString -> Web3 e HexString
 web3_sha3 hexInput = remote "web3_sha3" hexInput
 
 -- | Get the network id that the node is listening to.
-net_version :: forall e . Web3 e BigNumber
+net_version :: forall e . Web3 e String
 net_version = remote "net_version"
 
 -- | Returns `true`` if client is actively listening for network connections
@@ -73,8 +74,6 @@ eth_getBlockTransactionCountByHash blockHash = remote "eth_getBlockTransactionCo
 eth_getBlockTransactionCountByNumber :: forall e. ChainCursor -> Web3 e BigNumber
 eth_getBlockTransactionCountByNumber cm = remote "eth_getBlockTransactionCountByNumber" cm
 
--- TODO - is it appropriate for these to be Ints?
-
 -- | Returns the number of uncles in a block from a block matching the given block hash
 eth_getUncleCountByBlockHash :: forall e. HexString -> Web3 e BigNumber
 eth_getUncleCountByBlockHash blockNumber = remote "eth_getUncleCountByBlockHash" blockNumber
@@ -87,19 +86,13 @@ eth_getUncleCountByBlockNumber cm = remote "eth_getUncleCountByBlockNumber" cm
 eth_getCode :: forall e. Address -> ChainCursor -> Web3 e HexString
 eth_getCode addr cm = remote "eth_getCode" addr cm
 
--- | The sign method calculates an Ethereum specific signature with: `sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)))`.
--- | By adding a prefix to the message makes the calculated signature recognisable as an Ethereum specific signature. This prevents misuse where a malicious DApp can sign arbitrary data (e.g. transaction) and use the signature to impersonate the victim.
--- | **Note** the address to sign with must be unlocked.
-eth_sign :: forall e. Warn "eth_sign is deprecated in favor of personal_sign" => Address -> HexString -> Web3 e HexString
-eth_sign addr msg = remote "eth_sign" addr msg
-
 -- | Creates new message call transaction or a contract creation for signed transactions
 eth_sendRawTransaction :: forall e. HexString -> Web3 e HexString
 eth_sendRawTransaction rawTx = remote "eth_sendRawTransaction" rawTx
 
 -- | Makes a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas.
-eth_estimateGas :: forall e. TransactionOptions Wei -> ChainCursor -> Web3 e BigNumber
-eth_estimateGas txOpts cm = remote "eth_estimateGas" txOpts cm
+eth_estimateGas :: forall e. TransactionOptions Wei -> Web3 e BigNumber
+eth_estimateGas txOpts = remote "eth_estimateGas" txOpts
 
 -- | Returns information about a transaction by block hash and transaction index position.
 eth_getTransactionByBlockHashAndIndex :: forall e. HexString -> BigNumber -> Web3 e Transaction
@@ -122,13 +115,8 @@ eth_getUncleByBlockNumberAndIndex :: forall e. ChainCursor -> BigNumber -> Web3 
 eth_getUncleByBlockNumberAndIndex cm uncleIndex = remote "eth_getUncleByBlockNumberAndIndex" cm uncleIndex
 
 -- | Returns a list of available compilers in the client.
-eth_getCompilers :: forall e. Web3 e (Array String)
+eth_getCompilers :: forall e. Partial => Web3 e (Array String)
 eth_getCompilers = remote "eth_getCompilers"
-
--- TODO: As the ABI is returned decoding this isn't trivial - not going to implement without a need
--- -- | Returns compiled solidity code.
--- eth_compileSolidity :: forall e. String -> Web3 e HexString
--- eth_compileSolidity code = remote "eth_compileSolidity"
 
 -- | Returns information about a block by number.
 eth_getBlockByNumber :: forall e . ChainCursor -> Web3 e Block
@@ -181,9 +169,9 @@ eth_uninstallFilter :: forall e . FilterId -> Web3 e Boolean
 eth_uninstallFilter fid = remote "eth_uninstallFilter" fid
 
 -- | Sign a message with the given address, returning the signature.
-personal_sign :: forall e . HexString -> Address -> Web3 e HexString
-personal_sign _data signer = remote "personal_sign" _data signer
+personal_sign :: forall e . HexString -> Address -> Maybe String -> Web3 e HexString
+personal_sign _data signer password = remote "personal_sign" _data signer (fromMaybe "" password)
 
--- | Recover the address that signed the message.
+-- | Recover the address that signed the message from (1) the message and (2) the signature
 personal_ecRecover :: forall e . HexString -> HexString -> Web3 e Address
 personal_ecRecover _data sig = remote "personal_ecRecover" _data sig

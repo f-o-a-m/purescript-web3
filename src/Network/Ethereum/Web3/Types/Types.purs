@@ -422,7 +422,7 @@ _toBlock = lens (\(Filter f) -> f.toBlock)
           (\(Filter f) b -> Filter $ f {toBlock = b})
 
 -- | Used by the ethereum client to identify the filter you are querying
-newtype FilterId = FilterId HexString
+newtype FilterId = FilterId BigNumber
 
 derive instance genericFilterId :: Generic FilterId _
 
@@ -465,9 +465,10 @@ instance eqEventAction :: Eq EventAction where
 -- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
 -- | and 'eth_getFilterLogs'
 newtype Change = Change
-  { logIndex         :: HexString
-  , transactionIndex :: HexString
+  { logIndex         :: BigNumber
+  , transactionIndex :: BigNumber
   , transactionHash  :: HexString
+  , removed          :: Boolean
   , blockHash        :: HexString
   , blockNumber      :: BlockNumber
   , address          :: Address
