@@ -79,6 +79,7 @@ import Network.Ethereum.Web3.Types.Provider (Provider)
 
 newtype BlockNumber = BlockNumber BigNumber
 
+derive instance genericBlockNumber :: Generic BlockNumber _
 derive newtype instance showBlockNumber :: Show BlockNumber
 derive newtype instance eqBlockNumber :: Eq BlockNumber
 derive newtype instance ordBlockNumber :: Ord BlockNumber
