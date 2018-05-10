@@ -56,6 +56,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
+import Data.Argonaut as A
 import Data.Either (Either(..))
 import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
@@ -72,6 +73,7 @@ import Data.Ordering (invert)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
 import Network.Ethereum.Web3.Types.Provider (Provider)
+import Simple.JSON (class ReadForeign, class WriteForeign)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -86,6 +88,18 @@ derive newtype instance ordBlockNumber :: Ord BlockNumber
 derive newtype instance decodeBlockNumber :: Decode BlockNumber
 derive newtype instance encodeBlockNumber :: Encode BlockNumber
 derive instance newtypeBlockNumber :: Newtype BlockNumber _
+
+instance encodeJsonBlockNumber :: A.EncodeJson BlockNumber where
+  encodeJson (BlockNumber bn) = A.encodeJson bn
+
+instance decodeJsonBlockNumber :: A.DecodeJson BlockNumber where
+  decodeJson = map BlockNumber <<< A.decodeJson
+
+instance readFHexString :: ReadForeign BlockNumber where
+  readImpl = map BlockNumber <<< decode
+
+instance writeFHexString :: WriteForeign BlockNumber where
+  writeImpl (BlockNumber bn) = encode bn
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data ChainCursor =
