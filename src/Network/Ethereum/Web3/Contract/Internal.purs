@@ -27,7 +27,7 @@ import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
 import Type.Row (class RowLacks)
 import Network.Ethereum.Core.BigNumber (embed)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges, eth_uninstallFilter)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
 
@@ -62,7 +62,6 @@ pollFilter filterId stop = producer $ do
   bn <- eth_blockNumber
   if BN bn > stop
      then do
-       _ <- eth_uninstallFilter filterId
        pure <<< Right $ bn
      else do
        liftAff $ delay (Milliseconds 1000.0)

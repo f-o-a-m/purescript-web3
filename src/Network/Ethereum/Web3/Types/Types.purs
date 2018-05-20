@@ -46,34 +46,36 @@ import Prelude
 
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
-import Control.Monad.Aff (Aff, Fiber, ParAff, forkAff, liftEff')
+import Control.Error.Util (hush)
+import Control.Monad.Aff (Aff, Fiber, ParAff, attempt, forkAff, liftEff', message, throwError)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Eff.Class (class MonadEff)
 import Control.Monad.Eff.Exception (Error, throwException)
-import Control.Monad.Error.Class (class MonadThrow, catchError)
-import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
+import Control.Monad.Except (runExcept)
+import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
 import Data.Either (Either(..))
 import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
-import Data.Foreign.Generic (defaultOptions, genericDecode, genericEncode)
+import Data.Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
 import Data.Foreign.Index (readProp)
-import Data.Functor.Compose (Compose)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Lens (Lens', Lens, lens)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Simple.JSON (class ReadForeign, class WriteForeign)
+import Type.Row.Effect.Equality (class EffectRowEquals, effFrom, effTo) as ERE
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -327,31 +329,39 @@ foreign import data ETH :: Effect
 
 -- | A monad for asynchronous Web3 actions
 
-newtype Web3 e a = Web3 (ReaderT Provider (ExceptT Web3Error (Aff (eth :: ETH | e))) a)
+newtype Web3 e a = Web3 (ReaderT Provider (Aff (eth :: ETH | e)) a)
+
+
+unWeb3 :: forall eff. Web3 eff ~> ReaderT Provider (Aff (eth :: ETH | eff))
+unWeb3 (Web3 s) = s
 
 derive newtype instance functorWeb3 :: Functor (Web3 e)
-
 derive newtype instance applyWeb3 :: Apply (Web3 e)
-
 derive newtype instance applicativeWeb3 :: Applicative (Web3 e)
-
 derive newtype instance bindWeb3 :: Bind (Web3 e)
-
 derive newtype instance monadWeb3 :: Monad (Web3 e)
-
 derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 e)
-
-derive newtype instance monadAffWeb3 ∷ MonadAff (eth :: ETH | e) (Web3 e)
-
-derive newtype instance monadThrowWeb3 :: MonadThrow Web3Error (Web3 e)
-
+derive newtype instance monadAffWeb3 :: MonadAff (eth :: ETH | e) (Web3 e)
+derive newtype instance monadThrowWeb3 :: MonadThrow Error (Web3 e)
+derive newtype instance monadErrorWeb3 :: MonadError Error (Web3 e)
 derive newtype instance monadAskWeb3 :: MonadAsk Provider (Web3 e)
-
 derive newtype instance monadReaderWeb3 :: MonadReader Provider (Web3 e)
-
 derive newtype instance monadRecWeb3 :: MonadRec (Web3 e)
 
-newtype Web3Par e a = Web3Par (ReaderT Provider (Compose (ParAff (eth :: ETH | e)) (Either Web3Error)) a)
+instance monadForkWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadFork (Fiber eff) (Web3 eff') where
+  suspend = Web3 <<< map ERE.effFrom <<< MFork.suspend <<< unWeb3
+  fork = Web3 <<< map ERE.effFrom <<< MFork.fork <<< unWeb3
+  join = Web3 <<< lift <<< ERE.effTo <<< MFork.join
+
+instance monadKillWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadKill Error (Fiber eff) (Web3 eff') where
+  kill e = Web3 <<< ERE.effFrom <<< MFork.kill e <<< ERE.effTo
+
+instance monadBracketWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadBracket Error (Fiber eff) (Web3 eff') where
+  bracket acquire release run = Web3 $ MFork.bracket (unWeb3 acquire) (\c a -> unWeb3 (release c a)) (\a -> unWeb3 (run a))
+  uninterruptible = Web3 <<< MFork.uninterruptible <<< unWeb3
+  never = Web3 MFork.never
+
+newtype Web3Par e a = Web3Par (ReaderT Provider (ParAff (eth :: ETH | e)) a)
 
 derive newtype instance functorWeb3Par :: Functor (Web3Par e)
 
@@ -374,7 +384,17 @@ throwWeb3 = liftAff <<< liftEff' <<< throwException
 
 -- | Run an asynchronous `ETH` action
 runWeb3 :: forall e a . Provider -> Web3 e a -> Aff (eth :: ETH | e) (Either Web3Error a)
-runWeb3 p (Web3 action) = runExceptT (runReaderT action p)
+runWeb3 p (Web3 action) = attempt (runReaderT action p) >>= case _ of
+  Left err -> maybe (throwError err) (pure <<< Left) $ parseMsg $ message err
+  Right x -> pure $ Right x
+  where
+    -- NOTE: it's a bit hacky
+    -- for this to work, errors of type `Web3Error` should be converted to json
+    -- using `genericEncodeJSON defaultOptions` and then Error
+    -- should be created with json string as a message.
+    -- see Network.Ethereum.Web3.JsonRPC#asError
+    parseMsg :: String -> Maybe Web3Error
+    parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
 
 -- | Fork an asynchronous `ETH` action
 forkWeb3 :: forall e a .
@@ -598,6 +618,9 @@ instance eqRpcError :: Eq RpcError where
 
 instance decodeRpcError :: Decode RpcError where
   decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
+
+instance encodeRpcError :: Encode RpcError where
+  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
 data Web3Error =
     Rpc RpcError

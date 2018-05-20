@@ -14,6 +14,7 @@ import Prelude
 
 import Control.Coroutine (runProcess)
 import Control.Monad.Eff.Exception (error)
+import Control.Monad.Fork.Class (bracket)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
@@ -22,9 +23,9 @@ import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
-import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Core.Keccak256 (toSelector)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction)
+import Network.Ethereum.Types (Address, HexString)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Types (class EtherUnit, CallError(..), ChainCursor(..), Change, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
@@ -69,10 +70,12 @@ event' fltr w handler = do
               else pure startingBlock
     cursor -> mkBlockNumber cursor
   if fltr ^. _toBlock < BN pollingFromBlock
-     then pure unit
-     else do
-        filterId <- eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock
-        void <<< runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler
+    then pure unit
+    else do
+      bracket
+        (eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock)
+        (const $ void <<< eth_uninstallFilter)
+        (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
 
 
 --------------------------------------------------------------------------------

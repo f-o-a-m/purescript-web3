@@ -2,7 +2,7 @@ module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
 
-import Control.Monad.Aff (Aff, attempt)
+import Control.Monad.Aff (Aff, Error, attempt, error)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Aff.Compat (fromEffFnAff, EffFnAff)
 import Control.Monad.Error.Class (throwError)
@@ -12,6 +12,7 @@ import Data.Array ((:))
 import Data.Either (Either(..))
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (class Decode, class Encode, decode, encode)
+import Data.Foreign.Generic (defaultOptions, genericEncodeJSON)
 import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (ETH, MethodName, Request, Response(..), Web3, Web3Error(..), mkRequest)
 import Network.Ethereum.Web3.Types.Provider (Provider)
@@ -28,15 +29,20 @@ class Remote eff a | a -> eff where
 instance remoteBase :: (Decode a) => Remote eff (Web3 eff a) where
   remote_ f = do
     p <- ask
-    res' <- liftAff <<< attempt $ f p mempty
+    res' <- liftAff $ attempt $ f p mempty
     case res' of
-      Left uncheckedErr -> throwError <<< RemoteError $ show uncheckedErr
+      Left uncheckedErr -> throwError $ asError $ RemoteError $ show uncheckedErr
       Right res -> case runExcept $ decode res of
         -- case where we get either a known Web3Error or a foreign value
-        Left err -> throwError <<< ParserError $ show err
+        Left err -> throwError $ asError $ ParserError $ show err
         Right (Response r) -> case r of
-          Left err -> throwError err
+          Left err -> throwError $ asError err
           Right a -> pure a
+    where
+      -- NOTE: this is a bit hacky
+      -- see Network.Ethereum.Web3.Types.Types#parseMsg
+      asError :: Web3Error -> Error
+      asError e = error $ genericEncodeJSON defaultOptions e
 
 instance remoteInductive :: (Encode a, Remote eff b) => Remote eff (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)
