@@ -40,5 +40,8 @@ etherUnitTests =
       it "can format currencies correctly" do
         let n = mkValue (embed 1) :: Value Ether
             m = convert n :: Value Wei
+            -- making the loop shouldn't change the result
+            n' = convert m :: Value Ether
         formatValue n `shouldEqual` "1"
+        formatValue n' `shouldEqual` "1"
         formatValue m `shouldEqual` "1000000000000000000"
