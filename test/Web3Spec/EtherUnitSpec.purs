@@ -6,7 +6,7 @@ import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Module (mzeroL, (^*), (^+), (^-))
 import Network.Ethereum.Core.BigNumber (pow)
-import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromWei, mkValue)
+import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromWei, mkValue, formatValue)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -36,3 +36,12 @@ etherUnitTests =
 
         (noPay ^. _value) `shouldEqual` Nothing
         (opts ^. _value) `shouldEqual` (Just $ fromWei (embed 10 `pow` 18 ) :: Value Wei)
+
+      it "can format currencies correctly" do
+        let n = mkValue (embed 1) :: Value Ether
+            m = convert n :: Value Wei
+            -- making the loop shouldn't change the result
+            n' = convert m :: Value Ether
+        formatValue n `shouldEqual` "1"
+        formatValue n' `shouldEqual` "1"
+        formatValue m `shouldEqual` "1000000000000000000"

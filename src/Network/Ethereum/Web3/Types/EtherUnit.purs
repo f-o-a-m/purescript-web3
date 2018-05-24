@@ -4,6 +4,8 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , divider
   , name
   , convert
+  , formatValue
+  , mkValue
   , Wei
   , Babbage
   , Lovelace
@@ -14,7 +16,6 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , KEther
   , Value
   , NoPay
-  , mkValue
   ) where
 
 import Prelude
@@ -23,7 +24,7 @@ import Data.Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
 import Data.Module (class LeftModule, (^*))
 import Data.Monoid (class Monoid)
-import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber)
+import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
@@ -57,6 +58,9 @@ convert = fromWei <<< toWei
 class EtherUnitSpec a where
     divider :: Proxy a -> BigNumber
     name    :: Proxy a -> String
+
+formatValue :: forall a. EtherUnitSpec a => Value a -> String
+formatValue v = show $ toWei v `divide` divider (Proxy :: Proxy a)
 
 -- | Convert a big number into value, first using `floor` function to take the integer part
 mkValue :: forall a . EtherUnitSpec a => BigNumber -> Value a
