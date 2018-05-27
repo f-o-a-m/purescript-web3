@@ -19,6 +19,7 @@ To see an example project using all of the purescript-web3 tools and with thermi
 ## Build Instructions
 ```
 > npm install
+> bower install
 > npm run build
 > npm run test
 ```
