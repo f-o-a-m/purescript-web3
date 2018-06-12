@@ -72,8 +72,9 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
-import Network.Ethereum.Web3.Types.EtherUnit (class EtherUnit, NoPay, Value, Wei, convert)
+import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
+import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 import Type.Row.Effect.Equality (class EffectRowEquals, effFrom, effTo) as ERE
 
@@ -245,7 +246,7 @@ instance decodeTxReceipt :: Decode TransactionReceipt where
 newtype TransactionOptions u =
   TransactionOptions { from :: Maybe Address
                      , to :: Maybe Address
-                     , value :: Maybe (Value u)
+                     , value :: Maybe (Value (u ETHER))
                      , gas :: Maybe BigNumber
                      , gasPrice :: Maybe BigNumber
                      , data :: Maybe HexString
@@ -285,7 +286,7 @@ _data :: forall u. Lens' (TransactionOptions u) (Maybe HexString)
 _data = lens (\(TransactionOptions txOpt) -> txOpt.data)
            (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts {data = dat})
 
-_value :: forall u. EtherUnit (Value u) => Lens (TransactionOptions u) (TransactionOptions Wei) (Maybe (Value u)) (Maybe (Value Wei))
+_value :: forall u. TokenUnit (Value (u ETHER)) => Lens (TransactionOptions u) (TransactionOptions MinorUnit) (Maybe (Value (u ETHER))) (Maybe (Value Wei))
 _value = lens (\(TransactionOptions txOpt) -> txOpt.value)
            (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts {value = map convert val})
 

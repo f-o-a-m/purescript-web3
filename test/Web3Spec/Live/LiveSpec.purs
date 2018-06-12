@@ -10,7 +10,7 @@ import Data.Either (Either(..), isRight, fromRight)
 import Network.Ethereum.Core.BigNumber (parseBigNumber, decimal, BigNumber)
 import Network.Ethereum.Web3.Solidity (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
-import Network.Ethereum.Web3 (ETH, Block(..), ChainCursor(..), Web3, Provider, HexString, TransactionReceipt(..), runWeb3, mkHexString, defaultTransactionOptions, _from, _gas, _value, convert, fromWei, _to, event, forkWeb3, TransactionStatus(..), eventFilter, EventAction(..))
+import Network.Ethereum.Web3 (ETH, Block(..), ChainCursor(..), Web3, Provider, HexString, TransactionReceipt(..), runWeb3, mkHexString, defaultTransactionOptions, _from, _gas, _value, convert, fromMinorUnit, _to, event, forkWeb3, TransactionStatus(..), eventFilter, EventAction(..))
 import Network.Ethereum.Web3.Api as Api
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -133,7 +133,7 @@ liveSpec provider =
             receiver = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 1
             txOpts = defaultTransactionOptions # _from ?~ sender
                                                # _to ?~ receiver
-                                               # _value ?~ fromWei one
+                                               # _value ?~ fromMinorUnit one
         Api.eth_sendTransaction txOpts
       eRes `shouldSatisfy` isRight
       let txHash = unsafePartialBecause "Result was Right" $ fromRight eRes

@@ -28,7 +28,7 @@ import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
-import Network.Ethereum.Web3.Types (class EtherUnit, CallError(..), ChainCursor(..), Change, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ event' fltr w handler = do
 class TxMethod (selector :: Symbol) a where
     -- | Send a transaction for given contract 'Address', value and input data
     sendTx :: forall e u.
-              EtherUnit (Value u)
+              TokenUnit (Value (u ETHER))
            => IsSymbol selector
            => TransactionOptions u
            -> Tagged (SProxy selector) a
@@ -118,7 +118,7 @@ _sendTransaction :: forall a u rep e selector .
                     IsSymbol selector
                  => Generic a rep
                  => GenericABIEncode rep
-                 => EtherUnit (Value u)
+                 => TokenUnit (Value (u ETHER))
                  => TransactionOptions u
                  -> Tagged (SProxy selector) a
                  -> Web3 e HexString
