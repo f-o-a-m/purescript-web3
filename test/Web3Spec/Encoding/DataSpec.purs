@@ -12,10 +12,9 @@ import Data.Functor.Tagged (Tagged, tagged)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Network.Ethereum.Web3.Contract (sendTx)
 import Network.Ethereum.Core.Keccak256 (toSelector)
-import Network.Ethereum.Web3.Solidity.Generic (class RecordFieldsIso, class GenericABIEncode, genericFromRecordFields, genericABIEncode, class ArgsToRowListProxy)
+import Network.Ethereum.Web3.Solidity.Generic (class RecordFieldsIso, class GenericABIEncode, genericFromRecordFields, genericABIEncode)
 import Data.Generic.Rep (class Generic, Constructor)
 import Type.Proxy (Proxy(..))
-import Type.Row (class ListToRow)
 import Partial.Unsafe (unsafePartial)
 
 import Network.Ethereum.Web3.Solidity.AbiEncoding (toDataBuilder)
@@ -48,10 +47,8 @@ dataMaker
      IsSymbol selector
   => Generic a (Constructor name args)
   -- ^^ a ~ TupleN (Tagged s1 a1) (Tagged s2 a2) ...
-  => ArgsToRowListProxy args l
-  => ListToRow l fields
-  => GenericABIEncode (Constructor name args)
   => RecordFieldsIso args fields l
+  => GenericABIEncode (Constructor name args)
   => Proxy (Tagged (SProxy selector) a)
   -> Record fields
   -> HexString

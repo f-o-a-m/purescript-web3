@@ -203,7 +203,7 @@ instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy 
 instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
   argsToRowListProxy _ = RLProxy
 
-class RecordFieldsIso args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
+class ListToRow rowList fields <= RecordFieldsIso args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
   toRecordFields :: RLProxy rowList -> args -> Record fields
   fromRecordFields :: RLProxy rowList -> Record fields -> args
 
@@ -239,8 +239,6 @@ instance isoRecordInductive ::
 genericToRecordFields :: forall args fields l a name .
                          RecordFieldsIso args fields l
                       => Generic a (Constructor name args)
-                      => ArgsToRowListProxy args l
-                      => ListToRow l fields
                       => a
                       -> Record fields
 genericToRecordFields a =
@@ -250,8 +248,6 @@ genericToRecordFields a =
 genericFromRecordFields :: forall args fields l a name .
                          RecordFieldsIso args fields l
                       => Generic a (Constructor name args)
-                      => ArgsToRowListProxy args l
-                      => ListToRow l fields
                       => Record fields
                       -> a
 genericFromRecordFields r = to $ Constructor $ fromRecordFields (RLProxy :: RLProxy l) r
