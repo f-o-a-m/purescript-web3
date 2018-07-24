@@ -17,6 +17,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consumer, emit)
 import Data.Array (catMaybes, dropWhile, uncons)
 import Data.Either (Either(..))
+import Data.Identity (Identity)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
 import Data.Newtype (wrap, unwrap)
@@ -30,6 +31,8 @@ import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
+
+
 
 
 -- | `reduceEventStream` takes a handler and an initial state and attempts to run
@@ -148,9 +151,15 @@ class UncurryFields fields curried result | curried -> result fields where
 instance uncurryFieldsEmpty :: UncurryFields () (Web3 e b) (Web3 e b) where
   uncurryFields _ = id
 
+instance uncurryFieldsEmptyId :: UncurryFields () (Identity a) (Identity a) where
+  uncurryFields _ = id
+
 instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
   uncurryFields r f =
     let arg = (Record.get (SProxy :: SProxy s) r)
         before = Record.delete (SProxy :: SProxy s) r :: Record before
         partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
     in uncurryFields before partiallyApplied
+
+
+
