@@ -1,9 +1,10 @@
 module Network.Ethereum.Web3.Api where
 
 import Data.Maybe (Maybe, fromMaybe)
-import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Types (Address, HexString, BigNumber)
-import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3, Wei)
+import Network.Ethereum.Web3.JsonRPC (remote)
+import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
+import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit)
 import Type.Data.Boolean (kind Boolean)
 
 -- | Returns current node version string.
@@ -91,7 +92,7 @@ eth_sendRawTransaction :: forall e. HexString -> Web3 e HexString
 eth_sendRawTransaction rawTx = remote "eth_sendRawTransaction" rawTx
 
 -- | Makes a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas.
-eth_estimateGas :: forall e. TransactionOptions Wei -> Web3 e BigNumber
+eth_estimateGas :: forall e. TransactionOptions MinorUnit -> Web3 e BigNumber
 eth_estimateGas txOpts = remote "eth_estimateGas" txOpts
 
 -- | Returns information about a transaction by block hash and transaction index position.
@@ -135,7 +136,7 @@ eth_call :: forall e . TransactionOptions NoPay -> ChainCursor -> Web3 e HexStri
 eth_call opts cm = remote "eth_call" opts cm
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.
-eth_sendTransaction :: forall e . TransactionOptions Wei -> Web3 e HexString
+eth_sendTransaction :: forall e . TransactionOptions MinorUnit -> Web3 e HexString
 eth_sendTransaction opts = remote "eth_sendTransaction" opts
 
 -- | Get all account addresses registered at the `Provider`
