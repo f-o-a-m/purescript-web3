@@ -32,6 +32,8 @@ import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
 
 
+
+
 -- | `reduceEventStream` takes a handler and an initial state and attempts to run
 -- | the handler over the event stream. If the machine ends without a `TerminateEvent`
 -- | result, we return the current state. Otherwise we return `Nothing`.
