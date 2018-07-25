@@ -17,11 +17,10 @@ import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
 import Data.Record.Builder (build, merge)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, fromData)
-import Network.Ethereum.Web3.Solidity.Generic (class ArgsToRowListProxy, class GenericABIDecode, class ToRecordFields, genericFromData, genericToRecordFields)
+import Network.Ethereum.Web3.Solidity.Generic (class GenericABIDecode, class RecordFieldsIso, genericFromData, genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..))
 import Network.Ethereum.Types (HexString)
 import Type.Proxy (Proxy(..))
-import Type.Row (class ListToRow)
 
 --------------------------------------------------------------------------------
 -- Array Parsers
@@ -75,14 +74,10 @@ parseChange (Change change) anonymous = do
 
 
 combineChange :: forall aargs afields al a aname bargs bfields bl b bname c cfields.
-                 ToRecordFields aargs afields al
+                 RecordFieldsIso aargs afields al
               => Generic a (Constructor aname aargs)
-              => ArgsToRowListProxy aargs al
-              => ListToRow al afields
-              => ToRecordFields bargs bfields bl
+              => RecordFieldsIso bargs bfields bl
               => Generic b (Constructor bname bargs)
-              => ArgsToRowListProxy bargs bl
-              => ListToRow bl bfields
               => Union bfields afields cfields
               => Newtype c (Record cfields)
               => Event a b
@@ -94,15 +89,11 @@ class IndexedEvent a b c | c -> a b where
 
 decodeEventDef :: forall aargs afields al a aname bargs bfields bl b bname c cfields.
                ArrayParser aargs
-            => ToRecordFields aargs afields al
+            => RecordFieldsIso aargs afields al
             => Generic a (Constructor aname aargs)
-            => ArgsToRowListProxy aargs al
-            => ListToRow al afields
-            => ToRecordFields bargs bfields bl
+            => RecordFieldsIso bargs bfields bl
             => Generic b (Constructor bname bargs)
             => GenericABIDecode bargs
-            => ArgsToRowListProxy bargs bl
-            => ListToRow bl bfields
             => Union bfields afields cfields
             => Newtype c (Record cfields)
             => IndexedEvent a b c
@@ -117,15 +108,11 @@ class IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
   decodeEvent :: Change -> Maybe c
 
 instance defaultInstance :: ( ArrayParser aargs
-                            , ToRecordFields aargs afields al
+                            , RecordFieldsIso aargs afields al
                             , Generic a (Constructor aname aargs)
-                            , ArgsToRowListProxy aargs al
-                            , ListToRow al afields
-                            , ToRecordFields bargs bfields bl
+                            , RecordFieldsIso bargs bfields bl
                             , Generic b (Constructor bname bargs)
                             , GenericABIDecode bargs
-                            , ArgsToRowListProxy bargs bl
-                            , ListToRow bl bfields
                             , Union bfields afields cfields
                             , Newtype c (Record cfields)
                             , IndexedEvent a b c

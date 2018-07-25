@@ -8,6 +8,7 @@ module Network.Ethereum.Web3.Contract
  , class TxMethod
  , sendTx
  , deployContract
+ , mkDataField
  ) where
 
 import Prelude
@@ -18,7 +19,7 @@ import Control.Monad.Fork.Class (bracket)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
-import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
@@ -27,7 +28,7 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, genericABIEncode, genericFromData)
+import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
@@ -166,3 +167,18 @@ deployContract txOptions deployByteCode args =
   let txdata = txOptions # _data ?~ deployByteCode <> genericABIEncode (untagged args)
                          # _value %~ map convert
   in eth_sendTransaction txdata
+
+mkDataField
+  :: forall selector a name args fields l.
+     IsSymbol selector
+  => Generic a (Constructor name args)
+  => RecordFieldsIso args fields l
+  => GenericABIEncode (Constructor name args)
+  => Proxy (Tagged (SProxy selector) a)
+  -> Record fields
+  -> HexString
+mkDataField _ r =
+  let sig = reflectSymbol (SProxy :: SProxy selector)
+      sel = toSelector sig
+      args = genericFromRecordFields r :: a
+  in sel <> (genericABIEncode args)

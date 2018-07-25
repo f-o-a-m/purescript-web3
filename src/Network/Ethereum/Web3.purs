@@ -6,7 +6,7 @@ module Network.Ethereum.Web3
  , module Network.Ethereum.Web3.Types.Provider
  ) where
 
-import Network.Ethereum.Web3.Contract (class EventFilter, eventFilter, event, event', call, sendTx, deployContract)
+import Network.Ethereum.Web3.Contract (class EventFilter, eventFilter, event, event', call, sendTx, deployContract, mkDataField)
 import Network.Ethereum.Web3.Solidity
   ( D0, D1, D2, D3, D4, D5, D6, D7, D8, D9
   , type (:&), type (:%), DOne, DCons
