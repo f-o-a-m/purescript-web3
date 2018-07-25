@@ -1,7 +1,5 @@
 module Web3Spec.Encoding.DataSpec (dataMakerSpec) where
 
--- There is no test here, this just needs to compile
-
 import Prelude
 import Data.Maybe (fromJust)
 import Network.Ethereum.Web3.Solidity (UIntN, Tuple2, uIntNFromBigNumber)

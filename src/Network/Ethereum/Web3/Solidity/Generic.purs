@@ -185,14 +185,8 @@ dParser = do
 -- * Generator Helpers
 --------------------------------------------------------------------------------
 
-class RLProxyEquality (a :: RowList) (b :: RowList)
-
-instance rlproxyEqualityBase :: RLProxyEquality Nil Nil
-instance rlproxyEqualityInductive :: RLProxyEquality l1 l2 => RLProxyEquality (Cons s a l1) (Cons s a l2)
-
 class ArgsToRowListProxy args (l :: RowList) | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l
-
 
 instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where
   argsToRowListProxy _ = RLProxy
@@ -203,7 +197,7 @@ instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy 
 instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
   argsToRowListProxy _ = RLProxy
 
-class ListToRow rowList fields <= RecordFieldsIso args fields (rowList :: RowList) | args -> rowList, rowList -> args fields where
+class RecordFieldsIso args fields rowList | args -> rowList, rowList -> args fields where
   toRecordFields :: RLProxy rowList -> args -> Record fields
   fromRecordFields :: RLProxy rowList -> Record fields -> args
 
