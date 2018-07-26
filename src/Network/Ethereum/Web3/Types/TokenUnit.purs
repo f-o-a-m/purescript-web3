@@ -3,7 +3,7 @@ module Network.Ethereum.Web3.Types.TokenUnit
   , class TokenUnitSpec, divider
   , kind Token
   , kind TokenUnit
-  , ProxyTU
+  , ProxyTU(..)
   , Value
   , convert
   , formatValue
