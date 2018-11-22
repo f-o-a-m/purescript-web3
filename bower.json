@@ -22,7 +22,6 @@
     "purescript-foreign": "^5.0.0",
     "purescript-foreign-generic": "^7.0.0",
     "purescript-proxy": "^3.0.0",
-    "purescript-bytestrings": "safareli/purescript-bytestrings#compiler/0.12",
     "purescript-eth-core": "f-o-a-m/purescript-eth-core#compiler/0.12",
     "purescript-partial": "^2.0.0",
     "purescript-parsing": "^5.0.0",
@@ -33,7 +32,6 @@
     "purescript-free": "^5.0.0",
     "purescript-coroutines": "^5.0.0",
     "purescript-typelevel-prelude": "^3.0.0",
-    "purescript-modules": "TinkerTravel/purescript-modules#f6495e057d714cd7730c0b52ee8b35ad3471ff88",
     "purescript-fork": "^4.0.0"
   },
   "devDependencies": {
