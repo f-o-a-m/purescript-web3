@@ -44,7 +44,6 @@ derive newtype instance showValue :: Show (Value a)
 derive newtype instance decodeValue ::  Decode (Value a)
 
 instance encodeNoPay :: Encode (Value (NoPay t)) where
-  -- why do we need this instance?
   encode _ = encode (zero :: BigNumber)
 else instance encodeValue :: Encode (Value a) where
   encode (Value x) = encode x
