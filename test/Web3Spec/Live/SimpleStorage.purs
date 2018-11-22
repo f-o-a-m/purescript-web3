@@ -33,7 +33,7 @@ deployBytecode = unsafePartialBecause "This bytecode was copied and pasted from 
 
 type CountFn = Tagged (SProxy "count()") (Tuple0 )
 
-count :: forall e. TransactionOptions NoPay -> ChainCursor -> Web3 (Either CallError (UIntN (D2 :& D5 :& DOne D6)))
+count :: TransactionOptions NoPay -> ChainCursor -> Web3 (Either CallError (UIntN (D2 :& D5 :& DOne D6)))
 count x0 cm = map unTuple1 <$> call x0 cm ((tagged $ Tuple0 ) :: CountFn)
 
 --------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ count x0 cm = map unTuple1 <$> call x0 cm ((tagged $ Tuple0 ) :: CountFn)
 
 type SetCountFn = Tagged (SProxy "setCount(uint256)") (Tuple1 (UIntN (D2 :& D5 :& DOne D6)))
 
-setCount :: forall e. TransactionOptions NoPay -> { _count :: (UIntN (D2 :& D5 :& DOne D6)) } -> Web3 HexString
+setCount :: TransactionOptions NoPay -> { _count :: (UIntN (D2 :& D5 :& DOne D6)) } -> Web3 HexString
 setCount x0 r = uncurryFields  r $ setCount' x0
    where
     setCount' :: TransactionOptions NoPay -> Tagged (SProxy "_count") (UIntN (D2 :& D5 :& DOne D6)) -> Web3 HexString
@@ -56,7 +56,7 @@ setCount x0 r = uncurryFields  r $ setCount' x0
 
 type ConstructorFn = Tagged (SProxy "constructor()") (Tuple0 )
 
-constructor :: forall e. TransactionOptions NoPay -> HexString -> Web3 HexString
+constructor :: TransactionOptions NoPay -> HexString -> Web3 HexString
 constructor x0 bc = deployContract x0 bc ((tagged $ Tuple0 ) :: ConstructorFn)
 
 --------------------------------------------------------------------------------

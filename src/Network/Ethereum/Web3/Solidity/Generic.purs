@@ -26,7 +26,6 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
-import Data.Monoid (mempty)
 import Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)

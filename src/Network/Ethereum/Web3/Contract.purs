@@ -22,7 +22,6 @@ import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
-import Data.Monoid (mempty)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
@@ -41,7 +40,7 @@ class EventFilter a where
     eventFilter :: Proxy a -> Address -> Filter a
 
 -- | run `event'` one block at a time.
-event :: forall e a i ni.
+event :: forall a i ni.
          DecodeEvent i ni a
       => Filter a
       -> (a -> ReaderT Change Web3 EventAction)
@@ -52,7 +51,7 @@ event fltr handler = event' fltr zero handler
 -- | Takes a `Filter` and a handler, as well as a windowSize.
 -- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
 -- | `TerminateEvent` is thrown, it then transitions to polling.
-event' :: forall e a i ni.
+event' :: forall a i ni.
           DecodeEvent i ni a
        => Filter a
        -> Int
@@ -87,7 +86,7 @@ event' fltr w handler = do
 -- | of a transaction with this value as the payload.
 class TxMethod (selector :: Symbol) a where
     -- | Send a transaction for given contract 'Address', value and input data
-    sendTx :: forall e u.
+    sendTx :: forall u.
               TokenUnit (Value (u ETHER))
            => IsSymbol selector
            => TransactionOptions u
@@ -98,8 +97,7 @@ class TxMethod (selector :: Symbol) a where
 
 class CallMethod (selector :: Symbol) a b where
     -- | Constant call given contract 'Address' in mode and given input data
-    call :: forall e.
-            IsSymbol selector
+    call :: IsSymbol selector
          => TransactionOptions NoPay
          -- ^ TransactionOptions
          -> ChainCursor
@@ -115,7 +113,7 @@ instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod 
 instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
   call = _call
 
-_sendTransaction :: forall a u rep e selector .
+_sendTransaction :: forall a u rep selector .
                     IsSymbol selector
                  => Generic a rep
                  => GenericABIEncode rep
@@ -130,7 +128,7 @@ _sendTransaction txOptions dat = do
     txdata d = txOptions # _data .~ Just d
                          # _value %~ map convert
 
-_call :: forall a arep b brep e selector .
+_call :: forall a arep b brep selector .
          IsSymbol selector
       => Generic a arep
       => GenericABIEncode arep
@@ -156,7 +154,7 @@ _call txOptions cursor dat = do
   where
     txdata d  = txOptions # _data .~ Just d
 
-deployContract :: forall a rep e t.
+deployContract :: forall a rep t.
                     Generic a rep
                  => GenericABIEncode rep
                  => TransactionOptions NoPay

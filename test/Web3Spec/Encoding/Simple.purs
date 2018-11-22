@@ -28,7 +28,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
 
-encodingSimpleSpec :: forall r . Spec Unit
+encodingSimpleSpec :: Spec Unit
 encodingSimpleSpec = describe "encoding-spec" do
   stringTests
   bytesDTests

@@ -13,7 +13,6 @@ import Data.Either (Either(..))
 import Foreign (Foreign)
 import Foreign.Class (class Decode, class Encode, decode, encode)
 import Foreign.Generic (defaultOptions, genericEncodeJSON)
-import Data.Monoid (mempty)
 import Network.Ethereum.Web3.Types (MethodName, Request, Response(..), Web3, Web3Error(..), mkRequest)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 
