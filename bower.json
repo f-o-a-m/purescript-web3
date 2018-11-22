@@ -16,28 +16,29 @@
     "!src/**/*"
   ],
   "dependencies": {
-    "purescript-errors": "^3.0.0",
-    "purescript-profunctor-lenses": "^3.8.0",
-    "purescript-foreign": "^4.0.1",
-    "purescript-foreign-generic": "^6.0.0",
-    "purescript-proxy": "^2.1.0",
-    "purescript-bytestrings": "^6.0.0",
-    "purescript-eth-core": "^v2.0.0",
-    "purescript-partial": "^1.2.1",
-    "purescript-parsing": "^4.3.1",
-    "purescript-transformers": "^3.6.0",
-    "purescript-identity": "^3.1.0",
-    "purescript-aff": "^4.1.0",
-    "purescript-tagged": "^2.0.0",
-    "purescript-free": "^4.3.0",
-    "purescript-coroutines": "^4.0.0",
-    "purescript-typelevel-prelude": "^2.7.0",
-    "purescript-modules": "^3.0.0",
-    "purescript-fork": "^3.0.0"
+    "purescript-errors": "^4.0.0",
+    "purescript-avar": "^3.0.0",
+    "purescript-profunctor-lenses": "^4.0.0",
+    "purescript-foreign": "^5.0.0",
+    "purescript-foreign-generic": "^7.0.0",
+    "purescript-proxy": "^3.0.0",
+    "purescript-bytestrings": "safareli/purescript-bytestrings#compiler/0.12",
+    "purescript-eth-core": "f-o-a-m/purescript-eth-core#compiler/0.12",
+    "purescript-partial": "^2.0.0",
+    "purescript-parsing": "^5.0.0",
+    "purescript-transformers": "^4.0.0",
+    "purescript-identity": "^4.0.0",
+    "purescript-aff": "^5.0.0",
+    "purescript-tagged": "^3.0.0",
+    "purescript-free": "^5.0.0",
+    "purescript-coroutines": "^5.0.0",
+    "purescript-typelevel-prelude": "^3.0.0",
+    "purescript-modules": "TinkerTravel/purescript-modules#f6495e057d714cd7730c0b52ee8b35ad3471ff88",
+    "purescript-fork": "^4.0.0"
   },
   "devDependencies": {
-    "purescript-debug": "v3.0.0",
-    "purescript-spec": "v2.0.0",
-    "purescript-psci-support": "v3.0.0"
+    "purescript-debug": "^4.0.0",
+    "purescript-spec": "^3.0.0",
+    "purescript-psci-support": "^4.0.0"
   }
 }

@@ -3,15 +3,14 @@ module Web3Spec.Encoding.Simple (encodingSimpleSpec) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff, error, throwError)
-import Control.Monad.Eff.Console (CONSOLE)
+import Effect.Aff (Aff, error, throwError)
 import Control.Monad.Except (runExcept)
 import Data.Array (replicate)
 import Data.ByteString as BS
 import Data.Either (Either(Right), either)
 import Data.Foldable (intercalate)
-import Data.Foreign (ForeignError)
-import Data.Foreign.Generic (decodeJSON, defaultOptions)
+import Foreign (ForeignError)
+import Foreign.Generic (decodeJSON, defaultOptions)
 import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (unwrap)
@@ -29,7 +28,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
 
-encodingSimpleSpec :: forall r . Spec (console :: CONSOLE | r) Unit
+encodingSimpleSpec :: forall r . Spec Unit
 encodingSimpleSpec = describe "encoding-spec" do
   stringTests
   bytesDTests
@@ -41,12 +40,12 @@ encodingSimpleSpec = describe "encoding-spec" do
   falseOrObjectTests
   blockTests
 
-roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
+roundTrip :: forall a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Right decoded
 
-stringTests :: forall r . Spec r Unit
+stringTests:: Spec Unit
 stringTests =
     describe "string tests" do
 
@@ -97,7 +96,7 @@ stringTests =
         mkHexString "ff" `shouldNotEqual` mkHexString "aa"
 
 
-bytesDTests :: forall r . Spec r Unit
+bytesDTests:: Spec Unit
 bytesDTests =
     describe "bytesD tests" do
 
@@ -130,7 +129,7 @@ bytesDTests =
                                 <> "6461766500000000000000000000000000000000000000000000000000000000"
         roundTrip given expected
 
-bytesNTests :: forall r . Spec r Unit
+bytesNTests:: Spec Unit
 bytesNTests =
     describe "byteN tests" do
 
@@ -154,7 +153,7 @@ bytesNTests =
          roundTrip given expected
 
 
-intTests :: forall r . Spec r Unit
+intTests:: Spec Unit
 intTests =
     describe "int/uint tests" do
 
@@ -174,7 +173,7 @@ intTests =
          let expected = unsafePartial fromJust <<< mkHexString $ "000000000000000000000000000000000000000000000000000000003ade68b1"
          roundTrip given expected
 
-addressTests :: forall r . Spec r Unit
+addressTests:: Spec Unit
 addressTests =
     describe "addresses tests" do
 
@@ -183,7 +182,7 @@ addressTests =
          let expected = unsafePartial fromJust <<< mkHexString $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
          roundTrip given expected
 
-uintNTests :: forall r . Spec r Unit
+uintNTests:: Spec Unit
 uintNTests =
     describe "uint tests" do
 
@@ -203,7 +202,7 @@ uintNTests =
          let mgiven =  (uIntNFromBigNumber s248 $ (embed $ 2) `pow` 256 - one)
          mgiven `shouldEqual` Nothing
 
-intNTests :: forall r . Spec r Unit
+intNTests:: Spec Unit
 intNTests =
     describe "uint tests" do
 
@@ -228,7 +227,7 @@ intNTests =
          mgiven `shouldEqual` Nothing
 
 
-falseOrObjectTests :: forall r. Spec r Unit
+falseOrObjectTests :: Spec Unit
 falseOrObjectTests =
   describe "FalseOrObject tests" do
     let opts = defaultOptions { unwrapSingleConstructors = true }
@@ -242,7 +241,7 @@ falseOrObjectTests =
       decodedObj `shouldEqual` (Right $ FalseOrObject $ Just $ SyncStatus {startingBlock: embed 0, currentBlock: embed 1, highestBlock: embed 2})
 
 
-blockTests :: forall r. Spec (console :: CONSOLE | r) Unit
+blockTests :: Spec Unit
 blockTests =
   describe "Block decoding tests" do
     it "can decode normal blocks" do

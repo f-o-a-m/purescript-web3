@@ -1,13 +1,12 @@
 module Network.Ethereum.Web3.Types.Provider where
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Exception (EXCEPTION)
+import Effect (Effect)
 
 -- | Represents a connection to an ethereum client
 foreign import data Provider :: Type
 
--- | Produces reference to Metamas provider
-foreign import metamaskProvider :: forall e . Eff (exception :: EXCEPTION | e) Provider
+-- | Produces reference to Metamask provider
+foreign import metamaskProvider :: Effect Provider
 
 -- | Connect to an ethereum client at a given address, eg "http://localhost:8545"
-foreign import httpProvider :: forall e . String -> Eff e Provider
+foreign import httpProvider :: String -> Effect Provider

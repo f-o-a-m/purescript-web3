@@ -9,8 +9,8 @@ module Network.Ethereum.Web3.Contract.Internal
 
 import Prelude
 
-import Control.Monad.Aff (delay)
-import Control.Monad.Aff.Class (liftAff)
+import Effect.Aff (delay)
+import Effect.Aff.Class (liftAff)
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
@@ -20,12 +20,12 @@ import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
 import Data.Newtype (wrap, unwrap)
-import Data.Record as Record
+import Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
-import Type.Row (class RowLacks)
+import Type.Row as Row
 import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
@@ -55,11 +55,11 @@ reduceEventStream prod handler = eventRunner `pullFrom` prod
 -- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
 -- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
 -- | if ever. There is a minimum delay of 1 second between polls.
-pollFilter :: forall e a i ni .
+pollFilter :: forall a i ni .
               DecodeEvent i ni a
            => FilterId
            -> ChainCursor
-           -> Producer (Array (FilterChange a)) (Web3 e) BlockNumber
+           -> Producer (Array (FilterChange a)) (Web3) BlockNumber
 pollFilter filterId stop = producer $ do
   bn <- eth_blockNumber
   if BN bn > stop
@@ -108,10 +108,10 @@ type FilterStreamState a =
   , windowSize :: Int
   }
 
-logsStream :: forall e i ni a.
+logsStream :: forall i ni a.
               DecodeEvent i ni a
            => FilterStreamState a
-           -> Producer (Array (FilterChange a)) (Web3 e) BlockNumber
+           -> Producer (Array (FilterChange a)) Web3 BlockNumber
 logsStream currentState = do
     end <- lift <<< mkBlockNumber $ currentState.initialFilter ^. _toBlock
     if currentState.currentBlock > end
@@ -132,7 +132,7 @@ logsStream currentState = do
 
 
 -- | Coerce a 'ChainCursor' to an actual 'BlockNumber'.
-mkBlockNumber :: forall e . ChainCursor -> Web3 e BlockNumber
+mkBlockNumber :: ChainCursor -> Web3 BlockNumber
 mkBlockNumber bm = case bm of
   BN bn -> pure bn
   Earliest -> pure <<< wrap $ zero
@@ -147,10 +147,10 @@ mkBlockNumber bm = case bm of
 class UncurryFields fields curried result | curried -> result fields where
   uncurryFields :: Record fields -> curried -> result
 
-instance uncurryFieldsEmpty :: UncurryFields () (Web3 e b) (Web3 e b) where
-  uncurryFields _ = id
+instance uncurryFieldsEmpty :: UncurryFields () (Web3 b) (Web3 b) where
+  uncurryFields _ = identity
 
-instance uncurryFieldsInductive :: (IsSymbol s, RowCons s a before after, RowLacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
+instance uncurryFieldsInductive :: (IsSymbol s, Row.Cons s a before after, Row.Lacks s before, UncurryFields before f b) => UncurryFields after (Tagged (SProxy s) a -> f) b where
   uncurryFields r f =
     let arg = (Record.get (SProxy :: SProxy s) r)
         before = Record.delete (SProxy :: SProxy s) r :: Record before

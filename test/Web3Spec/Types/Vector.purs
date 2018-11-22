@@ -11,7 +11,7 @@ import Test.Spec (Spec, describe, it)
 import Unsafe.Coerce (unsafeCoerce)
 
 
-vectorSpec :: forall r . Spec r Unit
+vectorSpec:: Spec Unit
 vectorSpec = describe "Vector-spec" do
   it "spec module compiles" $ pure unit
 

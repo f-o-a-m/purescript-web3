@@ -14,7 +14,7 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Control.Monad.Eff.Exception (error)
+import Effect.Exception (error)
 import Control.Monad.Fork.Class (bracket)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
@@ -44,8 +44,8 @@ class EventFilter a where
 event :: forall e a i ni.
          DecodeEvent i ni a
       => Filter a
-      -> (a -> ReaderT Change (Web3 e) EventAction)
-      -> Web3 e Unit
+      -> (a -> ReaderT Change Web3 EventAction)
+      -> Web3 Unit
 event fltr handler = event' fltr zero handler
 
 
@@ -56,8 +56,8 @@ event' :: forall e a i ni.
           DecodeEvent i ni a
        => Filter a
        -> Int
-       -> (a -> ReaderT Change (Web3 e) EventAction)
-       -> Web3 e Unit
+       -> (a -> ReaderT Change Web3 EventAction)
+       -> Web3 Unit
 event' fltr w handler = do
   pollingFromBlock <- case fltr ^. _fromBlock of
     BN startingBlock -> do
@@ -93,7 +93,7 @@ class TxMethod (selector :: Symbol) a where
            => TransactionOptions u
            -> Tagged (SProxy selector) a
            -- ^ Method data
-           -> Web3 e HexString
+           -> Web3 HexString
            -- ^ 'Web3' wrapped tx hash
 
 class CallMethod (selector :: Symbol) a b where
@@ -106,7 +106,7 @@ class CallMethod (selector :: Symbol) a b where
          -- ^ State mode for constant call (latest or pending)
          -> Tagged (SProxy selector) a
          -- ^ Method data
-         -> Web3 e (Either CallError b)
+         -> Web3 (Either CallError b)
          -- ^ 'Web3' wrapped result
 
 instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod s a where
@@ -122,7 +122,7 @@ _sendTransaction :: forall a u rep e selector .
                  => TokenUnit (Value (u ETHER))
                  => TransactionOptions u
                  -> Tagged (SProxy selector) a
-                 -> Web3 e HexString
+                 -> Web3 HexString
 _sendTransaction txOptions dat = do
     let sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
     eth_sendTransaction $ txdata $ sel <> (genericABIEncode <<< untagged $ dat)
@@ -139,7 +139,7 @@ _call :: forall a arep b brep e selector .
       => TransactionOptions NoPay
       -> ChainCursor
       -> Tagged (SProxy selector) a
-      -> Web3 e (Either CallError b)
+      -> Web3 (Either CallError b)
 _call txOptions cursor dat = do
     let sig = reflectSymbol $ (SProxy :: SProxy selector)
         sel = toSelector sig
@@ -162,7 +162,7 @@ deployContract :: forall a rep e t.
                  => TransactionOptions NoPay
                  -> HexString
                  -> Tagged t a
-                 -> Web3 e HexString
+                 -> Web3 HexString
 deployContract txOptions deployByteCode args =
   let txdata = txOptions # _data ?~ deployByteCode <> genericABIEncode (untagged args)
                          # _value %~ map convert

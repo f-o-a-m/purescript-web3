@@ -10,7 +10,7 @@ import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-etherUnitTests :: forall r . Spec r Unit
+etherUnitTests:: Spec Unit
 etherUnitTests =
     describe "conversion tests" do
 

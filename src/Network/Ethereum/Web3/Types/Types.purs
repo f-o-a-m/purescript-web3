@@ -13,7 +13,6 @@ module Network.Ethereum.Web3.Types.Types
        , _value
        , _gas
        , _gasPrice
-       , ETH
        , _nonce
        , forkWeb3
        , forkWeb3'
@@ -47,11 +46,6 @@ import Prelude
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Error.Util (hush)
-import Control.Monad.Aff (Aff, Fiber, ParAff, attempt, forkAff, liftEff', message, throwError)
-import Control.Monad.Aff.Class (class MonadAff, liftAff)
-import Control.Monad.Eff (kind Effect)
-import Control.Monad.Eff.Class (class MonadEff)
-import Control.Monad.Eff.Exception (Error, throwException)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
@@ -60,10 +54,6 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
 import Data.Either (Either(..))
-import Data.Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
-import Data.Foreign.Class (class Decode, class Encode, decode, encode)
-import Data.Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
-import Data.Foreign.Index (readProp)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -71,12 +61,19 @@ import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
+import Effect.Aff (Aff, Fiber, ParAff, attempt, forkAff, message, throwError)
+import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Exception (Error, throwException)
+import Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
+import Foreign.Class (class Decode, class Encode, decode, encode)
+import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
+import Foreign.Index (readProp)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign)
-import Type.Row.Effect.Equality (class EffectRowEquals, effFrom, effTo) as ERE
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -326,65 +323,63 @@ instance showSyncStatus :: Show SyncStatus where
 -- * Web3
 --------------------------------------------------------------------------------
 
-foreign import data ETH :: Effect
-
 -- | A monad for asynchronous Web3 actions
 
-newtype Web3 e a = Web3 (ReaderT Provider (Aff (eth :: ETH | e)) a)
+newtype Web3 a = Web3 (ReaderT Provider Aff a)
 
 
-unWeb3 :: forall eff. Web3 eff ~> ReaderT Provider (Aff (eth :: ETH | eff))
+unWeb3 :: Web3 ~> ReaderT Provider Aff
 unWeb3 (Web3 s) = s
 
-derive newtype instance functorWeb3 :: Functor (Web3 e)
-derive newtype instance applyWeb3 :: Apply (Web3 e)
-derive newtype instance applicativeWeb3 :: Applicative (Web3 e)
-derive newtype instance bindWeb3 :: Bind (Web3 e)
-derive newtype instance monadWeb3 :: Monad (Web3 e)
-derive newtype instance monadEffWeb3 :: MonadEff (eth :: ETH | e) (Web3 e)
-derive newtype instance monadAffWeb3 :: MonadAff (eth :: ETH | e) (Web3 e)
-derive newtype instance monadThrowWeb3 :: MonadThrow Error (Web3 e)
-derive newtype instance monadErrorWeb3 :: MonadError Error (Web3 e)
-derive newtype instance monadAskWeb3 :: MonadAsk Provider (Web3 e)
-derive newtype instance monadReaderWeb3 :: MonadReader Provider (Web3 e)
-derive newtype instance monadRecWeb3 :: MonadRec (Web3 e)
+derive newtype instance functorWeb3 :: Functor Web3
+derive newtype instance applyWeb3 :: Apply Web3
+derive newtype instance applicativeWeb3 :: Applicative Web3
+derive newtype instance bindWeb3 :: Bind Web3
+derive newtype instance monadWeb3 :: Monad Web3
+derive newtype instance monadEffectWeb3 :: MonadEffect Web3
+derive newtype instance monadAffWeb3 :: MonadAff Web3
+derive newtype instance monadThrowWeb3 :: MonadThrow Error Web3
+derive newtype instance monadErrorWeb3 :: MonadError Error Web3
+derive newtype instance monadAskWeb3 :: MonadAsk Provider Web3
+derive newtype instance monadReaderWeb3 :: MonadReader Provider Web3
+derive newtype instance monadRecWeb3 :: MonadRec Web3
 
-instance monadForkWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadFork (Fiber eff) (Web3 eff') where
-  suspend = Web3 <<< map ERE.effFrom <<< MFork.suspend <<< unWeb3
-  fork = Web3 <<< map ERE.effFrom <<< MFork.fork <<< unWeb3
-  join = Web3 <<< lift <<< ERE.effTo <<< MFork.join
+instance monadForkWeb3 :: MFork.MonadFork Fiber Web3 where
+  suspend = Web3 <<< MFork.suspend <<< unWeb3
+  fork = Web3 <<< MFork.fork <<< unWeb3
+  join = Web3 <<< lift <<< MFork.join
 
-instance monadKillWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadKill Error (Fiber eff) (Web3 eff') where
-  kill e = Web3 <<< ERE.effFrom <<< MFork.kill e <<< ERE.effTo
+instance monadKillWeb3 :: MFork.MonadKill Error Fiber Web3 where
+  kill e = Web3 <<< MFork.kill e
 
-instance monadBracketWeb3 :: ERE.EffectRowEquals eff (eth :: ETH | eff') => MFork.MonadBracket Error (Fiber eff) (Web3 eff') where
+instance monadBracketWeb3 :: MFork.MonadBracket Error Fiber Web3 where
   bracket acquire release run = Web3 $ MFork.bracket (unWeb3 acquire) (\c a -> unWeb3 (release c a)) (\a -> unWeb3 (run a))
   uninterruptible = Web3 <<< MFork.uninterruptible <<< unWeb3
   never = Web3 MFork.never
 
-newtype Web3Par e a = Web3Par (ReaderT Provider (ParAff (eth :: ETH | e)) a)
+newtype Web3Par a = Web3Par (ReaderT Provider ParAff a)
 
-derive newtype instance functorWeb3Par :: Functor (Web3Par e)
+derive newtype instance functorWeb3Par :: Functor Web3Par
 
-derive newtype instance applyWeb3Par :: Apply (Web3Par e)
+derive newtype instance applyWeb3Par :: Apply Web3Par
 
-derive newtype instance applicativeWeb3Par :: Applicative (Web3Par e)
+derive newtype instance applicativeWeb3Par :: Applicative Web3Par
 
-instance monadParWeb3 :: Parallel (Web3Par e) (Web3 e) where
+instance monadParWeb3 :: Parallel Web3Par Web3 where
   parallel (Web3 m) = Web3Par (parallel m)
   sequential (Web3Par m) = Web3 (sequential m)
 
-derive newtype instance altParWeb3 :: Alt (Web3Par e)
+derive newtype instance altParWeb3 :: Alt Web3Par
 
-derive newtype instance plusParWeb3 :: Plus (Web3Par e)
+derive newtype instance plusParWeb3 :: Plus Web3Par
 
-derive newtype instance alternativeParWeb3 :: Alternative (Web3Par e)
+derive newtype instance alternativeParWeb3 :: Alternative Web3Par
 
-throwWeb3 :: forall e a. Error -> Web3 e a
-throwWeb3 = liftAff <<< liftEff' <<< throwException
+throwWeb3 :: forall a. Error -> Web3 a
+throwWeb3 = liftEffect <<< throwException
 
 -- | Run an asynchronous `ETH` action
-runWeb3 :: forall e a . Provider -> Web3 e a -> Aff (eth :: ETH | e) (Either Web3Error a)
+runWeb3 :: forall a . Provider -> Web3 a -> Aff (Either Web3Error a)
 runWeb3 p (Web3 action) = attempt (runReaderT action p) >>= case _ of
   Left err -> maybe (throwError err) (pure <<< Left) $ parseMsg $ message err
   Right x -> pure $ Right x
@@ -398,14 +393,14 @@ runWeb3 p (Web3 action) = attempt (runReaderT action p) >>= case _ of
     parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
 
 -- | Fork an asynchronous `ETH` action
-forkWeb3 :: forall e a .
+forkWeb3 :: forall a .
             Provider
-         -> Web3 e a
-         -> Aff (eth :: ETH | e) (Fiber (eth :: ETH | e) (Either Web3Error a))
+         -> Web3 a
+         -> Aff (Fiber (Either Web3Error a))
 forkWeb3 p = forkAff <<< runWeb3 p
 
 -- | Fork an asynchronous `ETH` action inside Web3 monad
-forkWeb3' :: forall e a. Web3 e a -> Web3 e (Fiber (eth :: ETH | e) (Either Web3Error a))
+forkWeb3' :: forall a. Web3 a -> Web3 (Fiber (Either Web3Error a))
 forkWeb3' web3Action = do
   p <- ask
   liftAff $ forkWeb3 p web3Action

@@ -21,10 +21,9 @@ module Network.Ethereum.Web3.Types.TokenUnit
 
 import Prelude
 
-import Data.Foreign.Class (class Decode, class Encode, encode)
+import Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
 import Data.Module (class LeftModule, (^*))
-import Data.Monoid (class Monoid)
 import Data.String (joinWith)
 import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
@@ -44,11 +43,11 @@ derive newtype instance showValue :: Show (Value a)
 
 derive newtype instance decodeValue ::  Decode (Value a)
 
-derive newtype instance encodeValue ::  Encode (Value a)
-
--- why do we need this instance?
 instance encodeNoPay :: Encode (Value (NoPay t)) where
-  encode _ = encode (Value zero)
+  -- why do we need this instance?
+  encode _ = encode (zero :: BigNumber)
+else instance encodeValue :: Encode (Value a) where
+  encode (Value x) = encode x
 
 instance semigroupTokenUnitSpec :: TokenUnitSpec a => Semigroup (Value a) where
   append a b = Value (unValue a `add` unValue b)
