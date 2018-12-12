@@ -23,7 +23,7 @@ import Prelude
 
 import Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
-import Data.Module (class LeftModule, (^*))
+import Data.Ring.Module (class LeftModule, (^*))
 import Data.String (joinWith)
 import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
