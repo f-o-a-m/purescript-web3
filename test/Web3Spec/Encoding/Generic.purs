@@ -11,7 +11,7 @@ import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
-import Data.Record.Builder (build, merge)
+import Record.Builder (build, merge)
 import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
@@ -22,12 +22,12 @@ import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-encodingGenericSpec :: forall r . Spec r Unit
+encodingGenericSpec:: Spec Unit
 encodingGenericSpec = describe "encoding-spec for generics" do
   toRecordFieldsSpec
 
 
-toRecordFieldsSpec :: forall r . Spec r Unit
+toRecordFieldsSpec:: Spec Unit
 toRecordFieldsSpec =
     describe "test ToRecordFields class" do
       it "pass toRecordFields basic test" do

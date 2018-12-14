@@ -2,9 +2,9 @@ module Web3Spec.Contract  where
 
 import Prelude
 
-import Control.Monad.Aff (Fiber)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, logShow)
+import Effect.Aff (Fiber)
+import Effect.Class (liftEffect)
+import Effect.Console (logShow)
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
@@ -14,7 +14,7 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), ETH, EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
+import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:%), type (:&), DOne, D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -57,19 +57,19 @@ instance eventFilterCountSet :: EventFilter CountSet where
 
 -- this is the application code
 
-setA :: forall e. IntN (D2 :& D5 :% D6) -> Web3 e HexString
+setA :: IntN (D2 :& D5 :% D6) -> Web3 HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
-countMonitor :: forall e. Web3 (console :: CONSOLE | e) (Fiber (eth :: ETH, console :: CONSOLE | e) (Either Web3Error Unit))
+countMonitor :: Web3 (Fiber (Either Web3Error Unit))
 countMonitor =
   let fltr = eventFilter (Proxy :: Proxy CountSet) ssAddress
                 # _fromBlock .~ (BN <<< wrap <<< embed $ 10)
                 # _toBlock .~ Latest
   in forkWeb3' $ event fltr \(CountSet cs) -> do
-    liftEff <<< logShow $ cs._count
+    liftEffect <<< logShow $ cs._count
     pure ContinueEvent
 
-simpleStorageSpec :: forall r. Spec (eth :: ETH, console :: CONSOLE | r) Unit
+simpleStorageSpec :: Spec Unit
 simpleStorageSpec =
   describe "Bounded event handlers" do
     it "can print the lifespan of a filter producing machine" do

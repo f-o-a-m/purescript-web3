@@ -1,31 +1,29 @@
 module Web3Spec.Live.LiveSpec where
 
 import Prelude
+
 import Data.Array ((!!))
-import Control.Monad.Aff (Aff, Milliseconds(..), delay)
-import Control.Monad.Aff.Console as C
-import Control.Monad.Aff.Class (liftAff)
-import Control.Monad.Aff.AVar (makeEmptyVar, putVar, takeVar, AVAR)
 import Data.Either (Either(..), isRight, fromRight)
+import Data.Lens ((?~), (%~))
+import Data.Maybe (Maybe(..), fromJust)
+import Data.Tuple (Tuple(..))
+import Effect.Aff.AVar as AVar
+import Effect.Aff (Aff, Milliseconds(..), delay)
+import Effect.Aff.Class (liftAff)
+import Effect.Class (liftEffect)
+import Effect.Console as C
 import Network.Ethereum.Core.BigNumber (parseBigNumber, decimal, BigNumber)
+import Network.Ethereum.Web3 (Block(..), ChainCursor(..), Web3, Provider, HexString, TransactionReceipt(..), runWeb3, mkHexString, defaultTransactionOptions, _from, _gas, _value, convert, fromMinorUnit, _to, event, forkWeb3, TransactionStatus(..), eventFilter, EventAction(..))
+import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
-import Network.Ethereum.Web3 (ETH, Block(..), ChainCursor(..), Web3, Provider, HexString, TransactionReceipt(..), runWeb3, mkHexString, defaultTransactionOptions, _from, _gas, _value, convert, fromMinorUnit, _to, event, forkWeb3, TransactionStatus(..), eventFilter, EventAction(..))
-import Network.Ethereum.Web3.Api as Api
+import Partial.Unsafe (unsafePartial, unsafePartialBecause)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
-import Partial.Unsafe (unsafePartial, unsafePartialBecause)
-import Data.Maybe (Maybe(..), fromJust)
-import Web3Spec.Live.SimpleStorage as SimpleStorage
-import Data.Lens ((?~), (%~))
-import Data.Tuple (Tuple(..))
 import Type.Proxy (Proxy(..))
+import Web3Spec.Live.SimpleStorage as SimpleStorage
 
-liveSpec
-  :: forall eff.
-     Provider
-  -> Spec (eth :: ETH, avar :: AVAR, console :: C.CONSOLE |eff) Unit
-
+liveSpec :: Provider -> Spec Unit
 liveSpec provider =
   describe "It should be able to test all the web3 endpoints live" do
 
@@ -148,7 +146,7 @@ liveSpec provider =
 
     it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" do
       let newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
-      eventVar <- makeEmptyVar
+      eventVar <-AVar.empty
       eRes <- runWeb3 provider deploySimpleStorage
       eRes `shouldSatisfy` isRight
       let txHash = unsafePartialBecause "Result was Right" $ fromRight eRes
@@ -157,8 +155,8 @@ liveSpec provider =
       let simpleStorageAddress = unsafePartialBecause "Contract deployment succeded" $ fromJust txReceipt.contractAddress
           fltr = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
       _ <- forkWeb3 provider $ event fltr \(SimpleStorage.CountSet {_count}) -> liftAff do
-        C.log $ "New Count Set: " <> show _count
-        putVar _count eventVar
+        liftEffect $ C.log $ "New Count Set: " <> show _count
+        AVar.put _count eventVar
         pure TerminateEvent
       let countSetOptions = defaultTransactionOptions
       _ <- runWeb3 provider do
@@ -168,8 +166,8 @@ liveSpec provider =
                                                # _to ?~ simpleStorageAddress
                                                # _gas ?~ bigGasLimit
         setCountHash <- SimpleStorage.setCount txOpts {_count: newCount}
-        liftAff $ C.log $ "Sumbitted count update transaction: " <> show setCountHash
-      n <- takeVar eventVar
+        liftEffect $ C.log $ "Sumbitted count update transaction: " <> show setCountHash
+      n <- AVar.take eventVar
       n `shouldEqual` newCount
       eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
       eRes' `shouldSatisfy` isRight
@@ -181,12 +179,12 @@ liveSpec provider =
 --------------------------------------------------------------------------------
 
 shouldSatisfy
-  :: forall e a.
+  :: forall a.
      Show a
   => Eq a
   => a
   -> (a -> Boolean)
-  -> Aff e Unit
+  -> Aff Unit
 shouldSatisfy a p =
   if p a then pure unit else fail $ "Predicate failed: " <> show a
 
@@ -201,10 +199,9 @@ bigGasLimit = unsafePartial fromJust $ parseBigNumber decimal "4712388"
 
 
 pollTransactionReceipt
-  :: forall eff.
-     HexString
+  :: HexString
   -> Provider
-  -> Aff (eth :: ETH | eff) TransactionReceipt
+  -> Aff TransactionReceipt
 pollTransactionReceipt txHash provider = do
   eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
   case eRes of
@@ -213,12 +210,12 @@ pollTransactionReceipt txHash provider = do
       pollTransactionReceipt txHash provider
     Right res -> pure res
 
-deploySimpleStorage :: forall e. Web3 (console :: C.CONSOLE | e) HexString
+deploySimpleStorage :: Web3 HexString
 deploySimpleStorage = do
   accounts <- Api.eth_getAccounts
   let sender = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
       txOpts = defaultTransactionOptions # _from ?~ sender
                                          # _gas ?~ bigGasLimit
   txHash <- SimpleStorage.constructor txOpts SimpleStorage.deployBytecode
-  liftAff $ C.log $ "Submitted SimpleStorage deployment: " <> show txHash
+  liftEffect $ C.log $ "Submitted SimpleStorage deployment: " <> show txHash
   pure txHash

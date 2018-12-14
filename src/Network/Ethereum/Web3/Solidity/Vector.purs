@@ -13,9 +13,8 @@ import Data.Array ((:))
 import Data.Array as A
 import Data.Foldable (class Foldable)
 import Data.Maybe (Maybe(..))
-import Data.Monoid (mempty)
 import Data.Traversable (class Traversable)
-import Data.Unfoldable (class Unfoldable)
+import Data.Unfoldable (class Unfoldable, class Unfoldable1)
 import Network.Ethereum.Web3.Solidity.Size (class Inc, class KnownSize, D0, DLProxy(DLProxy), DOne, sizeVal, kind DigitList)
 
 -- | Represents a statically sized vector of length `n`.
@@ -28,6 +27,7 @@ derive newtype instance eqVector :: Eq a => Eq (Vector n a)
 
 derive newtype instance functorVector :: Functor (Vector n)
 
+derive newtype instance unfoldable1Vector :: Unfoldable1 (Vector n)
 derive newtype instance unfoldableVector :: Unfoldable (Vector n)
 
 derive newtype instance foldableVector :: Foldable (Vector n)

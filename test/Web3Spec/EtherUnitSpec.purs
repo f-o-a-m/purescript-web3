@@ -4,13 +4,13 @@ import Prelude
 
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
-import Data.Module (mzeroL, (^*), (^+), (^-))
+import Data.Ring.Module (mzeroL, (^*), (^+), (^-))
 import Network.Ethereum.Core.BigNumber (pow)
 import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert, defaultTransactionOptions, embed, fromMinorUnit, mkValue, formatValue)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-etherUnitTests :: forall r . Spec r Unit
+etherUnitTests:: Spec Unit
 etherUnitTests =
     describe "conversion tests" do
 

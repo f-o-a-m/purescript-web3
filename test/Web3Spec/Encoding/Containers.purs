@@ -3,7 +3,7 @@ module Web3Spec.Encoding.Containers (encodingContainersSpec) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff)
+import Effect.Aff (Aff)
 import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
@@ -19,18 +19,18 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
-encodingContainersSpec :: forall r . Spec r Unit
+encodingContainersSpec:: Spec Unit
 encodingContainersSpec = describe "encoding-spec for containers" do
   staticArraysTests
   dynamicArraysTests
   tuplesTest
 
-roundTrip :: forall r a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff r Unit
+roundTrip :: forall a . Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff Unit
 roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Right decoded
 
-roundTripGeneric :: forall r a rep.
+roundTripGeneric :: forall a rep.
                     Show a
                  => Eq a
                  => Generic a rep
@@ -38,12 +38,12 @@ roundTripGeneric :: forall r a rep.
                  => GenericABIDecode rep
                  => a
                  -> HexString
-                 -> Aff r Unit
+                 -> Aff Unit
 roundTripGeneric decoded encoded = do
   encoded `shouldEqual` genericABIEncode decoded
   genericFromData encoded `shouldEqual` Right decoded
 
-staticArraysTests :: forall r . Spec r Unit
+staticArraysTests:: Spec Unit
 staticArraysTests =
     describe "statically sized array tests" do
 
@@ -76,7 +76,7 @@ staticArraysTests =
                                   <> "fb00000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
-dynamicArraysTests :: forall r . Spec r Unit
+dynamicArraysTests:: Spec Unit
 dynamicArraysTests =
     describe "dynamically sized array tests" do
 
@@ -88,7 +88,7 @@ dynamicArraysTests =
                                   <> "0000000000000000000000000000000000000000000000000000000000000000"
          roundTrip given expected
 
-tuplesTest :: forall r . Spec r Unit
+tuplesTest:: Spec Unit
 tuplesTest =
   describe "tuples test" do
 
