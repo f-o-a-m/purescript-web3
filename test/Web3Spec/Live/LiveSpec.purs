@@ -3,24 +3,30 @@ module Web3Spec.Live.LiveSpec where
 import Prelude
 
 import Data.Array ((!!))
+import Data.ByteString as BS
 import Data.Either (Either(..), isRight, fromRight)
 import Data.Lens ((?~), (%~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Tuple (Tuple(..))
-import Effect.Aff.AVar as AVar
 import Effect.Aff (Aff, Milliseconds(..), delay)
+import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
-import Effect.Console as C
+import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (parseBigNumber, decimal, BigNumber)
-import Network.Ethereum.Web3 (Block(..), ChainCursor(..), Web3, Provider, HexString, TransactionReceipt(..), runWeb3, mkHexString, defaultTransactionOptions, _from, _gas, _value, convert, fromMinorUnit, _to, event, forkWeb3, TransactionStatus(..), eventFilter, EventAction(..))
+import Network.Ethereum.Core.HexString as Hex
+import Network.Ethereum.Core.Keccak256 (keccak256)
+import Network.Ethereum.Core.Signatures as Sig
+import Network.Ethereum.Web3 (Block(..), ChainCursor(..), EventAction(..), HexString, Provider, TransactionReceipt(..), TransactionStatus(..), Web3, _from, _gas, _to, _value, convert, defaultTransactionOptions, event, eventFilter, forkWeb3, fromMinorUnit, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
+import Node.Buffer.Unsafe (slice)
 import Partial.Unsafe (unsafePartial, unsafePartialBecause)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Type.Proxy (Proxy(..))
+import Type.Quotient (mkQuotient, runQuotient)
 import Web3Spec.Live.SimpleStorage as SimpleStorage
 
 liveSpec :: Provider -> Spec Unit
@@ -108,17 +114,22 @@ liveSpec provider =
       eRes `shouldSatisfy` isRight
 
     -- TODO: validate this with eth-core lib
-    it "Can call personal_sign, personal_ecRecover" do
+    it "Can call personal_sign, personal_ecRecover, and they should coincide with eth-core" do
+      let msgBody = unsafePartial fromJust $ mkHexString "1234"
+          fullHashedMessageBS = keccak256 <<< makeRidiculousEthereumMessage $ msgBody
       eRes <- runWeb3 provider do
         accounts <- Api.eth_getAccounts
         let signer = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
-            msg = unsafePartial fromJust $ mkHexString "1234"
-        signature <- Api.personal_sign msg signer (Just "password123")
-        signer' <- Api.personal_ecRecover msg signature
-        pure $ Tuple signer signer'
+        signatureHex <- Api.personal_sign msgBody signer (Just "password123")
+        signer' <- Api.personal_ecRecover msgBody signatureHex
+        pure $ {signer, signer', signatureHex}
       eRes `shouldSatisfy` isRight
-      let Tuple signer signer' = unsafePartialBecause "Result was Right" $ fromRight eRes
+      let {signer, signer', signatureHex} = unsafePartialBecause "Result was Right" $ fromRight eRes
       signer `shouldEqual` signer'
+      -- make sure that we can recover the signature in purescript natively
+      let rsvSignature = case signatureFromByteString <<< Hex.toByteString $ signatureHex of
+                           Sig.Signature sig -> Sig.Signature sig {v = sig.v - 27}
+      Sig.publicToAddress (Sig.recoverSender fullHashedMessageBS rsvSignature) `shouldEqual` signer
 
     it "Can call eth_estimateGas" do
       eRes <- runWeb3 provider $ Api.eth_estimateGas (defaultTransactionOptions # _value %~ map convert)
@@ -219,3 +230,20 @@ deploySimpleStorage = do
   txHash <- SimpleStorage.constructor txOpts SimpleStorage.deployBytecode
   liftEffect $ C.log $ "Submitted SimpleStorage deployment: " <> show txHash
   pure txHash
+
+signatureToByteString :: Sig.Signature -> BS.ByteString
+signatureToByteString (Sig.Signature sig) =
+  Hex.toByteString sig.r <> Hex.toByteString sig.s <> BS.singleton (mkQuotient sig.v)
+
+signatureFromByteString :: BS.ByteString -> Sig.Signature
+signatureFromByteString bs =
+  let bfr = BS.unsafeThaw bs
+      r = Hex.fromByteString $ BS.unsafeFreeze $ slice 0 32 bfr
+      s = Hex.fromByteString $ BS.unsafeFreeze $ slice 32 64 bfr
+      v = runQuotient $ unsafePartial fromJust $ BS.last bs
+  in Sig.Signature {r,s,v}
+
+makeRidiculousEthereumMessage :: Hex.HexString -> Hex.HexString
+makeRidiculousEthereumMessage s =
+  let prefix = Hex.fromByteString <<< BS.toUTF8 $ "\EMEthereum Signed Message:\n" <> show (Hex.hexLength s `div` 2)
+  in prefix <> s
