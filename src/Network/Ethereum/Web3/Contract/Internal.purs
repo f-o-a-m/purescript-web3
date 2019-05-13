@@ -9,27 +9,29 @@ module Network.Ethereum.Web3.Contract.Internal
 
 import Prelude
 
-import Effect.Aff (delay)
-import Effect.Aff.Class (liftAff)
+import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consumer, emit)
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
-import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consumer, emit)
 import Data.Array (catMaybes, dropWhile, uncons)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
 import Data.Newtype (wrap, unwrap)
-import Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
-import Type.Row as Row
+import Effect.Aff (delay)
+import Effect.Aff.Class (liftAff)
+import Heterogeneous.Folding (class HFoldl)
+import Heterogeneous.Mapping (class Mapping)
 import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
+import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Record as Record
+import Type.Row as Row
 
 
 
@@ -156,3 +158,32 @@ instance uncurryFieldsInductive :: (IsSymbol s, Row.Cons s a before after, Row.L
         before = Record.delete (SProxy :: SProxy s) r :: Record before
         partiallyApplied = f (tagged arg :: Tagged (SProxy s) a)
     in uncurryFields before partiallyApplied
+
+--------------------------------------------------------------------------------
+-- Multifilters
+--------------------------------------------------------------------------------
+
+{-
+
+type MyMultiFilter =
+  { filter1 :: Filter e1
+  , filter2 :: Filter e2
+  ...
+  }
+
+-}
+
+data MultiFilterMinToBlock = MultiFilterMinToBlock
+
+instance foldMinToBlock :: HFoldl MultiFilterMinToBlock ChainCursor (Filter e) ChainCursor where
+  hfoldl MultiFilterMinToBlock acc f = min acc (f ^. _toBlock)
+
+data MultiFilterMinFromBlock = MultiFilterMinFromBlock
+
+instance foldMinFromBlock :: HFoldl MultiFilterMinFromBlock ChainCursor (Filter e) ChainCursor where
+  hfoldl MultiFilterMinFromBlock acc f = min acc (f ^. _fromBlock)
+
+data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
+
+instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
+  mapping (ModifyFilter f) filter = f filter

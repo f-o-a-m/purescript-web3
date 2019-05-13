@@ -33,7 +33,8 @@
     "purescript-coroutines": "^5.0.0",
     "purescript-typelevel-prelude": "^3.0.0",
     "purescript-fork": "^4.0.0",
-    "purescript-variant": "5.0.0"
+    "purescript-variant": "5.2.0",
+    "purescript-heterogeneous": "0.3.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
