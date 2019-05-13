@@ -3,6 +3,7 @@ module Network.Ethereum.Web3.Contract.Internal
  , pollFilter
  , logsStream
  , mkBlockNumber
+ , FilterChange(..)
  , class UncurryFields
  , uncurryFields
  ) where
@@ -13,23 +14,25 @@ import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consu
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
-import Data.Array (catMaybes, dropWhile, uncons)
+import Data.Array (catMaybes, cons, dropWhile, uncons)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (un, unwrap, wrap)
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
+import Data.Variant (Variant, expand, inj)
 import Effect.Aff (delay)
 import Effect.Aff.Class (liftAff)
-import Heterogeneous.Folding (class HFoldl)
-import Heterogeneous.Mapping (class Mapping)
-import Network.Ethereum.Core.BigNumber (embed)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges)
+import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, class HFoldlWithIndex, hfoldlWithIndex)
+import Heterogeneous.Mapping (class Mapping, class MappingWithIndex)
+import Network.Ethereum.Core.BigNumber (BigNumber, embed)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Prim.RowList as RowList
 import Record as Record
 import Type.Row as Row
 
@@ -74,10 +77,19 @@ pollFilter filterId stop = producer $ do
 
 -- * Process Filter Changes helpers
 
-type FilterChange a =
-  { rawChange :: Change
-  , event :: a
-  }
+newtype FilterChange a =
+  FilterChange { rawChange :: Change
+               , event :: a
+               }
+
+filterChangeToIndex :: forall a. FilterChange a -> Tuple BigNumber BigNumber
+filterChangeToIndex (FilterChange {rawChange: Change change}) = Tuple (un BlockNumber change.blockNumber) change.logIndex
+
+instance eqFilterChange :: Eq (FilterChange a) where
+  eq f1 f2 = filterChangeToIndex f1 `eq` filterChangeToIndex f2
+
+instance ordFilterChange :: Ord (FilterChange a) where
+  compare f1 f2 = filterChangeToIndex f1 `compare` filterChangeToIndex f2
 
 mkFilterChanges :: forall i ni a .
                    DecodeEvent i ni a
@@ -87,16 +99,16 @@ mkFilterChanges cs = catMaybes $ map pairChange cs
   where
     pairChange rawChange = do
       a <- decodeEvent rawChange
-      pure { rawChange : rawChange
-           , event : a
-           }
+      pure $ FilterChange { rawChange : rawChange
+                          , event : a
+                          }
 
 processChanges :: forall a f.
                   Monad f
                => (a -> ReaderT Change f EventAction)
                -> Array (FilterChange a)
                -> f (Array (Tuple EventAction BlockNumber))
-processChanges handler changes = for changes \c -> do
+processChanges handler changes = for changes \(FilterChange c) -> do
     act <- runReaderT (handler c.event) c.rawChange
     let (Change change) = c.rawChange
     pure $ Tuple act change.blockNumber
@@ -187,3 +199,47 @@ data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
 
 instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
   mapping (ModifyFilter f) filter = f filter
+
+data QueryAllLogs = QueryAllLogs
+
+-- can't use type synonyms so must use the explicit record type here
+instance queryAllLogs ::
+  ( DecodeEvent i ni a
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym (FilterChange a) r' r
+  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (Variant r'))) (Filter e) (Web3 (Array (Variant r))) where
+  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
+    changes :: Array (FilterChange a) <- mkFilterChanges <$> eth_getLogs filter
+    (<>) (inj prop <$> changes) <$> (map expand <$> acc)
+
+data MultiFilterStreamState fs =
+  MultiFilterStreamState { currentBlock :: ChainCursor
+                         , filters :: Record fs
+                         , windowSize :: Int
+                         }
+
+multiLogsStream
+  :: forall fs fsList r.
+     RowList.RowToList fs fsList
+  => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+  => MultiFilterStreamState fs
+  -> Producer (Array (Variant r)) Web3 Unit --BlockNumber
+multiLogsStream (MultiFilterStreamState state) = do
+  end <- lift <<< mkBlockNumber $ hfoldlWithIndex MultiFilterMinToBlock Pending state.filters
+  pure unit
+--  if currentState.currentBlock > end
+--     then pure currentState.currentBlock
+--     else do
+--          let to' = newTo end currentState.currentBlock currentState.windowSize
+--              fltr = currentState.initialFilter
+--                       # _fromBlock .~ BN currentState.currentBlock
+--                       # _toBlock .~ BN to'
+--          changes <- lift $ eth_getLogs fltr
+--          emit $ mkFilterChanges changes
+--          logsStream currentState {currentBlock = succ to'}
+--  where
+--    newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
+--    newTo upper current window = min upper ((wrap $ (unwrap current) + embed window))
+--    succ :: BlockNumber -> BlockNumber
+--    succ bn = wrap $ unwrap bn + one
