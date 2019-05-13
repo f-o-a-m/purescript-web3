@@ -14,7 +14,7 @@ import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consu
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
-import Data.Array (catMaybes, cons, dropWhile, uncons)
+import Data.Array (catMaybes, dropWhile, uncons)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Lens ((.~), (^.))
@@ -26,8 +26,8 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Variant (Variant, expand, inj)
 import Effect.Aff (delay)
 import Effect.Aff.Class (liftAff)
-import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, class HFoldlWithIndex, hfoldlWithIndex)
-import Heterogeneous.Mapping (class Mapping, class MappingWithIndex)
+import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, hfoldlWithIndex)
+import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
@@ -214,7 +214,7 @@ instance queryAllLogs ::
     (<>) (inj prop <$> changes) <$> (map expand <$> acc)
 
 data MultiFilterStreamState fs =
-  MultiFilterStreamState { currentBlock :: ChainCursor
+  MultiFilterStreamState { currentBlock :: BlockNumber
                          , filters :: Record fs
                          , windowSize :: Int
                          }
@@ -223,23 +223,25 @@ multiLogsStream
   :: forall fs fsList r.
      RowList.RowToList fs fsList
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
+  => FoldlRecord QueryAllLogs (Web3 (Array (Variant ()))) fsList fs (Web3 (Array (Variant r)))
   => MultiFilterStreamState fs
-  -> Producer (Array (Variant r)) Web3 Unit --BlockNumber
+  -> Producer (Array (Variant r)) Web3 BlockNumber
 multiLogsStream (MultiFilterStreamState state) = do
   end <- lift <<< mkBlockNumber $ hfoldlWithIndex MultiFilterMinToBlock Pending state.filters
-  pure unit
---  if currentState.currentBlock > end
---     then pure currentState.currentBlock
---     else do
---          let to' = newTo end currentState.currentBlock currentState.windowSize
---              fltr = currentState.initialFilter
---                       # _fromBlock .~ BN currentState.currentBlock
---                       # _toBlock .~ BN to'
---          changes <- lift $ eth_getLogs fltr
---          emit $ mkFilterChanges changes
---          logsStream currentState {currentBlock = succ to'}
---  where
---    newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
---    newTo upper current window = min upper ((wrap $ (unwrap current) + embed window))
---    succ :: BlockNumber -> BlockNumber
---    succ bn = wrap $ unwrap bn + one
+  if state.currentBlock > end
+    then pure state.currentBlock
+    else do
+      let to' = newTo end state.currentBlock state.windowSize
+          g :: forall e. Filter e -> Filter e
+          g fltr = fltr # _fromBlock .~ BN state.currentBlock
+                        # _toBlock .~ BN to'
+          fs' = hmap (ModifyFilter g) state.filters
+      changes <- lift $ hfoldlWithIndex QueryAllLogs (pure [] :: Web3 (Array (Variant ()))) fs'
+      emit changes
+      multiLogsStream $ MultiFilterStreamState state {currentBlock = succ to'}
+  where
+    newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
+    newTo upper current window = min upper ((wrap $ (unwrap current) + embed window))
+    succ :: BlockNumber -> BlockNumber
+    succ bn = wrap $ unwrap bn + one
