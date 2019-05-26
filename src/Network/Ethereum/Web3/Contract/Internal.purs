@@ -35,7 +35,7 @@ import Effect.Aff.Class (liftAff)
 import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, hfoldlWithIndex)
 import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap, class MapVariantWithIndex, mapVariantWithIndex)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 import Prim.RowList as RowList
@@ -338,15 +338,14 @@ instance checkMultiFilterLogs ::
     changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
     (<>) changes <$> (map (map expand) <$> acc)
 
---checkMultiFilter
---    :: forall fs fis fsList.
---       FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
---    => Row.RowToList fs fsList
---    => Record fs
---    -> Web3 (Record fis)
---checkMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))
-
 data CloseMultiFilter = CloseMultiFilter
+
+instance closeMultiFilterFold ::
+  ( IsSymbol sym
+  ) => FoldingWithIndex CloseMultiFilter (SProxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
+  foldingWithIndex CloseMultiFilter (prop :: SProxy sym) acc filter = do
+    void $ eth_uninstallFilter $ untagged filter
+    acc
 
 
 --data PollAllFilters = PollAllFilters
