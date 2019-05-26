@@ -348,34 +348,23 @@ instance closeMultiFilterFold ::
     acc
 
 
---data PollAllFilters = PollAllFilters
----- can't use type synonyms so must use the explicit record type here
---instance pollAllFilters ::
---  ( DecodeEvent i ni e
---  , IsSymbol sym
---  , Row.Union r' b r
---  , Row.Cons sym e r' r
---  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
---  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
---    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
---    (<>) changes <$> (map (map expand) <$> acc)
---
---
 ---- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
 ---- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
 ---- | if ever. There is a minimum delay of 1 second between polls.
---pollFilter
---  :: forall a i ni .
---     DecodeEvent i ni a
---  => FilterId
---  -> ChainCursor
---  -> Producer (Array (FilterChange a)) (Web3) BlockNumber
---pollFilter filterId stop = producer $ do
---  bn <- eth_blockNumber
---  if BN bn > stop
---    then do
---    pure <<< Right $ bn
---    else do
---    liftAff $ delay (Milliseconds 1000.0)
---      changes <- eth_getFilterChanges filterId
---                 pure <<< Left $ mkFilterChanges changes
+pollFilterMulti
+  :: forall fsList r fids.
+     RowList.RowToList fids fsList
+  => FoldlRecord CheckMultiFilter (Web3 (Array (Variant ()))) fsList fids (Web3 (Array (Variant r)))
+  => Ord (Variant r)
+  => Record fids
+  -> ChainCursor
+  -> Producer (Array (Variant r)) Web3 BlockNumber
+pollFilterMulti fids stop = producer do
+  bn <- eth_blockNumber
+  if BN bn > stop
+    then do
+      pure <<< Right $ bn
+    else do
+      liftAff $ delay (Milliseconds 1000.0)
+      changes <- hfoldlWithIndex CheckMultiFilter (pure [] :: Web3 (Array (Variant ()))) fids
+      pure <<< Left $ sort changes
