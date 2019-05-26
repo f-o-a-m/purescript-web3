@@ -209,13 +209,13 @@ type MyMultiFilter =
 
 data MultiFilterMinToBlock = MultiFilterMinToBlock
 
-instance foldMinToBlock :: HFoldl MultiFilterMinToBlock ChainCursor (Filter e) ChainCursor where
-  hfoldl MultiFilterMinToBlock acc f = min acc (f ^. _toBlock)
+instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+  foldingWithIndex MultiFilterMinToBlock _ acc f = min acc (f ^. _toBlock)
 
 data MultiFilterMinFromBlock = MultiFilterMinFromBlock
 
-instance foldMinFromBlock :: HFoldl MultiFilterMinFromBlock ChainCursor (Filter e) ChainCursor where
-  hfoldl MultiFilterMinFromBlock acc f = min acc (f ^. _fromBlock)
+instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+  foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
 
 data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
 
@@ -264,7 +264,6 @@ multiLogsStream
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
   => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
-  => Ord (Variant r)
   => MultiFilterStreamState fs
   -> Producer (Array (FilterChange (Variant r))) Web3 BlockNumber
 multiLogsStream (MultiFilterStreamState state) = do
@@ -366,7 +365,6 @@ pollFilterMulti
   :: forall fsList r fids.
      RowList.RowToList fids fsList
   => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsList fids (Web3 (Array (FilterChange (Variant r))))
-  => Ord (Variant r)
   => Record fids
   -> ChainCursor
   -> Producer (Array (FilterChange (Variant r))) Web3 BlockNumber

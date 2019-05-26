@@ -91,15 +91,14 @@ event' fltr w handler = do
 -- | `TerminateEvent` is thrown, it then transitions to polling.
 eventMulti'
       :: forall fs handlers fsList handlersList r1 r fsIds fsIdsList.
-         HFoldl MultiFilterMinFromBlock (Record fs) ChainCursor ChainCursor
-      => HFoldl MultiFilterMinToBlock (Record fs) ChainCursor ChainCursor
+         FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
+      => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
       => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
       => Row.RowToList handlers handlersList
       => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
       => RowList.RowToList fs fsList
       => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
       => Row.Union r1 () r
-      => Ord (Variant r)
       => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
       => FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds))
       => FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit)
@@ -110,7 +109,7 @@ eventMulti'
       -> Record handlers
       -> Web3 Unit
 eventMulti' fltrs w handler = do
-  pollingFromBlock <- case hfoldl MultiFilterMinFromBlock fltrs Pending of
+  pollingFromBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Pending fltrs of
     BN startingBlock -> do
       currentBlock <- eth_blockNumber
       if startingBlock < currentBlock
@@ -124,7 +123,7 @@ eventMulti' fltrs w handler = do
               in runProcess $ reduceEventStreamMulti producer handler
               else pure startingBlock
     cursor -> mkBlockNumber cursor
-  let minToBlock = hfoldl MultiFilterMinToBlock fltrs Pending
+  let minToBlock = hfoldlWithIndex MultiFilterMinToBlock Pending fltrs
   if minToBlock < BN pollingFromBlock
     then pure unit
     else
