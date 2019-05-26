@@ -2,10 +2,16 @@ module Network.Ethereum.Web3.Contract.Internal
  ( reduceEventStream
  , pollFilter
  , logsStream
+ , multiLogsStream
  , mkBlockNumber
  , FilterChange(..)
  , class UncurryFields
  , uncurryFields
+ -- *
+ , MultiFilterMinToBlock
+ , ModifyFilter
+ , QueryAllLogs
+ , MultiFilterStreamState
  ) where
 
 import Prelude
@@ -14,27 +20,29 @@ import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consu
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
-import Data.Array (catMaybes, dropWhile, uncons)
+import Data.Array (catMaybes, dropWhile, sort, uncons, snoc)
 import Data.Either (Either(..))
-import Data.Functor.Tagged (Tagged, tagged)
+import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Lens ((.~), (^.))
 import Data.Newtype (un, unwrap, wrap)
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), fst, snd)
-import Data.Variant (Variant, expand, inj)
+import Data.Variant (Variant, class VariantMatchCases, expand, inj, match)
 import Effect.Aff (delay)
 import Effect.Aff.Class (liftAff)
 import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, hfoldlWithIndex)
-import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap)
+import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap, class MapVariantWithIndex, mapVariantWithIndex)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 import Prim.RowList as RowList
 import Record as Record
+import Type.Proxy (Proxy(..))
 import Type.Row as Row
+import Data.Functor.Tagged (tagged, Tagged)
 
 
 
@@ -90,6 +98,9 @@ instance eqFilterChange :: Eq (FilterChange a) where
 
 instance ordFilterChange :: Ord (FilterChange a) where
   compare f1 f2 = filterChangeToIndex f1 `compare` filterChangeToIndex f2
+
+instance functorFilterChange :: Functor FilterChange where
+  map f (FilterChange e) = FilterChange e {event = f e.event}
 
 mkFilterChanges :: forall i ni a .
                    DecodeEvent i ni a
@@ -200,18 +211,35 @@ data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
 instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
   mapping (ModifyFilter f) filter = f filter
 
+mkFilterChangesV
+  :: forall i ni a sym r b.
+     DecodeEvent i ni a
+  => Row.Cons sym a b r
+  => IsSymbol sym
+  => SProxy sym
+  -> Proxy a
+  -> Array Change
+  -> Array (FilterChange (Variant r))
+mkFilterChangesV sp _ cs = catMaybes $ map pairChange cs
+  where
+    pairChange rawChange = do
+      a :: a <- decodeEvent rawChange
+      pure $ FilterChange { rawChange : rawChange
+                          , event : inj sp a
+                          }
+
 data QueryAllLogs = QueryAllLogs
 
 -- can't use type synonyms so must use the explicit record type here
 instance queryAllLogs ::
-  ( DecodeEvent i ni a
+  ( DecodeEvent i ni e
   , IsSymbol sym
   , Row.Union r' b r
-  , Row.Cons sym (FilterChange a) r' r
-  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (Variant r'))) (Filter e) (Web3 (Array (Variant r))) where
+  , Row.Cons sym e r' r
+  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
   foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
-    changes :: Array (FilterChange a) <- mkFilterChanges <$> eth_getLogs filter
-    (<>) (inj prop <$> changes) <$> (map expand <$> acc)
+    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
+    (<>) changes <$> (map (map expand) <$> acc)
 
 data MultiFilterStreamState fs =
   MultiFilterStreamState { currentBlock :: BlockNumber
@@ -225,6 +253,7 @@ multiLogsStream
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
   => FoldlRecord QueryAllLogs (Web3 (Array (Variant ()))) fsList fs (Web3 (Array (Variant r)))
+  => Ord (Variant r)
   => MultiFilterStreamState fs
   -> Producer (Array (Variant r)) Web3 BlockNumber
 multiLogsStream (MultiFilterStreamState state) = do
@@ -238,10 +267,116 @@ multiLogsStream (MultiFilterStreamState state) = do
                         # _toBlock .~ BN to'
           fs' = hmap (ModifyFilter g) state.filters
       changes <- lift $ hfoldlWithIndex QueryAllLogs (pure [] :: Web3 (Array (Variant ()))) fs'
-      emit changes
+      emit $ sort changes
       multiLogsStream $ MultiFilterStreamState state {currentBlock = succ to'}
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper ((wrap $ (unwrap current) + embed window))
     succ :: BlockNumber -> BlockNumber
     succ bn = wrap $ unwrap bn + one
+
+processChangesMulti
+  :: forall f r rl r1 r2.
+     Monad f
+  => Row.RowToList r rl
+  => VariantMatchCases rl r1 (ReaderT Change f EventAction)
+  => Row.Union r1 () r2
+  => Record r
+  -> Array (FilterChange (Variant r2))
+  -> f (Array (Tuple EventAction BlockNumber))
+processChangesMulti handlerRec changes = for changes \(FilterChange c) -> do
+    let (Change change) = c.rawChange
+    act <- runReaderT (match handlerRec c.event) c.rawChange
+    pure $ Tuple act change.blockNumber
+
+reduceEventStreamMulti
+  :: forall f r handlers handlersList r1.
+     Monad f
+  => MonadRec f
+  => Row.RowToList handlers handlersList
+  => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
+  => Row.Union r1 () r
+  => Producer (Array (FilterChange (Variant r))) f BlockNumber
+  -> Record handlers
+  -> Process f BlockNumber
+reduceEventStreamMulti prod handlerRec = eventRunner `pullFrom` prod
+  where
+    eventRunner = consumer \changes -> do
+      acts <- processChangesMulti handlerRec changes
+      let nos = dropWhile ((==) ContinueEvent <<< fst) acts
+      pure $ snd <<< _.head <$> uncons nos
+
+data OpenMultiFilter = OpenMultiFilter
+
+instance openMultiFilterFold ::
+  ( Row.Lacks sym r'
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym (Tagged e FilterId) r' r
+  ) => FoldingWithIndex OpenMultiFilter (SProxy sym) (Web3 (Record r')) (Filter e) (Web3 (Record r)) where
+  foldingWithIndex OpenMultiFilter (prop :: SProxy sym) acc filter = do
+    filterId <- eth_newFilter filter
+    Record.insert prop (tagged filterId :: Tagged e FilterId) <$> acc
+
+openMultiFilter
+    ::  forall fs fis fsList.
+        FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
+    => Row.RowToList fs fsList
+    => Record fs
+    -> Web3 (Record fis)
+openMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))
+
+data CheckMultiFilter = CheckMultiFilter
+
+instance checkMultiFilterLogs ::
+  ( DecodeEvent i ni e
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym e r' r
+  ) => FoldingWithIndex CheckMultiFilter (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
+  foldingWithIndex CheckMultiFilter (prop :: SProxy sym) acc filterId = do
+    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
+    (<>) changes <$> (map (map expand) <$> acc)
+
+--checkMultiFilter
+--    :: forall fs fis fsList.
+--       FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
+--    => Row.RowToList fs fsList
+--    => Record fs
+--    -> Web3 (Record fis)
+--checkMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))
+
+data CloseMultiFilter = CloseMultiFilter
+
+
+--data PollAllFilters = PollAllFilters
+---- can't use type synonyms so must use the explicit record type here
+--instance pollAllFilters ::
+--  ( DecodeEvent i ni e
+--  , IsSymbol sym
+--  , Row.Union r' b r
+--  , Row.Cons sym e r' r
+--  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
+--  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
+--    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
+--    (<>) changes <$> (map (map expand) <$> acc)
+--
+--
+---- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
+---- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
+---- | if ever. There is a minimum delay of 1 second between polls.
+--pollFilter
+--  :: forall a i ni .
+--     DecodeEvent i ni a
+--  => FilterId
+--  -> ChainCursor
+--  -> Producer (Array (FilterChange a)) (Web3) BlockNumber
+--pollFilter filterId stop = producer $ do
+--  bn <- eth_blockNumber
+--  if BN bn > stop
+--    then do
+--    pure <<< Right $ bn
+--    else do
+--    liftAff $ delay (Milliseconds 1000.0)
+--      changes <- eth_getFilterChanges filterId
+--                 pure <<< Left $ mkFilterChanges changes

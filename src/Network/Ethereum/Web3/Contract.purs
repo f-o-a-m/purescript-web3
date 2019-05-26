@@ -77,6 +77,37 @@ event' fltr w handler = do
         (const $ void <<< eth_uninstallFilter)
         (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
 
+---- | Takes a `Filter` and a handler, as well as a windowSize.
+---- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
+---- | `TerminateEvent` is thrown, it then transitions to polling.
+--eventMulti'
+--      :: forall fs handlers.
+--      -> Record fs
+--      -> Int
+--      -> Record handlers
+--      -> Web3 Unit
+--eventMulti' fltrs w handler = do
+--  pollingFromBlock <- case fltr ^. _fromBlock of
+--    BN startingBlock -> do
+--      currentBlock <- eth_blockNumber
+--      if startingBlock < currentBlock
+--         then let initialState =
+--                    MultiFilterStreamState { currentBlock: startingBlock
+--                                           , initialFilter: fltrs
+--                                           , windowSize: w
+--                                           }
+--              in runProcess $ reduceEventStream (multiLogsStream initialState) handler
+--              else pure startingBlock
+--    cursor -> mkBlockNumber cursor
+--  if fltr ^. _toBlock < BN pollingFromBlock
+--    then pure unit
+--    else do
+--      bracket
+--        (eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock)
+--        (const $ void <<< eth_uninstallFilter)
+--        (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
+
+
 
 --------------------------------------------------------------------------------
 -- * Methods
