@@ -9,9 +9,20 @@ module Network.Ethereum.Web3.Contract.Internal
  , uncurryFields
  -- *
  , MultiFilterMinToBlock
- , ModifyFilter
- , QueryAllLogs
- , MultiFilterStreamState
+ , ModifyFilter(..)
+ , QueryAllLogs(..)
+ , MultiFilterStreamState(..)
+
+---
+ , MultiFilterMinToBlock(..)
+ , MultiFilterMinFromBlock(..)
+ , MultiFilterStreamState(..)
+ , reduceEventStreamMulti
+ , openMultiFilter
+ , pollFilterMulti
+ , CheckMultiFilter(..)
+ , OpenMultiFilter(..)
+ , CloseMultiFilter(..)
  ) where
 
 import Prelude
@@ -252,10 +263,10 @@ multiLogsStream
      RowList.RowToList fs fsList
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
-  => FoldlRecord QueryAllLogs (Web3 (Array (Variant ()))) fsList fs (Web3 (Array (Variant r)))
+  => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
   => Ord (Variant r)
   => MultiFilterStreamState fs
-  -> Producer (Array (Variant r)) Web3 BlockNumber
+  -> Producer (Array (FilterChange (Variant r))) Web3 BlockNumber
 multiLogsStream (MultiFilterStreamState state) = do
   end <- lift <<< mkBlockNumber $ hfoldlWithIndex MultiFilterMinToBlock Pending state.filters
   if state.currentBlock > end
@@ -266,7 +277,7 @@ multiLogsStream (MultiFilterStreamState state) = do
           g fltr = fltr # _fromBlock .~ BN state.currentBlock
                         # _toBlock .~ BN to'
           fs' = hmap (ModifyFilter g) state.filters
-      changes <- lift $ hfoldlWithIndex QueryAllLogs (pure [] :: Web3 (Array (Variant ()))) fs'
+      changes <- lift $ hfoldlWithIndex QueryAllLogs (pure [] ::  Web3 (Array (FilterChange (Variant ())))) fs'
       emit $ sort changes
       multiLogsStream $ MultiFilterStreamState state {currentBlock = succ to'}
   where
@@ -354,11 +365,11 @@ instance closeMultiFilterFold ::
 pollFilterMulti
   :: forall fsList r fids.
      RowList.RowToList fids fsList
-  => FoldlRecord CheckMultiFilter (Web3 (Array (Variant ()))) fsList fids (Web3 (Array (Variant r)))
+  => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsList fids (Web3 (Array (FilterChange (Variant r))))
   => Ord (Variant r)
   => Record fids
   -> ChainCursor
-  -> Producer (Array (Variant r)) Web3 BlockNumber
+  -> Producer (Array (FilterChange (Variant r))) Web3 BlockNumber
 pollFilterMulti fids stop = producer do
   bn <- eth_blockNumber
   if BN bn > stop
@@ -366,5 +377,5 @@ pollFilterMulti fids stop = producer do
       pure <<< Right $ bn
     else do
       liftAff $ delay (Milliseconds 1000.0)
-      changes <- hfoldlWithIndex CheckMultiFilter (pure [] :: Web3 (Array (Variant ()))) fids
+      changes <- hfoldlWithIndex CheckMultiFilter (pure [] :: Web3 (Array (FilterChange (Variant ())))) fids
       pure <<< Left $ sort changes

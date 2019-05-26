@@ -9,6 +9,7 @@ module Network.Ethereum.Web3.Contract
  , sendTx
  , deployContract
  , mkDataField
+ , eventMulti'
  ) where
 
 import Prelude
@@ -28,8 +29,16 @@ import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
 import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3, BlockNumber)
 import Type.Proxy (Proxy)
+
+import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, class HFoldl, hfoldlWithIndex, hfoldl)
+import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap, class MapVariantWithIndex, mapVariantWithIndex)
+import Network.Ethereum.Web3.Contract.Internal (MultiFilterMinToBlock(..), MultiFilterMinFromBlock(..), MultiFilterStreamState(..), multiLogsStream, reduceEventStreamMulti, ModifyFilter(..), QueryAllLogs(..), FilterChange(..), openMultiFilter, OpenMultiFilter(..), CloseMultiFilter(..), pollFilterMulti, CheckMultiFilter(..))
+import Prim.RowList as RowList
+import Type.Row as Row
+import Data.Variant (Variant, class VariantMatchCases, expand, inj, match)
+import Control.Coroutine (Producer, Consumer, Process, pullFrom, producer, consumer, emit)
 
 --------------------------------------------------------------------------------
 -- * Events
@@ -77,35 +86,54 @@ event' fltr w handler = do
         (const $ void <<< eth_uninstallFilter)
         (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
 
----- | Takes a `Filter` and a handler, as well as a windowSize.
----- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
----- | `TerminateEvent` is thrown, it then transitions to polling.
---eventMulti'
---      :: forall fs handlers.
---      -> Record fs
---      -> Int
---      -> Record handlers
---      -> Web3 Unit
---eventMulti' fltrs w handler = do
---  pollingFromBlock <- case fltr ^. _fromBlock of
---    BN startingBlock -> do
---      currentBlock <- eth_blockNumber
---      if startingBlock < currentBlock
---         then let initialState =
---                    MultiFilterStreamState { currentBlock: startingBlock
---                                           , initialFilter: fltrs
---                                           , windowSize: w
---                                           }
---              in runProcess $ reduceEventStream (multiLogsStream initialState) handler
---              else pure startingBlock
---    cursor -> mkBlockNumber cursor
---  if fltr ^. _toBlock < BN pollingFromBlock
---    then pure unit
---    else do
---      bracket
---        (eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock)
---        (const $ void <<< eth_uninstallFilter)
---        (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
+-- | Takes a `Filter` and a handler, as well as a windowSize.
+-- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
+-- | `TerminateEvent` is thrown, it then transitions to polling.
+eventMulti'
+      :: forall fs handlers fsList handlersList r1 r fsIds fsIdsList.
+         HFoldl MultiFilterMinFromBlock (Record fs) ChainCursor ChainCursor
+      => HFoldl MultiFilterMinToBlock (Record fs) ChainCursor ChainCursor
+      => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+      => Row.RowToList handlers handlersList
+      => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
+      => RowList.RowToList fs fsList
+      => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
+      => Row.Union r1 () r
+      => Ord (Variant r)
+      => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
+      => FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds))
+      => FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit)
+      => RowList.RowToList fsIds fsIdsList
+      => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant r))))
+      => Record fs
+      -> Int
+      -> Record handlers
+      -> Web3 Unit
+eventMulti' fltrs w handler = do
+  pollingFromBlock <- case hfoldl MultiFilterMinFromBlock fltrs Pending of
+    BN startingBlock -> do
+      currentBlock <- eth_blockNumber
+      if startingBlock < currentBlock
+         then let initialState =
+                    MultiFilterStreamState { currentBlock: startingBlock
+                                           , filters: fltrs
+                                           , windowSize: w
+                                           }
+                  producer :: Producer (Array (FilterChange (Variant r))) Web3 BlockNumber
+                  producer = multiLogsStream initialState
+              in runProcess $ reduceEventStreamMulti producer handler
+              else pure startingBlock
+    cursor -> mkBlockNumber cursor
+  let minToBlock = hfoldl MultiFilterMinToBlock fltrs Pending
+  if minToBlock < BN pollingFromBlock
+    then pure unit
+    else
+      bracket
+        (let fltrs' = hmap (ModifyFilter \fltr -> fltr # _fromBlock .~ BN pollingFromBlock) fltrs
+         in openMultiFilter fltrs'
+        )
+        (const $ hfoldlWithIndex CloseMultiFilter (pure unit :: Web3 Unit))
+        (\filterIds -> void $ runProcess $ reduceEventStreamMulti (pollFilterMulti filterIds minToBlock) handler)
 
 
 

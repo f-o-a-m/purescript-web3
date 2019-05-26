@@ -14,12 +14,14 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
+import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx, Filter)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:%), type (:&), DOne, D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
+
+import Network.Ethereum.Web3.Contract (eventMulti')
 
 ssAddress :: Address
 ssAddress = unsafePartial fromJust $ mkAddress =<< mkHexString "c29313014a78b440876bac21be369c3047e313e7"
@@ -55,7 +57,49 @@ instance eventFilterCountSet :: EventFilter CountSet where
                          # _topics .~ Just [Just (unsafePartial fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
                          # _address .~ Just ssAddress
 
+--------------------------------------------------------------------------------
+-- | CountSet1
+--------------------------------------------------------------------------------
+
+-- This is what the auto-generated code should look like
+
+newtype CountSet1 = CountSet1 {_count :: (UIntN (D2 :& D5 :% D6))}
+
+derive instance newtypeCountSet1 :: Newtype CountSet1 _
+
+instance indexedEventCountSet1 :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_count") (UIntN (D2 :& D5 :& DOne D6)))) CountSet1 where
+  isAnonymous _ = false
+
+derive instance genericCountSet1 :: Generic CountSet1 _
+
+instance eventGenericCountSet1Show :: Show CountSet1 where
+        show = genericShow
+
+instance eventGenericCountSet1eq :: Eq CountSet1 where
+        eq = genericEq
+
+instance eventFilterCountSet1 :: EventFilter CountSet1 where
+  eventFilter _  addr = defaultFilter
+                         # _topics .~ Just [Just (unsafePartial fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
+                         # _address .~ Just ssAddress
+
 -- this is the application code
+-----------------------------------------------------
+filters :: { event1 :: Filter CountSet
+           , event2 :: Filter CountSet1
+           }
+filters = { event1:  eventFilter (Proxy :: Proxy CountSet) ssAddress
+          , event2:  eventFilter (Proxy :: Proxy CountSet1) ssAddress
+          }
+
+handlers = { event1: const $ pure ContinueEvent
+           , event2: const $ pure ContinueEvent
+           }
+
+process = eventMulti' filters 1 handlers
+
+
+------------------------------------------------------
 
 setA :: IntN (D2 :& D5 :% D6) -> Web3 HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
