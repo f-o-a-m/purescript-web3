@@ -14,7 +14,7 @@ import Data.Lens ((.~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Data.Symbol (SProxy)
-import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx)
+import Network.Ethereum.Web3 (class EventFilter, Address, ChainCursor(..), EventAction(..), HexString, Web3, Web3Error, _address, _fromBlock, _toBlock, _topics, defaultFilter, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', mkAddress, mkHexString, sendTx, FilterStreamState, ChangeReceipt)
 import Network.Ethereum.Web3.Solidity (class IndexedEvent, type (:%), type (:&), DOne, D2, D5, D6, IntN, Tuple0, Tuple1(..), UIntN)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -60,7 +60,7 @@ instance eventFilterCountSet :: EventFilter CountSet where
 setA :: IntN (D2 :& D5 :% D6) -> Web3 HexString
 setA n = sendTx defaultTransactionOptions ((tagged <<< Tuple1 $ n) :: FnSet)
 
-countMonitor :: Web3 (Fiber (Either Web3Error Unit))
+countMonitor :: Web3 (Fiber (Either Web3Error (Either (FilterStreamState CountSet) ChangeReceipt)))
 countMonitor =
   let fltr = eventFilter (Proxy :: Proxy CountSet) ssAddress
                 # _fromBlock .~ (BN <<< wrap <<< embed $ 10)
