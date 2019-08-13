@@ -76,7 +76,9 @@ filterProducer currentState = do
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
     chainHead <- lift eth_blockNumber
+    traceM ("[filterProducer] chainHead=" <> show chainHead)
     let initialFromBlock = currentState.initialFilter ^. _fromBlock
+    traceM ("[filterProducer] inititailFromBlock=" <> show initialFromBlock)
     start <- lift $ mkBlockNumber initialFromBlock
     if chainHead < start
        then traceM "[filterProducer] Filter hasn't started yet..." *> waitForMoreBlocks
