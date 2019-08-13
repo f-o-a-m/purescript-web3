@@ -57,7 +57,7 @@ event' :: forall e i ni.
        -> EventHandler Web3 e
        -> Web3 (Either (FilterStreamState e) ChangeReceipt)
 event' fltr w handler = do
-  currentBlock <- mkBlockNumber $ fltr ^. _toBlock
+  currentBlock <- mkBlockNumber $ fltr ^. _fromBlock
   let initialState = { currentBlock
                      , initialFilter: fltr
                      , windowSize: w
