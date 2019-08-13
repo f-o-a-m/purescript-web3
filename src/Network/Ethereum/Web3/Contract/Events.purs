@@ -30,9 +30,9 @@ import Effect.Aff (delay)
 import Effect.Aff.Class (liftAff)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed)
 import Network.Ethereum.Core.HexString (HexString)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getLogs, eth_getFilterChanges, eth_newFilter, eth_uninstallFilter)
+import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (EventAction(..), BlockNumber, ChainCursor(..), Filter, FilterId, Change(..), _toBlock, _fromBlock, Web3)
+import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 
 --import Debug.Trace (traceM)
 --------------------------------------------------------------------------------
@@ -71,29 +71,32 @@ filterProducer
      FilterStreamState e
   -> Transducer Void (Filter e) Web3 (FilterStreamState e)
 filterProducer currentState = do
-    let initialToBlock = currentState.initialFilter ^. _toBlock
-    --traceM ("[produceFilter] inititailToBlock=" <> show initialToBlock)
-    end <- lift <<< mkBlockNumber $ initialToBlock
-    --traceM ("[produceFilter] end=" <> show end)
-    if currentState.currentBlock > end
-      then
-        let
-          continue = do
-            --traceM "Waiting For Blocks..."
-            lift $ liftAff $ delay (Milliseconds 3000.0)
-            filterProducer currentState
-        in
-          case initialToBlock of
-             Pending -> continue
-             Latest -> continue
-             _ -> pure currentState
-      else do
-        let to' = newTo end currentState.currentBlock currentState.windowSize
-            fltr = currentState.initialFilter
-                     # _fromBlock .~ BN currentState.currentBlock
-                     # _toBlock .~ BN to'
-        yieldT fltr
-        filterProducer currentState { currentBlock = succ to' }
+    let waitForMoreBlocks = do
+          --traceM "Waiting For Blocks..."
+          lift $ liftAff $ delay (Milliseconds 3000.0)
+          filterProducer currentState
+    chainHead <- lift eth_blockNumber
+    let initialFromBlock = currentState.initialFilter ^. _fromBlock
+    start <- lift $ mkBlockNumber initialFromBlock
+    if chainHead < start
+       then waitForMoreBlocks
+       else do
+         let initialToBlock = currentState.initialFilter ^. _toBlock
+         --traceM ("[produceFilter] inititailToBlock=" <> show initialToBlock)
+         end <- lift $ mkBlockNumber initialToBlock
+         --traceM ("[produceFilter] end=" <> show end)
+         if currentState.currentBlock > end
+           then case initialToBlock of
+                  Pending -> waitForMoreBlocks
+                  Latest -> waitForMoreBlocks
+                  _ -> pure currentState
+           else do
+             let to' = newTo end currentState.currentBlock currentState.windowSize
+                 fltr = currentState.initialFilter
+                          # _fromBlock .~ BN currentState.currentBlock
+                          # _toBlock .~ BN to'
+             yieldT fltr
+             filterProducer currentState { currentBlock = succ to' }
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper (wrap $ unwrap current + embed window)
