@@ -34,7 +34,7 @@ import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_get
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 
---import Debug.Trace (traceM)
+import Debug.Trace (traceM)
 --------------------------------------------------------------------------------
 -- * Types
 --------------------------------------------------------------------------------
@@ -72,21 +72,21 @@ filterProducer
   -> Transducer Void (Filter e) Web3 (FilterStreamState e)
 filterProducer currentState = do
     let waitForMoreBlocks = do
-          --traceM "Waiting For Blocks..."
+          traceM "[filterProducer] Waiting For Blocks..."
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
     chainHead <- lift eth_blockNumber
     let initialFromBlock = currentState.initialFilter ^. _fromBlock
     start <- lift $ mkBlockNumber initialFromBlock
     if chainHead < start
-       then waitForMoreBlocks
+       then traceM "[filterProducer] Filter hasn't started yet..." *> waitForMoreBlocks
        else do
          let initialToBlock = currentState.initialFilter ^. _toBlock
-         --traceM ("[produceFilter] inititailToBlock=" <> show initialToBlock)
+         traceM ("[filterProducer] inititailToBlock=" <> show initialToBlock)
          end <- lift $ mkBlockNumber initialToBlock
-         --traceM ("[produceFilter] end=" <> show end)
+         traceM ("[filterProducer] end=" <> show end)
          if currentState.currentBlock > end
-           then case initialToBlock of
+           then traceM "[filterProducer] Filter goes too far" *> case initialToBlock of
                   Pending -> waitForMoreBlocks
                   Latest -> waitForMoreBlocks
                   _ -> pure currentState
@@ -95,6 +95,7 @@ filterProducer currentState = do
                  fltr = currentState.initialFilter
                           # _fromBlock .~ BN currentState.currentBlock
                           # _toBlock .~ BN to'
+             traceM $ "[filterProducer] Yielding filter fltr" <> show fltr
              yieldT fltr
              filterProducer currentState { currentBlock = succ to' }
   where
@@ -110,9 +111,9 @@ makeFilterChanges
      DecodeEvent i ni e
   => Transducer (Filter e) (Array (FilterChange e)) Web3 Unit
 makeFilterChanges = awaitForever \fltr -> do
-  --traceM $ "[makeFilterChanges] fltr : " <> show fltr
+  traceM $ "[makeFilterChanges] fltr : " <> show fltr
   changes <- lift $ eth_getLogs fltr
-  --traceM $ "[makeFilterChanges] changes : " <> show changes
+  traceM $ "[makeFilterChanges] changes : " <> show changes
   yieldT $ mkFilterChanges changes
 
 -- | A stateless (on the server) stream of filter changes starting from an initial
