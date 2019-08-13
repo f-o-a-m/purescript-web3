@@ -12,11 +12,10 @@ module Network.Ethereum.Web3.Contract.Events
 import Prelude
 
 import Control.Coroutine (Producer, Consumer, Process, producer, consumer, pullFrom)
-import Control.Coroutine.Transducer (Transducer, awaitForever, fromProducer, toProducer, yieldT, (=>=))
+import Control.Coroutine.Transducer (Transducer, awaitForever, toProducer, yieldT, (=>=))
 import Control.Monad.Fork.Class (bracket)
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.State (StateT, get, put, evalStateT)
 import Control.Monad.Trans.Class (lift)
 import Control.Parallel (class Parallel)
 import Data.Array (catMaybes)

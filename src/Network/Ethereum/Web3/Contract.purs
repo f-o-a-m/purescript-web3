@@ -14,7 +14,6 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Effect.Exception (error)
 import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
@@ -22,12 +21,13 @@ import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_sendTransaction)
-import Network.Ethereum.Web3.Contract.Events (aquireFilter, reduceEventStream, pollFilter, logsStream, mkBlockNumber, FilterStreamState, ChangeReceipt, EventHandler)
+import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
+import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, mkBlockNumber, FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _toBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
