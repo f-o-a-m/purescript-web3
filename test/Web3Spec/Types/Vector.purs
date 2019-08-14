@@ -1,4 +1,4 @@
-module Web3Spec.Types.Vector (vectorSpec) where
+module Web3Spec.Types.Vector (spec) where
 
 import Prelude
 
@@ -11,8 +11,8 @@ import Test.Spec (Spec, describe, it)
 import Unsafe.Coerce (unsafeCoerce)
 
 
-vectorSpec:: Spec Unit
-vectorSpec = describe "Vector-spec" do
+spec:: Spec Unit
+spec = describe "Vector-spec" do
   it "spec module compiles" $ pure unit
 
 unsafeVector :: forall a. Vector a Int

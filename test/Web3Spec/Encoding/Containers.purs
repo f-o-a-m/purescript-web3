@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Containers (encodingContainersSpec) where
+module Web3Spec.Encoding.Containers (spec) where
 
 
 import Prelude
@@ -19,8 +19,8 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
-encodingContainersSpec:: Spec Unit
-encodingContainersSpec = describe "encoding-spec for containers" do
+spec:: Spec Unit
+spec = describe "encoding-spec for containers" do
   staticArraysTests
   dynamicArraysTests
   tuplesTest

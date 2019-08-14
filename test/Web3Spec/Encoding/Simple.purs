@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Simple (encodingSimpleSpec) where
+module Web3Spec.Encoding.Simple (spec) where
 
 
 import Prelude
@@ -28,8 +28,8 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
 
-encodingSimpleSpec :: Spec Unit
-encodingSimpleSpec = describe "encoding-spec" do
+spec :: Spec Unit
+spec = describe "encoding-spec" do
   stringTests
   bytesDTests
   bytesNTests
@@ -251,21 +251,6 @@ blockTests =
       dBlock.hash `shouldEqual` (Just $ upToHex "0x093ff26b85b5e3ac3e331f3d766a81990be76ec8ac79f62a81e30faa642dc26f")
       dBlock.timestamp `shouldEqual` embed 1507570522
 
-{-
-
-This test is broken for now because of upgrades to data.foreign.generic
-
-    it "can decode parity blocks (no nonce field, but does have author field)" do
-      let (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ decodeJSON blockNoNoncePlaintext
-      Block dBlock' <- either (throwError <<< error <<< show) pure decodedBlockE
-      let b@(KovanBlock dBlock) = KovanBlock (unsafeCoerce dBlock')
-      traceA $ unsafeCoerce b
-      -- nonce replaced by author
-      dBlock."author" `shouldEqual` (upToHex  "0x05a56e2d52c817161883f50c441c3228cfe54d9f")
-      -- sanity check some other fields to make sure things are consistent
-      dBlock.hash `shouldEqual` (Just $ upToHex "0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6")
-      dBlock.timestamp `shouldEqual` embed 1438269988
--}
   where
     -- this is block 1 on Eth mainnet
     blockPlaintext ="{\"difficulty\":\"0x1\",\"extraData\":\"0x0000000000000000000000000000000000000000000000000000000000000000759e3fae48d5abad53ab446f31ab3ae1531f2e4c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"gasLimit\":\"0x8000000\",\"gasUsed\":\"0x0\",\"hash\":\"0x093ff26b85b5e3ac3e331f3d766a81990be76ec8ac79f62a81e30faa642dc26f\",\"logsBloom\":\"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"miner\":\"0x0000000000000000000000000000000000000000\",\"mixHash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"nonce\":\"0x0000000000000000\",\"number\":\"0x0\",\"parentHash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"receiptsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"sha3Uncles\":\"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347\",\"size\":\"0x273\",\"stateRoot\":\"0xd3811ce828cfc6b07dbedfe073e1ef7e50bda2dac61a901e995c0f460a625cdd\",\"timestamp\":\"0x59dbb35a\",\"totalDifficulty\":\"0x1\",\"transactions\":[],\"transactionsRoot\":\"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\",\"uncles\":[]}"

@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.DataSpec (dataMakerSpec) where
+module Web3Spec.Encoding.DataSpec (spec) where
 
 import Prelude
 import Data.Maybe (fromJust)
@@ -20,8 +20,8 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
-dataMakerSpec:: Spec Unit
-dataMakerSpec =
+spec:: Spec Unit
+spec =
     describe "data maker" do
 
       it "can make the approval data" do
