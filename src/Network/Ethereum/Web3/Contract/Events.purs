@@ -71,16 +71,14 @@ filterProducer
      FilterStreamState e
   -> Transducer Void (Filter e) Web3 (FilterStreamState e)
 filterProducer currentState = do
+    traceM ("[filterProducer] currentBlock=" <> show currentState.currentBlock)
     let waitForMoreBlocks = do
           traceM "[filterProducer] Waiting For Blocks..."
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
     chainHead <- lift eth_blockNumber
     traceM ("[filterProducer] chainHead=" <> show chainHead)
-    let initialFromBlock = currentState.initialFilter ^. _fromBlock
-    traceM ("[filterProducer] inititailFromBlock=" <> show initialFromBlock)
-    start <- lift $ mkBlockNumber initialFromBlock
-    if chainHead < start
+    if chainHead < currentState.currentBlock
        then traceM "[filterProducer] Filter hasn't started yet..." *> waitForMoreBlocks
        else do
          let initialToBlock = currentState.initialFilter ^. _toBlock
