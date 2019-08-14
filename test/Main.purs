@@ -23,14 +23,16 @@ import Web3Spec.Types.Vector (vectorSpec)
 main :: Effect Unit
 main = do
   let cfg =  defaultConfig {timeout = Just (Milliseconds $ 60.0 * 1000.0)}
-      runner = void <<< un Identity <<< runSpecT cfg [consoleReporter]
+      idRunner = void <<< un Identity <<< runSpecT cfg [consoleReporter]
   p <- httpProvider "http://localhost:8545"
-  launchAff_ $ runner do
-    dataMakerSpec
-    vectorSpec
-    encodingContainersSpec
-    encodingSimpleSpec
-    encodingGenericSpec
-    simpleStorageSpec
-    etherUnitTests
-    liveSpec p
+  launchAff_ do
+    idRunner do
+      dataMakerSpec
+      vectorSpec
+      encodingContainersSpec
+      encodingSimpleSpec
+      encodingGenericSpec
+      simpleStorageSpec
+      etherUnitTests
+    runSpecT cfg [consoleReporter] do
+      liveSpec p

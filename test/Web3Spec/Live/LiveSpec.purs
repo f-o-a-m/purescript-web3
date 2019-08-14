@@ -1,36 +1,41 @@
-module Web3Spec.Live.LiveSpec where
+module Web3Spec.Live.LiveSpec (liveSpec) where
 
 import Prelude
 
 import Data.Array ((!!))
 import Data.ByteString as BS
-import Data.Either (Either(..), isRight, fromRight)
+import Data.Either (isRight, fromRight)
 import Data.Lens ((?~), (%~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Tuple (Tuple(..))
-import Effect.Aff (Aff, Milliseconds(..), delay)
+import Effect.Aff (Aff)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as C
-import Network.Ethereum.Core.BigNumber (parseBigNumber, decimal, BigNumber)
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Keccak256 (keccak256)
 import Network.Ethereum.Core.Signatures as Sig
-import Network.Ethereum.Web3 (Block(..), ChainCursor(..), EventAction(..), HexString, Provider, TransactionReceipt(..), TransactionStatus(..), Web3, _from, _gas, _to, _value, convert, defaultTransactionOptions, event, eventFilter, forkWeb3, fromMinorUnit, mkHexString, runWeb3)
+import Network.Ethereum.Web3 (Address, Block(..), ChainCursor(..), EventAction(..), Provider, TransactionReceipt(..), _from, _to, _value, convert, defaultTransactionOptions, event, eventFilter, forkWeb3, fromMinorUnit, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
 import Node.Buffer.Unsafe (slice)
-import Partial.Unsafe (unsafePartial, unsafePartialBecause)
-import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (fail, shouldEqual)
+import Partial.Unsafe (unsafeCrashWith, unsafePartial, unsafePartialBecause)
+import Test.Spec (SpecT, beforeAll, describe, it)
+import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Proxy (Proxy(..))
 import Type.Quotient (mkQuotient, runQuotient)
 import Web3Spec.Live.SimpleStorage as SimpleStorage
+import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, pollTransactionReceipt)
 
-liveSpec :: Provider -> Spec Unit
-liveSpec provider =
+liveSpec :: Provider -> SpecT Aff Unit Aff Unit
+liveSpec p = do
+  rpcSpec p
+  contractSpec p
+
+rpcSpec :: Provider -> SpecT Aff Unit Aff Unit
+rpcSpec provider =
   describe "It should be able to test all the web3 endpoints live" do
 
     it "Can get the network version" do
@@ -146,7 +151,7 @@ liveSpec provider =
         Api.eth_sendTransaction txOpts
       eRes `shouldSatisfy` isRight
       let txHash = unsafePartialBecause "Result was Right" $ fromRight eRes
-      TransactionReceipt txReceipt <- pollTransactionReceipt txHash provider
+      TransactionReceipt txReceipt <- pollTransactionReceipt txHash provider pure
       eRes' <- runWeb3 provider do
         tx <- Api.eth_getTransactionByBlockHashAndIndex txReceipt.blockHash zero
         tx' <- Api.eth_getTransactionByBlockNumberAndIndex (BN txReceipt.blockNumber) zero
@@ -155,27 +160,23 @@ liveSpec provider =
       let Tuple tx tx' = unsafePartialBecause "Result was Right" $ fromRight eRes'
       tx `shouldEqual` tx'
 
-    it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" do
-      let newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
-      eventVar <-AVar.empty
-      eRes <- runWeb3 provider deploySimpleStorage
-      eRes `shouldSatisfy` isRight
-      let txHash = unsafePartialBecause "Result was Right" $ fromRight eRes
-      (TransactionReceipt txReceipt) <- pollTransactionReceipt txHash provider
-      txReceipt.status `shouldEqual` Succeeded
-      let simpleStorageAddress = unsafePartialBecause "Contract deployment succeded" $ fromJust txReceipt.contractAddress
+
+contractSpec :: Provider -> SpecT Aff Unit Aff Unit
+contractSpec provider = beforeAll (deploySimpleStorage provider) $
+  describe "It should be able to deploy and test a simple contract" $
+
+    it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" $ \simpleStorageCfg -> do
+      let {simpleStorageAddress, userAddress} = simpleStorageCfg
+          newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
           fltr = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+      eventVar <-AVar.empty
       _ <- forkWeb3 provider $ event fltr \(SimpleStorage.CountSet {_count}) -> liftAff do
         liftEffect $ C.log $ "New Count Set: " <> show _count
         AVar.put _count eventVar
         pure TerminateEvent
-      let countSetOptions = defaultTransactionOptions
       _ <- runWeb3 provider do
-        accounts <- Api.eth_getAccounts
-        let sender = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
-            txOpts = defaultTransactionOptions # _from ?~ sender
-                                               # _to ?~ simpleStorageAddress
-                                               # _gas ?~ bigGasLimit
+        let txOpts = defaultTestTxOptions # _from ?~ userAddress
+                                          # _to ?~ simpleStorageAddress
         setCountHash <- SimpleStorage.setCount txOpts {_count: newCount}
         liftEffect $ C.log $ "Sumbitted count update transaction: " <> show setCountHash
       n <- AVar.take eventVar
@@ -183,53 +184,31 @@ liveSpec provider =
       eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
       eRes' `shouldSatisfy` isRight
 
-
-
 --------------------------------------------------------------------------------
 -- | Helpers
 --------------------------------------------------------------------------------
 
-shouldSatisfy
-  :: forall a.
-     Show a
-  => Eq a
-  => a
-  -> (a -> Boolean)
-  -> Aff Unit
-shouldSatisfy a p =
-  if p a then pure unit else fail $ "Predicate failed: " <> show a
+type SimpleStorageConfig =
+  { simpleStorageAddress :: Address
+  , userAddress :: Address
+  }
 
-mkHexString'
-  :: String
-  -> HexString
-mkHexString' hx =
-  unsafePartialBecause "I know how to make a HexString" $ fromJust $ mkHexString hx
-
-bigGasLimit :: BigNumber
-bigGasLimit = unsafePartial fromJust $ parseBigNumber decimal "4712388"
-
-
-pollTransactionReceipt
-  :: HexString
-  -> Provider
-  -> Aff TransactionReceipt
-pollTransactionReceipt txHash provider = do
-  eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
-  case eRes of
-    Left e -> do
-      delay (Milliseconds 2000.0)
-      pollTransactionReceipt txHash provider
-    Right res -> pure res
-
-deploySimpleStorage :: Web3 HexString
-deploySimpleStorage = do
-  accounts <- Api.eth_getAccounts
-  let sender = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
-      txOpts = defaultTransactionOptions # _from ?~ sender
-                                         # _gas ?~ bigGasLimit
-  txHash <- SimpleStorage.constructor txOpts SimpleStorage.deployBytecode
-  liftEffect $ C.log $ "Submitted SimpleStorage deployment: " <> show txHash
-  pure txHash
+deploySimpleStorage :: Provider -> Aff SimpleStorageConfig
+deploySimpleStorage p = do
+  userAddress <- assertWeb3 p $ do
+    accounts <- Api.eth_getAccounts
+    pure $ unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
+  txHash <- assertWeb3 p do
+    accounts <- Api.eth_getAccounts
+    let txOpts = defaultTestTxOptions # _from ?~ userAddress
+    txHash <- SimpleStorage.constructor txOpts SimpleStorage.deployBytecode
+    liftEffect $ C.log $ "Submitted SimpleStorage deployment: " <> show txHash
+    pure txHash
+  let k (TransactionReceipt rec) = case rec.contractAddress of
+        Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
+        Just addr -> pure addr
+  simpleStorageAddress <- pollTransactionReceipt txHash p k
+  pure $ {simpleStorageAddress, userAddress}
 
 signatureToByteString :: Sig.Signature -> BS.ByteString
 signatureToByteString (Sig.Signature sig) =
