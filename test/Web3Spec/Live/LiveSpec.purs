@@ -162,27 +162,28 @@ rpcSpec provider =
 
 
 contractSpec :: Provider -> SpecT Aff Unit Aff Unit
-contractSpec provider = beforeAll (deploySimpleStorage provider) $
+contractSpec provider =
   describe "It should be able to deploy and test a simple contract" $
+    beforeAll (deploySimpleStorage provider) $
 
-    it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" $ \simpleStorageCfg -> do
-      let {simpleStorageAddress, userAddress} = simpleStorageCfg
-          newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
-          fltr = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
-      eventVar <-AVar.empty
-      _ <- forkWeb3 provider $ event fltr \(SimpleStorage.CountSet {_count}) -> liftAff do
-        liftEffect $ C.log $ "New Count Set: " <> show _count
-        AVar.put _count eventVar
-        pure TerminateEvent
-      _ <- runWeb3 provider do
-        let txOpts = defaultTestTxOptions # _from ?~ userAddress
-                                          # _to ?~ simpleStorageAddress
-        setCountHash <- SimpleStorage.setCount txOpts {_count: newCount}
-        liftEffect $ C.log $ "Sumbitted count update transaction: " <> show setCountHash
-      n <- AVar.take eventVar
-      n `shouldEqual` newCount
-      eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
-      eRes' `shouldSatisfy` isRight
+      it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" $ \simpleStorageCfg -> do
+        let {simpleStorageAddress, userAddress} = simpleStorageCfg
+            newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
+            fltr = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+        eventVar <-AVar.empty
+        _ <- forkWeb3 provider $ event fltr \(SimpleStorage.CountSet {_count}) -> liftAff do
+          liftEffect $ C.log $ "New Count Set: " <> show _count
+          AVar.put _count eventVar
+          pure TerminateEvent
+        _ <- runWeb3 provider do
+          let txOpts = defaultTestTxOptions # _from ?~ userAddress
+                                            # _to ?~ simpleStorageAddress
+          setCountHash <- SimpleStorage.setCount txOpts {_count: newCount}
+          liftEffect $ C.log $ "Sumbitted count update transaction: " <> show setCountHash
+        n <- AVar.take eventVar
+        n `shouldEqual` newCount
+        eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
+        eRes' `shouldSatisfy` isRight
 
 --------------------------------------------------------------------------------
 -- | Helpers

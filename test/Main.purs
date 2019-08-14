@@ -2,9 +2,7 @@ module Test.Main where
 
 import Prelude
 
-import Data.Identity (Identity(..))
 import Data.Maybe (Maybe(..))
-import Data.Newtype (un)
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), launchAff_)
 import Network.Ethereum.Web3.Types.Provider (httpProvider)
@@ -23,10 +21,8 @@ import Web3Spec.Types.Vector (vectorSpec)
 main :: Effect Unit
 main = do
   let cfg =  defaultConfig {timeout = Just (Milliseconds $ 60.0 * 1000.0)}
-      idRunner = void <<< un Identity <<< runSpecT cfg [consoleReporter]
   p <- httpProvider "http://localhost:8545"
-  launchAff_ do
-    idRunner do
+  launchAff_ $ runSpecT cfg [consoleReporter] do
       dataMakerSpec
       vectorSpec
       encodingContainersSpec
@@ -34,5 +30,4 @@ main = do
       encodingGenericSpec
       simpleStorageSpec
       etherUnitTests
-    runSpecT cfg [consoleReporter] do
       liveSpec p
