@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Array ((!!))
 import Data.ByteString as BS
-import Data.Either (isRight, fromRight)
+import Data.Either (isRight)
 import Data.Lens ((?~), (%~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Tuple (Tuple(..))

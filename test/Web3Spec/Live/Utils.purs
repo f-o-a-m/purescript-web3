@@ -1,6 +1,8 @@
 module Web3Spec.LiveSpec.Utils
   ( takeEvent
+  , deployContract
   , assertWeb3
+  , assertStorageCall
   , pollTransactionReceipt
   , mkHexString'
   , mkUInt
@@ -10,15 +12,18 @@ module Web3Spec.LiveSpec.Utils
 
 import Prelude
 
+import Data.Array ((!!))
 import Data.Either (Either(..))
 import Data.Lens ((?~))
-import Data.Maybe (fromJust)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (liftAff)
-import Network.Ethereum.Core.BigNumber (BigNumber, decimal, parseBigNumber)
-import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3, uIntNFromBigNumber)
+import Effect.Class (liftEffect)
+import Effect.Class.Console as C
+import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent)
 import Network.Ethereum.Web3.Solidity.Sizes (S256, s256)
@@ -57,6 +62,17 @@ assertWeb3 provider a = runWeb3 provider a <#> case _ of
   Right x -> x
   Left err -> unsafeCrashWith $ "expected Right in `assertWeb3`, got error" <> show err
 
+assertStorageCall
+  :: forall a.
+     Provider
+  -> Web3 (Either CallError a)
+  -> Aff a
+assertStorageCall p f = do
+  eRes <- assertWeb3 p f
+  case eRes of
+    Right x -> pure x
+    Left err -> unsafeCrashWith $ "expected Right in `assertStorageCall`, got error" <> show err
+
 pollTransactionReceipt
   :: forall a.
      HexString
@@ -72,6 +88,33 @@ pollTransactionReceipt txHash provider k = do
     Right receipt@(TransactionReceipt res) -> case res.status of
       Succeeded -> k receipt
       Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
+
+type ContractConfig =
+  { contractAddress :: Address
+  , userAddress :: Address
+  }
+
+deployContract
+  :: Provider
+  -> String -- contract name
+  -> (TransactionOptions NoPay -> Web3 HexString) -- deployment transaction
+  -> Aff ContractConfig
+deployContract p contractName deploymentTx = do
+  userAddress <- assertWeb3 p $ do
+    accounts <- Api.eth_getAccounts
+    pure $ unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
+  txHash <- assertWeb3 p do
+    accounts <- Api.eth_getAccounts
+    let txOpts = defaultTestTxOptions # _from ?~ userAddress
+    txHash <- deploymentTx txOpts
+    liftEffect $ C.log $ "Submitted " <> contractName <> " deployment : " <> show txHash
+    pure txHash
+  let k (TransactionReceipt rec) = case rec.contractAddress of
+        Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
+        Just addr -> pure addr
+  contractAddress <- pollTransactionReceipt txHash p k
+  pure $ {contractAddress, userAddress}
+
 
 mkHexString'
   :: String
