@@ -13,14 +13,12 @@ import Effect.Class (liftEffect)
 import Effect.Class.Console as C
 import Network.Ethereum.Web3 (Address, ChainCursor(..), EventAction(..), Provider, TransactionReceipt(..), _from, _to, event, eventFilter, forkWeb3, runWeb3)
 import Network.Ethereum.Web3.Api as Api
-import Network.Ethereum.Web3.Solidity (uIntNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Sizes (s256)
 import Partial.Unsafe (unsafeCrashWith, unsafePartialBecause)
 import Test.Spec (SpecT, beforeAll, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.SimpleStorage as SimpleStorage
-import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, pollTransactionReceipt)
+import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, mkUInt, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
@@ -29,7 +27,7 @@ spec provider =
 
       it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" $ \simpleStorageCfg -> do
         let {simpleStorageAddress, userAddress} = simpleStorageCfg
-            newCount = unsafePartialBecause "one is a UINT" $ fromJust (uIntNFromBigNumber s256 one)
+            newCount = mkUInt one
             fltr = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
         eventVar <-AVar.empty
         _ <- forkWeb3 provider $ event fltr \(SimpleStorage.CountSet {_count}) -> liftAff do

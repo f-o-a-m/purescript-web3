@@ -3,6 +3,7 @@ module Web3Spec.LiveSpec.Utils
   , assertWeb3
   , pollTransactionReceipt
   , mkHexString'
+  , mkUInt
   , defaultTestTxOptions
   , bigGasLimit
   ) where
@@ -16,10 +17,11 @@ import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (liftAff)
-import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
-import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3)
+import Network.Ethereum.Core.BigNumber (BigNumber, decimal, parseBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent)
+import Network.Ethereum.Web3.Solidity.Sizes (S256, s256)
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial, unsafePartialBecause)
 import Type.Proxy (Proxy)
@@ -76,6 +78,11 @@ mkHexString'
   -> HexString
 mkHexString' hx =
   unsafePartialBecause "I know how to make a HexString" $ fromJust $ mkHexString hx
+
+mkUInt
+  :: BigNumber
+  -> UIntN S256
+mkUInt n = unsafePartialBecause "I know how to make a UInt" $ fromJust $ uIntNFromBigNumber s256 n
 
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions =

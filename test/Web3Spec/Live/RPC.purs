@@ -19,7 +19,7 @@ import Partial.Unsafe (unsafePartial, unsafePartialBecause)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Quotient (mkQuotient, runQuotient)
-import Web3Spec.LiveSpec.Utils (pollTransactionReceipt)
+import Web3Spec.LiveSpec.Utils (assertWeb3, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
@@ -74,27 +74,23 @@ spec provider =
       eRes `shouldSatisfy` isRight
 
     it "Can call eth_getBlockByNumber, eth_getBlockTransactionCountByHash, getBlockTransactionCountByNumber" do
-      eRes <- runWeb3 provider do
+      Tuple count1 count2 <- assertWeb3 provider do
         bn <- Api.eth_blockNumber
         Block block <- Api.eth_getBlockByNumber (BN bn)
         let bHash = unsafePartialBecause "Block is not pending" $ fromJust block.hash
         count1 <- Api.eth_getBlockTransactionCountByHash bHash
         count2 <- Api.eth_getBlockTransactionCountByNumber (BN bn)
         pure $ Tuple count1 count2
-      eRes `shouldSatisfy` isRight
-      let Tuple count1 count2 = unsafePartialBecause "Result was Right" $ fromRight eRes
       count1 `shouldEqual` count2
 
     it "Can call eth_getUncleCountByBlockHash eth_getUncleCountByBlockNumber" do
-      eRes <- runWeb3 provider do
+      Tuple count1 count2 <- assertWeb3 provider do
         bn <- Api.eth_blockNumber
         Block block <- Api.eth_getBlockByNumber (BN bn)
         let bHash = unsafePartialBecause "Block is not pending" $ fromJust block.hash
         count1 <- Api.eth_getUncleCountByBlockHash bHash
         count2 <- Api.eth_getUncleCountByBlockNumber (BN bn)
         pure $ Tuple count1 count2
-      eRes `shouldSatisfy` isRight
-      let Tuple count1 count2 = unsafePartialBecause "Result was Right" $ fromRight eRes
       count1 `shouldEqual` count2
 
     it "Can call eth_getBlockByHash" do
@@ -109,14 +105,12 @@ spec provider =
     it "Can call personal_sign, personal_ecRecover, and they should coincide with eth-core" do
       let msgBody = unsafePartial fromJust $ mkHexString "1234"
           fullHashedMessageBS = keccak256 <<< makeRidiculousEthereumMessage $ msgBody
-      eRes <- runWeb3 provider do
+      {signer, signer', signatureHex} <- assertWeb3 provider do
         accounts <- Api.eth_getAccounts
         let signer = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
         signatureHex <- Api.personal_sign msgBody signer (Just "password123")
         signer' <- Api.personal_ecRecover msgBody signatureHex
         pure $ {signer, signer', signatureHex}
-      eRes `shouldSatisfy` isRight
-      let {signer, signer', signatureHex} = unsafePartialBecause "Result was Right" $ fromRight eRes
       signer `shouldEqual` signer'
       -- make sure that we can recover the signature in purescript natively
       let rsvSignature = case signatureFromByteString <<< Hex.toByteString $ signatureHex of
@@ -128,7 +122,7 @@ spec provider =
       eRes `shouldSatisfy` isRight
 
     it "Can call eth_getTransactionByBlockHashAndIndex eth_getBlockTransactionByBlockNumberAndIndex" do
-      eRes <- runWeb3 provider do
+      txHash <- assertWeb3 provider do
         accounts <- Api.eth_getAccounts
         let sender = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
             receiver = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 1
@@ -136,15 +130,11 @@ spec provider =
                                                # _to ?~ receiver
                                                # _value ?~ fromMinorUnit one
         Api.eth_sendTransaction txOpts
-      eRes `shouldSatisfy` isRight
-      let txHash = unsafePartialBecause "Result was Right" $ fromRight eRes
       TransactionReceipt txReceipt <- pollTransactionReceipt txHash provider pure
-      eRes' <- runWeb3 provider do
+      Tuple tx tx' <- assertWeb3 provider do
         tx <- Api.eth_getTransactionByBlockHashAndIndex txReceipt.blockHash zero
         tx' <- Api.eth_getTransactionByBlockNumberAndIndex (BN txReceipt.blockNumber) zero
         pure $ Tuple tx tx'
-      eRes' `shouldSatisfy` isRight
-      let Tuple tx tx' = unsafePartialBecause "Result was Right" $ fromRight eRes'
       tx `shouldEqual` tx'
 
 signatureToByteString :: Sig.Signature -> BS.ByteString
