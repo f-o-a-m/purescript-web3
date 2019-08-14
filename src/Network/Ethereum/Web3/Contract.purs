@@ -14,7 +14,6 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
@@ -27,7 +26,7 @@ import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, mkBlockNumber, FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -42,7 +41,7 @@ class EventFilter e where
 event :: forall e i ni.
          DecodeEvent i ni e
       => Filter e
-      -> (e -> ReaderT Change Web3 EventAction)
+      -> EventHandler Web3 e
       -> Web3 (Either (FilterStreamState e) ChangeReceipt)
 event fltr handler = event' fltr zero handler
 
