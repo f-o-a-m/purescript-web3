@@ -143,7 +143,8 @@ pollFilter filterId stop = fromProducer $ producer $ do
 
 -- | `reduceEventStream` takes a handler and an initial state and attempts to run
 -- | the handler over the event stream. If the machine ends without a `TerminateEvent`
--- | result, we return the current state. Otherwise we return `Nothing`.
+-- | result, we return the current state. Otherwise we return the `ChangeReceipt`
+-- | for the event that caused the termination.
 reduceEventStream
   :: forall f par e.
      Monad f
