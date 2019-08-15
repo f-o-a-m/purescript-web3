@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Simple (spec) where
+module Web3Spec.Encoding.SimpleSpec (spec) where
 
 
 import Prelude

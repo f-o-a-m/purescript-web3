@@ -1,4 +1,4 @@
-module Web3Spec.Types.EtherUnit  (spec) where
+module Web3Spec.Types.EtherUnitSpec  (spec) where
 
 import Prelude
 

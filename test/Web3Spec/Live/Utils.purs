@@ -1,18 +1,9 @@
-module Web3Spec.LiveSpec.Utils
-  ( takeEvent
-  , deployContract
-  , assertWeb3
-  , assertStorageCall
-  , pollTransactionReceipt
-  , mkHexString'
-  , mkUInt
-  , defaultTestTxOptions
-  , bigGasLimit
-  ) where
+module Web3Spec.LiveSpec.Utils where
 
 import Prelude
 
 import Data.Array ((!!))
+import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (Maybe(..), fromJust)
@@ -23,10 +14,9 @@ import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
-import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, BigNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
-import Network.Ethereum.Web3.Solidity (class DecodeEvent)
-import Network.Ethereum.Web3.Solidity.Sizes (S256, s256)
+import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial, unsafePartialBecause)
 import Type.Proxy (Proxy)
@@ -122,10 +112,30 @@ mkHexString'
 mkHexString' hx =
   unsafePartialBecause "I know how to make a HexString" $ fromJust $ mkHexString hx
 
-mkUInt
-  :: BigNumber
-  -> UIntN S256
-mkUInt n = unsafePartialBecause "I know how to make a UInt" $ fromJust $ uIntNFromBigNumber s256 n
+mkUIntN
+  :: forall n.
+     KnownSize n
+  => DLProxy n
+  -> Int
+  -> UIntN n
+mkUIntN p n = unsafePartialBecause "I know how to make a UInt" $ fromJust $ uIntNFromBigNumber p $ embed n
+
+
+mkIntN
+  :: forall n.
+     KnownSize n
+  => DLProxy n
+  -> Int
+  -> IntN n
+mkIntN p n = unsafePartialBecause "I know how to make an Int" $ fromJust $ intNFromBigNumber p $ embed n
+
+mkBytesN
+  :: forall n.
+     KnownSize n
+  => DLProxy n
+  -> String
+  -> BytesN n
+mkBytesN p s = unsafePartialBecause "I know how to make Bytes" $ fromJust $ fromByteString p =<< flip BS.fromString BS.Hex s
 
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions =

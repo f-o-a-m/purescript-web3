@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Generic (spec) where
+module Web3Spec.Encoding.GenericSpec (spec) where
 
 
 import Prelude

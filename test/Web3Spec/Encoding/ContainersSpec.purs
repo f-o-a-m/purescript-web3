@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Containers (spec) where
+module Web3Spec.Encoding.ContainersSpec (spec) where
 
 
 import Prelude

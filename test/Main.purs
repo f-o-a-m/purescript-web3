@@ -12,14 +12,15 @@ import Network.Ethereum.Web3.Types.Provider (httpProvider)
 import Test.Spec (Spec, SpecT, mapSpecTree)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
-import Web3Spec.Encoding.Containers as EncodingContainersSpec
+import Web3Spec.Encoding.ContainersSpec as EncodingContainersSpec
 import Web3Spec.Encoding.DataSpec as EncodingDataSpec
-import Web3Spec.Encoding.Generic as EncodingGenericSpec
-import Web3Spec.Encoding.Simple as EncodingSimpleSpec
-import Web3Spec.Live.SimpleStorage as SimpleStorageSpec
-import Web3Spec.Live.RPC as RPCSpec
-import Web3Spec.Types.EtherUnit as EtherUnitSpec
-import Web3Spec.Types.Vector as VectorSpec
+import Web3Spec.Encoding.GenericSpec as EncodingGenericSpec
+import Web3Spec.Encoding.SimpleSpec as EncodingSimpleSpec
+import Web3Spec.Live.SimpleStorageSpec as SimpleStorageSpec
+import Web3Spec.Live.ComplexStorageSpec as ComplexStorageSpec
+import Web3Spec.Live.RPCSpec as RPCSpec
+import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
+import Web3Spec.Types.VectorSpec as VectorSpec
 
 
 main :: Effect Unit
@@ -36,6 +37,7 @@ main = launchAff_ do
       EtherUnitSpec.spec
     RPCSpec.spec p
     SimpleStorageSpec.spec p
+    ComplexStorageSpec.spec p
   where
     hoist :: Spec ~> SpecT Aff Unit Aff
     hoist = mapSpecTree (pure <<< un Identity) identity

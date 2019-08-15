@@ -1,4 +1,4 @@
-module Web3Spec.Types.Vector (spec) where
+module Web3Spec.Types.VectorSpec (spec) where
 
 import Prelude
 

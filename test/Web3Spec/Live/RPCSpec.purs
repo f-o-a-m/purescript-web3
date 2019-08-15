@@ -1,4 +1,4 @@
-module Web3Spec.Live.RPC (spec) where
+module Web3Spec.Live.RPCSpec (spec) where
 
 import Prelude
 
