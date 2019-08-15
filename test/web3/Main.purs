@@ -20,6 +20,7 @@ import Web3Spec.Live.SimpleStorageSpec as SimpleStorageSpec
 import Web3Spec.Live.ComplexStorageSpec as ComplexStorageSpec
 import Web3Spec.Live.MockERC20Spec as MockERC20Spec
 import Web3Spec.Live.PayableTestSpec as PayableTestSpec
+import Web3Spec.Live.SimpleErrorTestSpec as SimpleErrorTestSpec
 import Web3Spec.Live.RPCSpec as RPCSpec
 import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
 import Web3Spec.Types.VectorSpec as VectorSpec
@@ -42,6 +43,7 @@ main = launchAff_ do
     ComplexStorageSpec.spec p
     MockERC20Spec.spec p
     PayableTestSpec.spec p
+    SimpleErrorTestSpec.spec p
   where
     hoist :: Spec ~> SpecT Aff Unit Aff
     hoist = mapSpecTree (pure <<< un Identity) identity
