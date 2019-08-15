@@ -3,25 +3,26 @@ module Web3Spec.Live.ComplexStorageSpec (spec) where
 import Prelude
 
 import Data.Lens ((?~))
+import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
-import Network.Ethereum.Web3 (BytesN, Provider, Value, Wei, _data, _from, _to, _value, mkValue, nilVector)
+import Network.Ethereum.Web3 (Provider, Value, Wei, _data, _from, _to, _value, mkValue, nilVector)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity ((:<))
 import Network.Ethereum.Web3.Solidity.Sizes (s16, s2, s224, s256)
 import Test.Spec (SpecT, beforeAll, describe, it)
-import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
+import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.ComplexStorage as ComplexStorage
 import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, deployContract, mkBytesN, mkIntN, mkUIntN, takeEvent)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
-  describe "It should be able to deploy and test a complex contract" $
+  describe "Complex Storage" $
     beforeAll ( deployContract provider "ComplexStorage" $ \txOpts ->
                   Api.eth_sendTransaction $ txOpts # _data ?~ ComplexStorage.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $
-      it "Can deploy a contract, verify the contract storage, make a transaction, get get the event, make a call" $ \complexStorageCfg -> do
+      it "Can encode and decode complex objects to / from a smart contract" $ \complexStorageCfg -> do
         let {contractAddress: complexStorageAddress, userAddress} = complexStorageCfg
             uint = mkUIntN s256 1
             int = mkIntN s256 $ negate 1
@@ -45,11 +46,8 @@ spec provider =
                   , _bytes16Val : bytes16
                   , _bytes2VectorListVal : bytes2s
                   }
-            setAction = ComplexStorage.setValues txOptions arg
+            setValsAction = ComplexStorage.setValues txOptions arg
         pure unit
-        --hx <- runWeb3 provider $ 
-        --liftEffect $ log $ "setValues tx hash: " <> show hx
-        --_ <- joinFiber fiber
-        --ev <- AVar.take var
-        --ev `shouldEqual` ComplexStorage.ValsSet {a: uint, b: int, c: bool, d: int224, e: bools, f: ints, g: string, h: bytes16,  i:bytes2s}
-        --  pure unit
+        Tuple _ _event <- assertWeb3 provider $
+          takeEvent (Proxy :: Proxy ComplexStorage.ValsSet) complexStorageAddress setValsAction
+        _event `shouldEqual` ComplexStorage.ValsSet  {a: uint, b: int, c: bool, d: int224, e: bools, f: ints, g: string, h: bytes16,  i:bytes2s}

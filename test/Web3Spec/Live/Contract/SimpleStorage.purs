@@ -16,7 +16,7 @@ import Network.Ethereum.Web3.Contract.Internal (uncurryFields)
 import Network.Ethereum.Web3.Solidity (D2, D5, D6, DOne, Tuple0(..), Tuple1(..), UIntN, class IndexedEvent, unTuple1)
 import Network.Ethereum.Web3.Solidity.Size (type (:&))
 import Network.Ethereum.Web3.Types (CallError, ChainCursor, HexString, NoPay, TransactionOptions, Web3, defaultFilter, mkHexString)
-import Partial.Unsafe (unsafePartial, unsafePartialBecause)
+import Partial.Unsafe (unsafePartial)
 
 import Web3Spec.LiveSpec.Utils (mkHexString')
 
