@@ -2,7 +2,7 @@
 -- | Adoption
 --------------------------------------------------------------------------------
 
-module Contract.Adoption where
+module Web3Spec.Live.Contract.Adoption where
 
 import Prelude 
 

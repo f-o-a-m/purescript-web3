@@ -19,7 +19,7 @@ import Partial.Unsafe (unsafePartial, unsafePartialBecause)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Quotient (mkQuotient, runQuotient)
-import Web3Spec.LiveSpec.Utils (assertWeb3, pollTransactionReceipt)
+import Web3Spec.Live.Utils (assertWeb3, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =

@@ -13,7 +13,8 @@
     "dependencies": [],
     "solc-output-selection": [],
     "purescript-generator": {
-        "output-path": "../Web3Spec/Live",
-        "module-prefix": "Contract"
+        "output-path": "../web3",
+        "module-prefix": "Web3Spec.Live.Contract"
+
     }
 }

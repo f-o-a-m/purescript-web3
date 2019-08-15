@@ -1,4 +1,4 @@
-module Web3Spec.LiveSpec.Utils where
+module Web3Spec.Live.Utils where
 
 import Prelude
 

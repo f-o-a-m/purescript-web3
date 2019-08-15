@@ -2,7 +2,7 @@
 -- | MockERC20
 --------------------------------------------------------------------------------
 
-module Contract.MockERC20 where
+module Web3Spec.Live.Contract.MockERC20 where
 
 import Prelude 
 

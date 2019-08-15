@@ -2,7 +2,7 @@
 -- | ComplexStorage
 --------------------------------------------------------------------------------
 
-module Contract.ComplexStorage where
+module Web3Spec.Live.Contract.ComplexStorage where
 
 import Prelude 
 

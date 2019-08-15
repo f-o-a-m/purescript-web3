@@ -13,13 +13,14 @@ import Test.Spec (SpecT, beforeAll, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.SimpleStorage as SimpleStorage
-import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, deployContract, mkUIntN, takeEvent)
+import Web3Spec.Live.Code.SimpleStorage as SimpleStorageCode
+import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, deployContract, mkUIntN, takeEvent)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "Simple Storage" $
     beforeAll ( deployContract provider "SimpleStorage" $ \txOpts ->
-                  SimpleStorage.constructor txOpts SimpleStorage.deployBytecode
+                  SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
               ) $
       it "Can get and set a simple UInt with events" $ \simpleStorageCfg -> do
         let {contractAddress: simpleStorageAddress, userAddress} = simpleStorageCfg

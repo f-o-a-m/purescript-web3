@@ -13,13 +13,14 @@ import Test.Spec (SpecT, beforeAll, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.ComplexStorage as ComplexStorage
-import Web3Spec.LiveSpec.Utils (assertWeb3, defaultTestTxOptions, deployContract, mkBytesN, mkIntN, mkUIntN, takeEvent)
+import Web3Spec.Live.Code.ComplexStorage as ComplexStorageCode
+import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, deployContract, mkBytesN, mkIntN, mkUIntN, takeEvent)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "Complex Storage" $
     beforeAll ( deployContract provider "ComplexStorage" $ \txOpts ->
-                  Api.eth_sendTransaction $ txOpts # _data ?~ ComplexStorage.deployBytecode
+                  Api.eth_sendTransaction $ txOpts # _data ?~ ComplexStorageCode.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $
       it "Can encode and decode complex objects to / from a smart contract" $ \complexStorageCfg -> do

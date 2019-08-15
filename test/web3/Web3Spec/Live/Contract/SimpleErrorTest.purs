@@ -2,7 +2,7 @@
 -- | SimpleErrorTest
 --------------------------------------------------------------------------------
 
-module Contract.SimpleErrorTest where
+module Web3Spec.Live.Contract.SimpleErrorTest where
 
 import Prelude 
 

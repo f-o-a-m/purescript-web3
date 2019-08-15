@@ -2,7 +2,7 @@
 -- | PayableTest
 --------------------------------------------------------------------------------
 
-module Contract.PayableTest where
+module Web3Spec.Live.Contract.PayableTest where
 
 import Prelude 
 

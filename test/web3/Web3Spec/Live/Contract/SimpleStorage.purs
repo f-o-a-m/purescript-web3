@@ -2,7 +2,7 @@
 -- | SimpleStorage
 --------------------------------------------------------------------------------
 
-module Contract.SimpleStorage where
+module Web3Spec.Live.Contract.SimpleStorage where
 
 import Prelude 
 
