@@ -14,6 +14,7 @@ import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
+import Network.Ethereum.Core.Signatures (mkAddress)
 import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, BigNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
@@ -140,6 +141,9 @@ mkBytesN p s = unsafePartialBecause "I know how to make Bytes" $ fromJust $ from
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions =
   defaultTransactionOptions # _gas ?~ bigGasLimit
+
+nullAddress :: Address
+nullAddress = unsafePartial $ fromJust $ mkAddress =<< mkHexString "0000000000000000000000000000000000000000"
 
 bigGasLimit :: BigNumber
 bigGasLimit = unsafePartial fromJust $ parseBigNumber decimal "4712388"
