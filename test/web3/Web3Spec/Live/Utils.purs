@@ -7,6 +7,7 @@ import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (Maybe(..), fromJust)
+import Data.Newtype (wrap, unwrap)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.AVar as AVar
@@ -15,7 +16,7 @@ import Effect.Class (liftEffect)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, BigNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
@@ -79,6 +80,19 @@ pollTransactionReceipt txHash provider k = do
     Right receipt@(TransactionReceipt res) -> case res.status of
       Succeeded -> k receipt
       Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
+
+hangOutTillBlock :: BlockNumber -> Web3 Unit
+hangOutTillBlock bn = do
+  bn' <- Api.eth_blockNumber
+  unless (bn' >= bn) do
+    liftAff $ delay (Milliseconds 1000.0)
+    hangOutTillBlock bn 
+
+awaitNextBlock :: Web3 Unit
+awaitNextBlock = do
+  n <- Api.eth_blockNumber
+  let next = wrap $ embed 1 + unwrap n
+  hangOutTillBlock next
 
 type ContractConfig =
   { contractAddress :: Address
