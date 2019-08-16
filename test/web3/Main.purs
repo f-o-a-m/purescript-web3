@@ -22,6 +22,7 @@ import Web3Spec.Live.MockERC20Spec as MockERC20Spec
 import Web3Spec.Live.PayableTestSpec as PayableTestSpec
 import Web3Spec.Live.SimpleErrorTestSpec as SimpleErrorTestSpec
 import Web3Spec.Live.RPCSpec as RPCSpec
+import Web3Spec.Live.FilterSpec as FilterSpec
 import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
 import Web3Spec.Types.VectorSpec as VectorSpec
 
@@ -31,19 +32,20 @@ main = launchAff_ do
   let cfg = defaultConfig {timeout = Just (Milliseconds $ 60.0 * 1000.0)}
   p <- liftEffect $ httpProvider "http://localhost:8545"
   join $ runSpecT cfg [consoleReporter] do
-    hoist do
-      EncodingDataSpec.spec
-      VectorSpec.spec
-      EncodingContainersSpec.spec
-      EncodingSimpleSpec.spec
-      EncodingGenericSpec.spec
-      EtherUnitSpec.spec
-    RPCSpec.spec p
-    SimpleStorageSpec.spec p
-    ComplexStorageSpec.spec p
-    MockERC20Spec.spec p
-    PayableTestSpec.spec p
-    SimpleErrorTestSpec.spec p
+    --hoist do
+    --  EncodingDataSpec.spec
+    --  VectorSpec.spec
+    --  EncodingContainersSpec.spec
+    --  EncodingSimpleSpec.spec
+    --  EncodingGenericSpec.spec
+    --  EtherUnitSpec.spec
+    --RPCSpec.spec p
+    --SimpleStorageSpec.spec p
+    --ComplexStorageSpec.spec p
+    --MockERC20Spec.spec p
+    --PayableTestSpec.spec p
+    --SimpleErrorTestSpec.spec p
+    FilterSpec.spec p
   where
     hoist :: Spec ~> SpecT Aff Unit Aff
     hoist = mapSpecTree (pure <<< un Identity) identity

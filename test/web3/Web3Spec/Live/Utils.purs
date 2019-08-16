@@ -9,14 +9,14 @@ import Data.Lens ((?~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (wrap, unwrap)
 import Data.Tuple (Tuple(..))
-import Effect.Aff (Aff, Milliseconds(..), delay)
+import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
@@ -84,7 +84,8 @@ pollTransactionReceipt txHash provider k = do
 hangOutTillBlock :: BlockNumber -> Web3 Unit
 hangOutTillBlock bn = do
   bn' <- Api.eth_blockNumber
-  unless (bn' >= bn) do
+  liftAff $ C.log $ "Current block number : " <> show bn' 
+  when (bn' > bn) do
     liftAff $ delay (Milliseconds 1000.0)
     hangOutTillBlock bn 
 
@@ -92,6 +93,7 @@ awaitNextBlock :: Web3 Unit
 awaitNextBlock = do
   n <- Api.eth_blockNumber
   let next = wrap $ embed 1 + unwrap n
+  liftAff $ C.log $ "Awaiting block number " <> show next
   hangOutTillBlock next
 
 type ContractConfig =
@@ -118,8 +120,18 @@ deployContract p contractName deploymentTx = do
         Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
         Just addr -> pure addr
   contractAddress <- pollTransactionReceipt txHash p k
+  C.log $ contractName <> " successfully deployed to " <> show contractAddress
   pure $ {contractAddress, userAddress}
 
+joinWeb3Fork
+  :: forall a.
+     Fiber (Either Web3Error a)
+  -> Aff a
+joinWeb3Fork fiber = do
+  eRes <- joinFiber fiber
+  case eRes of
+    Left e -> unsafeCrashWith $ "Error in forked web3 process " <> show e
+    Right a -> pure a
 
 mkHexString'
   :: String
