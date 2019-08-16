@@ -3,30 +3,31 @@ module Web3Spec.Live.FilterSpec (spec) where
 import Prelude
 
 import Control.Monad.Reader (ask)
-import Data.Array ((..), snoc)
+import Data.Array (snoc)
 import Data.Either (Either)
+import Data.Newtype (wrap, unwrap)
 import Data.Traversable (traverse_)
 import Data.Lens ((?~), (.~), (^.))
 import Effect.Aff (Aff, Fiber)
 import Effect.Aff.Class (liftAff)
 import Effect.Aff.AVar as AVar
 import Effect.Class.Console as C
-import Network.Ethereum.Web3 (Web3, BlockNumber, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, Address)
+import Network.Ethereum.Web3 (Web3, BlockNumber, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256, S256)
-import Test.Spec (SpecT, before, describe, it)
+import Test.Spec (SpecT, before, describe, it, parallel)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.SimpleStorage as SimpleStorage
 import Web3Spec.Live.Code.SimpleStorage as SimpleStorageCode
-import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, ContractConfig, deployContract, mkUIntN, awaitNextBlock, joinWeb3Fork)
+import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, ContractConfig, deployContract, mkUIntN, awaitNextBlock, joinWeb3Fork, hangOutTillBlock)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
-  describe "Filters" do
+  describe "Filters" $ parallel do
       before (deployUniqueSimpleStorage provider) $
-        it "can stream events starting and ending in the past" $ \simpleStorageCfg1 -> do
-          let {simpleStorageAddress, setter} = simpleStorageCfg1
+        it "can stream events starting and ending in the past" \simpleStorageCfg -> do
+          let {simpleStorageAddress, setter} = simpleStorageCfg
               values = mkUIntN s256 <$> [1,2,3]
               filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
           fiber <- monitorUntil provider filter (_ == mkUIntN s256 3)
@@ -43,8 +44,8 @@ spec provider =
           foundValues `shouldEqual` values
 
       before (deployUniqueSimpleStorage provider) $
-        it "can stream events starting in the past and ending in the future" $ \simpleStorageCfg2 -> do
-          let {simpleStorageAddress, setter} = simpleStorageCfg2
+        it "can stream events starting in the past and ending in the future" \simpleStorageCfg -> do
+          let {simpleStorageAddress, setter} = simpleStorageCfg
               firstValues = mkUIntN s256 <$> [1,2,3]
               secondValues = mkUIntN s256 <$> [4,5,6]
               filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
@@ -60,6 +61,40 @@ spec provider =
           {foundValuesV} <- joinWeb3Fork fiber2
           foundValues <- AVar.take foundValuesV
           (firstValues <> secondValues) `shouldEqual` foundValues
+
+      before (deployUniqueSimpleStorage provider) $
+        it "can stream events starting and ending in the future, unbounded" \simpleStorageCfg -> do
+          let {simpleStorageAddress, setter} = simpleStorageCfg
+              values = mkUIntN s256 <$> [1,2,3]
+          now <- assertWeb3 provider Api.eth_blockNumber
+          let later = wrap $ unwrap now + embed 3
+              filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+                           # _fromBlock .~ BN later
+                           # _toBlock   .~ Latest
+          fiber <- monitorUntil provider filter (_ == mkUIntN s256 3)
+          assertWeb3 provider $ hangOutTillBlock later
+          assertWeb3 provider $ traverse_ setter values
+          {foundValuesV} <- joinWeb3Fork fiber
+          foundValues <- AVar.take foundValuesV
+          foundValues `shouldEqual` values
+
+      before (deployUniqueSimpleStorage provider) $
+        it "can stream events starting and ending in the future, bounded" \simpleStorageCfg -> do
+          let {simpleStorageAddress, setter} = simpleStorageCfg
+              values = mkUIntN s256 <$> [8,9,10]
+          now <- assertWeb3 provider Api.eth_blockNumber
+          let later = wrap $ unwrap now + embed 3
+              latest = wrap $ unwrap now + embed 8
+              filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+                         # _fromBlock .~ BN later
+                         # _toBlock   .~ BN latest
+          fiber <- monitorUntil provider filter (_ == mkUIntN s256 3)
+          assertWeb3 provider $ hangOutTillBlock later
+          assertWeb3 provider $ traverse_ setter values
+          {foundValuesV} <- joinWeb3Fork fiber
+          foundValues <- AVar.take foundValuesV
+          foundValues `shouldEqual` values
+
 
 
 --------------------------------------------------------------------------------
