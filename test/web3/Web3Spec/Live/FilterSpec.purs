@@ -24,7 +24,7 @@ import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, ContractConfig, de
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
-  describe "Filters" $ parallel do
+  describe "Filters" do
       before (deployUniqueSimpleStorage provider) $
         it "can stream events starting and ending in the past" \simpleStorageCfg -> do
           let {simpleStorageAddress, setter} = simpleStorageCfg

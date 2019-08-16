@@ -85,7 +85,7 @@ hangOutTillBlock :: BlockNumber -> Web3 Unit
 hangOutTillBlock bn = do
   bn' <- Api.eth_blockNumber
   liftAff $ C.log $ "Current block number : " <> show bn' 
-  when (bn' > bn) do
+  when (bn' < bn) do
     liftAff $ delay (Milliseconds 1000.0)
     hangOutTillBlock bn 
 
