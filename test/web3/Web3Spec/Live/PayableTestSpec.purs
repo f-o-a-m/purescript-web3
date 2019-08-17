@@ -5,6 +5,7 @@ import Prelude
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
+import Effect.Class.Console as C
 import Network.Ethereum.Web3 (Provider, _from, _to, _value, mkValue, Value, Wei, Ether, Shannon, _data, unUIntN, convert)
 import Network.Ethereum.Web3.Api as Api
 import Test.Spec (SpecT, beforeAll, describe, it)
@@ -19,7 +20,7 @@ spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "PayableTest" $
 
-    beforeAll ( deployContract provider "PayableTest" $ \txOpts ->
+    beforeAll ( deployContract provider C.log "PayableTest" $ \txOpts ->
                   Api.eth_sendTransaction $ txOpts # _data ?~ PayableTestCode.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $

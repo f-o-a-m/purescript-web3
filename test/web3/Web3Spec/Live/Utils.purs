@@ -2,18 +2,22 @@ module Web3Spec.Live.Utils where
 
 import Prelude
 
+import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Data.Array ((!!))
 import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (wrap, unwrap)
+import Data.Traversable (intercalate)
+import Data.Array.NonEmpty as NAE
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
 import Effect.Aff.AVar as AVar
-import Effect.Aff.Class (liftAff)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as C
+import Test.Spec (ComputationType(..), Spec, SpecT, hoistSpec)
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
 import Network.Ethereum.Core.Signatures (mkAddress)
 import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
@@ -22,6 +26,16 @@ import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial, unsafePartialBecause)
 import Type.Proxy (Proxy)
+
+type Logger m = String -> m Unit
+
+go :: SpecT (ReaderT (Logger Aff) Aff) Unit Aff ~> SpecT Aff Unit Aff
+go = hoistSpec identity \cType m ->
+  let
+    prefix = case cType of
+      CleanUpWithContext n -> intercalate " > " n <> " (afterAll) "
+      TestWithName n -> intercalate " > " $ NAE.toArray n
+  in runReaderT m \logMsg -> C.log $ prefix  <> "| " <> logMsg
 
 -- | Run a `Web3` action which will dispatch a single event, wait for the event,
 -- | then return the action's result and the event.
@@ -46,32 +60,35 @@ takeEvent prx addrs web3Action = do
 
 -- | Assert the `Web3` action's result, crash the program if it doesn't succeed.
 assertWeb3
-  :: forall a.
-     Provider
+  :: forall m a.
+     MonadAff m
+  => Provider
   -> Web3 a
-  -> Aff a
-assertWeb3 provider a = runWeb3 provider a <#> case _ of
+  -> m a
+assertWeb3 provider a = liftAff $ runWeb3 provider a <#> case _ of
   Right x -> x
   Left err -> unsafeCrashWith $ "expected Right in `assertWeb3`, got error" <> show err
 
 assertStorageCall
-  :: forall a.
-     Provider
+  :: forall m a.
+     MonadAff m
+  => Provider
   -> Web3 (Either CallError a)
-  -> Aff a
-assertStorageCall p f = do
+  -> m a
+assertStorageCall p f = liftAff do
   eRes <- assertWeb3 p f
   case eRes of
     Right x -> pure x
     Left err -> unsafeCrashWith $ "expected Right in `assertStorageCall`, got error" <> show err
 
 pollTransactionReceipt
-  :: forall a.
-     HexString
+  :: forall m a.
+     MonadAff m
+  => HexString
   -> Provider
   -> (TransactionReceipt -> Aff a)
-  -> Aff a
-pollTransactionReceipt txHash provider k = do
+  -> m a
+pollTransactionReceipt txHash provider k = liftAff do
   eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
   case eRes of
     Left _ -> do
@@ -81,20 +98,31 @@ pollTransactionReceipt txHash provider k = do
       Succeeded -> k receipt
       Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
 
-hangOutTillBlock :: BlockNumber -> Web3 Unit
-hangOutTillBlock bn = do
-  bn' <- Api.eth_blockNumber
-  liftAff $ C.log $ "Current block number : " <> show bn' 
+hangOutTillBlock 
+  :: forall m.
+     MonadAff m
+  => Provider
+  -> Logger m
+  -> BlockNumber
+  -> m Unit
+hangOutTillBlock provider logger bn = do
+  bn' <- assertWeb3 provider Api.eth_blockNumber
+  logger $ "Current block number : " <> show bn' 
   when (bn' < bn) do
     liftAff $ delay (Milliseconds 1000.0)
-    hangOutTillBlock bn 
+    hangOutTillBlock provider logger bn 
 
-awaitNextBlock :: Web3 Unit
-awaitNextBlock = do
-  n <- Api.eth_blockNumber
+awaitNextBlock 
+  :: forall m. 
+     MonadAff m
+  => Provider
+  -> Logger m
+  -> m Unit
+awaitNextBlock provider logger = do
+  n <- assertWeb3 provider Api.eth_blockNumber
   let next = wrap $ embed 1 + unwrap n
-  liftAff $ C.log $ "Awaiting block number " <> show next
-  hangOutTillBlock next
+  logger $ "Awaiting block number " <> show next
+  hangOutTillBlock provider logger next
 
 type ContractConfig =
   { contractAddress :: Address
@@ -102,11 +130,14 @@ type ContractConfig =
   }
 
 deployContract
-  :: Provider
+  :: forall m.
+     MonadAff m
+  => Provider
+  -> Logger m
   -> String -- contract name
   -> (TransactionOptions NoPay -> Web3 HexString) -- deployment transaction
-  -> Aff ContractConfig
-deployContract p contractName deploymentTx = do
+  -> m ContractConfig
+deployContract p logger contractName deploymentTx = do
   userAddress <- assertWeb3 p $ do
     accounts <- Api.eth_getAccounts
     pure $ unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
@@ -114,20 +145,21 @@ deployContract p contractName deploymentTx = do
     accounts <- Api.eth_getAccounts
     let txOpts = defaultTestTxOptions # _from ?~ userAddress
     txHash <- deploymentTx txOpts
-    liftEffect $ C.log $ "Submitted " <> contractName <> " deployment : " <> show txHash
     pure txHash
+  logger $ "Submitted " <> contractName <> " deployment : " <> show txHash
   let k (TransactionReceipt rec) = case rec.contractAddress of
         Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
         Just addr -> pure addr
   contractAddress <- pollTransactionReceipt txHash p k
-  C.log $ contractName <> " successfully deployed to " <> show contractAddress
+  logger $ contractName <> " successfully deployed to " <> show contractAddress
   pure $ {contractAddress, userAddress}
 
 joinWeb3Fork
-  :: forall a.
-     Fiber (Either Web3Error a)
-  -> Aff a
-joinWeb3Fork fiber = do
+  :: forall a m.
+     MonadAff m
+  => Fiber (Either Web3Error a)
+  -> m a
+joinWeb3Fork fiber = liftAff do
   eRes <- joinFiber fiber
   case eRes of
     Left e -> unsafeCrashWith $ "Error in forked web3 process " <> show e

@@ -5,6 +5,7 @@ import Prelude
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
+import Effect.Class.Console as C
 import Network.Ethereum.Web3 (Provider, _from, _to, _value, mkValue, Value, Wei, _data)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
@@ -20,7 +21,7 @@ spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "MockERC20" $
 
-    beforeAll ( deployContract provider "MockERC20" $ \txOpts ->
+    beforeAll ( deployContract provider C.log "MockERC20" $ \txOpts ->
                   Api.eth_sendTransaction $ txOpts # _data ?~ MockERC20Code.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $

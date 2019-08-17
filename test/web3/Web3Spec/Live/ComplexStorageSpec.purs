@@ -5,6 +5,7 @@ import Prelude
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
+import Effect.Class.Console as C
 import Network.Ethereum.Web3 (Provider, Value, Wei, _data, _from, _to, _value, mkValue, nilVector)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity ((:<))
@@ -19,7 +20,7 @@ import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, deployContract, mk
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "Complex Storage" $
-    beforeAll ( deployContract provider "ComplexStorage" $ \txOpts ->
+    beforeAll ( deployContract provider C.log "ComplexStorage" $ \txOpts ->
                   Api.eth_sendTransaction $ txOpts # _data ?~ ComplexStorageCode.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $

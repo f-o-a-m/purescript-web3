@@ -6,6 +6,7 @@ import Data.Either (isRight)
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
+import Effect.Class.Console as C
 import Network.Ethereum.Web3 (ChainCursor(..), Provider, _from, _to, runWeb3)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
@@ -19,7 +20,7 @@ import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, deployContract, mk
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "Simple Storage" $
-    beforeAll ( deployContract provider "SimpleStorage" $ \txOpts ->
+    beforeAll ( deployContract provider C.log "SimpleStorage" $ \txOpts ->
                   SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
               ) $
       it "Can get and set a simple UInt with events" $ \simpleStorageCfg -> do

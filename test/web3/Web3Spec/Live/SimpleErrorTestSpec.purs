@@ -5,6 +5,7 @@ import Prelude
 import Data.Either (Either(..), isLeft)
 import Data.Lens ((?~))
 import Effect.Aff (Aff)
+import Effect.Class.Console as C
 import Network.Ethereum.Web3 (Provider, ChainCursor(..), _from, _to, _value, mkValue, Value, Wei,  _data)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
 import Network.Ethereum.Web3.Api as Api
@@ -19,7 +20,7 @@ spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
   describe "SimpleError" $
 
-    beforeAll ( deployContract provider "SimpleErrorTest" $ \txOpts ->
+    beforeAll ( deployContract provider C.log "SimpleErrorTest" $ \txOpts ->
                   Api.eth_sendTransaction $ txOpts # _data ?~ SimpleErrorTestCode.deployBytecode
                                                    # _value ?~ (mkValue zero :: Value Wei)
               ) $
