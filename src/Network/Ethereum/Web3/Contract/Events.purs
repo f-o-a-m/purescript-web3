@@ -22,7 +22,7 @@ import Data.Array (catMaybes)
 import Data.Either (Either(..))
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (wrap, unwrap, over)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for_)
 import Data.Tuple (fst)
@@ -32,7 +32,7 @@ import Network.Ethereum.Core.BigNumber (BigNumber, embed)
 import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 
 --------------------------------------------------------------------------------
 -- * Types
@@ -44,6 +44,7 @@ type FilterStreamState e =
   { currentBlock :: BlockNumber
   , initialFilter :: Filter e
   , windowSize :: Int
+  , trailBy :: Int
   }
 
 type FilterChange e =
@@ -89,23 +90,18 @@ filterProducer currentState = do
        then waitForMoreBlocks
        -- otherwise try make progress
        else case currentState.initialFilter ^. _toBlock of
-         -- NOTE: The current behavior for Pending is incorrect, but it's always been incorrect
-         -- We will fix this before the next release.
+         -- TODO: This behavior is incorrect
          Pending -> continueTo chainHead
-         -- if the original filter goes to Latest, consume as many as possible up to the chain head
-         Latest -> continueTo chainHead
-         -- if the original filter ends at a specific block, consume as many as possible up to that block
+         -- consume as many as possible up to the chain head
+         Latest -> continueTo $ over BlockNumber (\bn -> bn - embed currentState.trailBy) chainHead
+         -- if the original fitler ends at a specific block, consume as many as possible up to that block
          -- or terminate if we're already past it
          BN targetEnd -> 
-           if currentState.currentBlock <= targetEnd
-             then continueTo targetEnd
-             else pure currentState
-         -- otherwise we're in Earliest, which is a degenerate case
-         Earliest -> 
-           let genesisBlock = wrap zero
-           in if currentState.currentBlock <= genesisBlock 
-                then continueTo genesisBlock
+           let targetEnd' = min targetEnd $ over BlockNumber (\bn -> bn - embed currentState.trailBy) chainHead
+           in if currentState.currentBlock <= targetEnd'
+                then continueTo targetEnd'
                 else pure currentState
+         -- otherwsie we're in Earliest, which is a degenerate case
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper (wrap $ unwrap current + embed window)

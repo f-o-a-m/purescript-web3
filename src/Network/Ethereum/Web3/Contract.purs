@@ -43,7 +43,7 @@ event :: forall e i ni.
       => Filter e
       -> EventHandler Web3 e
       -> Web3 (Either (FilterStreamState e) ChangeReceipt)
-event fltr handler = event' fltr zero handler
+event fltr handler = event' fltr {windowSize: 0, trailBy: 0} handler
 
 
 -- | Takes a `Filter` and a handler, as well as a windowSize.
@@ -52,14 +52,17 @@ event fltr handler = event' fltr zero handler
 event' :: forall e i ni.
           DecodeEvent i ni e
        => Filter e
-       -> Int
+       -> { windowSize :: Int
+          , trailBy :: Int
+          }
        -> EventHandler Web3 e
        -> Web3 (Either (FilterStreamState e) ChangeReceipt)
-event' fltr w handler = do
-  currentBlock <- mkBlockNumber $ fltr ^. _fromBlock
+event' initialFilter {windowSize, trailBy} handler = do
+  currentBlock <- mkBlockNumber $ initialFilter ^. _fromBlock
   let initialState = { currentBlock
-                     , initialFilter: fltr
-                     , windowSize: w
+                     , initialFilter
+                     , windowSize
+                     , trailBy
                      }
   runProcess $ reduceEventStream (logsStream initialState) handler
 

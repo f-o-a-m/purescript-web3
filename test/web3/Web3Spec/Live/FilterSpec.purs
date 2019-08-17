@@ -3,21 +3,21 @@ module Web3Spec.Live.FilterSpec (spec) where
 import Prelude
 
 import Control.Monad.Reader (ask)
+import Control.Monad.Trans.Class (lift)
 import Data.Array ((..), snoc, length, head, sortWith)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (wrap, unwrap, un)
 import Data.Ord.Down (Down(..))
 import Data.Traversable (traverse_)
 import Data.Lens ((?~), (.~), (^.))
-import Effect.Aff (Aff, Fiber)
+import Data.Tuple (Tuple(..), fst, snd)
+import Effect.Aff (Aff, Fiber, error)
 import Effect.Class (liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Aff.AVar as AVar
 import Effect.AVar as EAVar
-import Effect.Class.Console as C
-import Effect.Unsafe (unsafePerformEffect)
-import Network.Ethereum.Web3 (BlockNumber, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address)
+import Network.Ethereum.Web3 (BlockNumber(..), throwWeb3, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address, event')
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256, S256)
 import Partial.Unsafe (unsafeCrashWith)
@@ -40,6 +40,8 @@ type FilterEnv m =
   }
 
 {-
+NOTE: none of the Futures use Pending, the behavior is currently ill defined
+
 Case [Past,Past] : The filter is starting and ending in the past.
 Case [Past, ∞] : The filter starts in the past but continues indefinitely into the future.
 Case [Future, ∞] : The fitler starts in the future and continues indefinitely into the future.
@@ -54,16 +56,16 @@ spec'
   -> SpecT m Unit Aff Unit
 spec' provider {logger} = do
   uIntV <- liftEffect $ EAVar.new 1
-  let uIntsGen = mkUIntsGen uIntV
+  let gen = mkUIntsGen uIntV
   describe "Filters" $ parallel do
 
-    before (deployUniqueSimpleStorage provider logger) $
+    before (deployUniqueSimpleStorage provider logger gen) $
       it "Case [Past, Past]" \simpleStorageCfg -> do
-        let {simpleStorageAddress, setter} = simpleStorageCfg
+        let {simpleStorageAddress, setter, uIntsGen} = simpleStorageCfg
             filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
         values <- uIntsGen 3
         logger $ "Searching for values " <> show values
-        fiber <- monitorUntil provider logger filter (_ == aMax values)
+        fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
         start <- assertWeb3 provider Api.eth_blockNumber
         traverse_ setter values
         {endingBlockV} <- joinWeb3Fork fiber
@@ -71,35 +73,20 @@ spec' provider {logger} = do
         let pastFilter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                            # _fromBlock .~ BN start
                            # _toBlock .~  BN end
-        fiber' <- monitorUntil provider logger pastFilter (const false)
+        fiber' <- monitorUntil provider logger pastFilter (const false) defaultFilterOpts
         {foundValuesV} <- joinWeb3Fork fiber'
         foundValues <- liftAff $ AVar.take foundValuesV
         liftAff $ foundValues `shouldEqual` values
 
-    before (deployUniqueSimpleStorage provider logger) $
-      it "Case [Past, ∞]" \simpleStorageCfg -> do
-        let {simpleStorageAddress, setter} = simpleStorageCfg
-            filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
-        firstValues <- uIntsGen 3
-        secondValues <- uIntsGen 3
-        let allValues = firstValues <> secondValues
-        logger $ "Searching for values " <> show allValues
-        fiber1 <- monitorUntil provider logger filter1 (_ == aMax firstValues)
-        start <- assertWeb3 provider Api.eth_blockNumber
-        traverse_ setter firstValues
-        _ <- joinWeb3Fork fiber1
-        let filter2 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
-                         # _fromBlock .~ BN start
-                         # _toBlock   .~ Latest
-        fiber2 <- monitorUntil provider logger filter2 (_ == aMax secondValues)
-        traverse_ setter secondValues
-        {foundValuesV} <- joinWeb3Fork fiber2
-        foundValues <- liftAff $ AVar.take foundValuesV
-        liftAff $ foundValues `shouldEqual` allValues
+    before (deployUniqueSimpleStorage provider logger gen) $ do
+      it "Case [Past, ∞] No Trail" \simpleStorageCfg -> do
+        fromPastToFutureTrailingBy simpleStorageCfg provider logger defaultFilterOpts
+      it "Case [Past, ∞] With Trail" \simpleStorageCfg -> do
+        fromPastToFutureTrailingBy simpleStorageCfg provider logger {trailBy: 3, windowSize: 2}
 
-    before (deployUniqueSimpleStorage provider logger) $
+    before (deployUniqueSimpleStorage provider logger gen) $
       it "Case [Future, ∞]" \simpleStorageCfg -> do
-        let {simpleStorageAddress, setter} = simpleStorageCfg
+        let {simpleStorageAddress, setter, uIntsGen} = simpleStorageCfg
         values <- uIntsGen 3
         logger $ "Searching for values " <> show values
         now <- assertWeb3 provider Api.eth_blockNumber
@@ -107,16 +94,16 @@ spec' provider {logger} = do
             filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                          # _fromBlock .~ BN later
                          # _toBlock   .~ Latest
-        fiber <- monitorUntil provider logger filter (_ == aMax values)
+        fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
         hangOutTillBlock provider logger later
         traverse_ setter values
         {foundValuesV} <- joinWeb3Fork fiber
         foundValues <- liftAff $ AVar.take foundValuesV
         liftAff $ foundValues `shouldEqual` values
 
-    before (deployUniqueSimpleStorage provider logger) $
+    before (deployUniqueSimpleStorage provider logger gen) $
       it "Case [Future, Future]" \simpleStorageCfg -> do
-        let {simpleStorageAddress, setter} = simpleStorageCfg
+        let {simpleStorageAddress, setter, uIntsGen} = simpleStorageCfg
         values <- uIntsGen 3
         logger $ "Searching for values " <> show values
         let nValues = length values
@@ -127,7 +114,7 @@ spec' provider {logger} = do
             filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                        # _fromBlock .~ BN later
                        # _toBlock   .~ BN latest
-        fiber <- monitorUntil provider logger filter (_ == aMax values)
+        fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
         hangOutTillBlock provider logger later
         traverse_ setter values
         {foundValuesV} <- joinWeb3Fork fiber
@@ -138,6 +125,43 @@ spec' provider {logger} = do
 -- Utils
 --------------------------------------------------------------------------------
 
+type FilterOpts =
+  { trailBy :: Int
+  , windowSize :: Int
+  }
+
+defaultFilterOpts :: FilterOpts
+defaultFilterOpts = {trailBy: 0, windowSize: 0}
+
+fromPastToFutureTrailingBy
+  :: forall m.
+     MonadAff m
+  => SimpleStorageCfg m
+  -> Provider
+  -> Logger m
+  -> FilterOpts
+  -> m Unit
+fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
+  let {simpleStorageAddress, setter, uIntsGen} = simpleStorageCfg
+      filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+  firstValues <- uIntsGen 7
+  secondValues <- uIntsGen 7
+  let allValues = firstValues <> secondValues
+  logger $ "Searching for values " <> show allValues
+  fiber1 <- monitorUntil provider logger filter1 (_ == aMax firstValues) defaultFilterOpts
+  start <- assertWeb3 provider Api.eth_blockNumber
+  traverse_ setter firstValues
+  _ <- joinWeb3Fork fiber1
+  let filter2 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
+                   # _fromBlock .~ BN start
+                   # _toBlock   .~ Latest
+  fiber2 <- monitorUntil provider logger filter2 (_ == aMax secondValues) opts
+  traverse_ setter secondValues
+  {foundValuesV} <- joinWeb3Fork fiber2
+  foundValues <- liftAff $ AVar.take foundValuesV
+  liftAff $ foundValues `shouldEqual` allValues
+
+
 monitorUntil
   :: forall m.
      MonadAff m
@@ -145,6 +169,7 @@ monitorUntil
   -> Logger m
   -> Filter SimpleStorage.CountSet
   -> (UIntN S256 -> Boolean)
+  -> FilterOpts
   -> m
        ( Fiber
          ( Either Web3Error
@@ -153,36 +178,47 @@ monitorUntil
              }
          )
        )
-monitorUntil provider logger filter p = do
+monitorUntil provider logger filter p opts = do
   endingBlockV <- liftAff AVar.empty
   foundValuesV <- liftAff $ AVar.new []
   logger $ "Creating filter with fromBlock=" <> 
     show (filter ^. _fromBlock) <> " toBlock=" <> show (filter ^. _toBlock)
   liftAff $ forkWeb3 provider $ do
-    _ <- event filter \(SimpleStorage.CountSet {_count}) -> do
-      Change c <- ask
+    _ <- event' filter opts \(SimpleStorage.CountSet {_count}) -> do
+      change@(Change c) <- ask
+      chainHead <- lift Api.eth_blockNumber
+      when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy) $
+        lift $ throwWeb3 $ error "Exceded max trailBy"
       foundSoFar <- liftAff $ AVar.take foundValuesV
       liftAff $ AVar.put (foundSoFar `snoc` _count) foundValuesV
-      if p _count
+      let shouldTerminate = p _count
+      if shouldTerminate
         then do
           liftAff $ AVar.put c.blockNumber endingBlockV
           pure TerminateEvent
         else pure ContinueEvent
     pure {endingBlockV, foundValuesV}
 
+
+type SimpleStorageCfg m = 
+  { simpleStorageAddress :: Address
+  , setter :: UIntN S256 -> m Unit
+  , uIntsGen :: Int -> m (Array (UIntN S256))
+  } 
+
 deployUniqueSimpleStorage
   :: forall m.
      MonadAff m
   => Provider
   -> Logger m
-  -> m { simpleStorageAddress :: Address
-       , setter :: UIntN S256 -> m Unit
-       } 
-deployUniqueSimpleStorage provider logger = do
+  -> (Int -> m (Array (UIntN S256)))
+  -> m (SimpleStorageCfg m)
+deployUniqueSimpleStorage provider logger uIntsGen = do
   contractConfig <- deployContract provider logger "SimpleStorage" $ \txOpts ->
     SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
   pure { simpleStorageAddress: contractConfig.contractAddress
        , setter: mkSetter contractConfig provider logger
+       , uIntsGen
        }
 
 mkSetter
