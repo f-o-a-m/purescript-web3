@@ -130,7 +130,7 @@ spec provider =
                                                # _to ?~ receiver
                                                # _value ?~ fromMinorUnit one
         Api.eth_sendTransaction txOpts
-      TransactionReceipt txReceipt <- pollTransactionReceipt txHash provider pure
+      TransactionReceipt txReceipt <- pollTransactionReceipt provider txHash pure
       Tuple tx tx' <- assertWeb3 provider do
         tx <- Api.eth_getTransactionByBlockHashAndIndex txReceipt.blockHash zero
         tx' <- Api.eth_getTransactionByBlockNumberAndIndex (BN txReceipt.blockNumber) zero

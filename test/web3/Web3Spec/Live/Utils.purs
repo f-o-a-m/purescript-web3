@@ -84,16 +84,16 @@ assertStorageCall p f = liftAff do
 pollTransactionReceipt
   :: forall m a.
      MonadAff m
-  => HexString
-  -> Provider
+  => Provider
+  -> HexString
   -> (TransactionReceipt -> Aff a)
   -> m a
-pollTransactionReceipt txHash provider k = liftAff do
+pollTransactionReceipt provider txHash k = liftAff do
   eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
   case eRes of
     Left _ -> do
       delay (Milliseconds 2000.0)
-      pollTransactionReceipt txHash provider k
+      pollTransactionReceipt provider txHash k
     Right receipt@(TransactionReceipt res) -> case res.status of
       Succeeded -> k receipt
       Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
@@ -150,7 +150,7 @@ deployContract p logger contractName deploymentTx = do
   let k (TransactionReceipt rec) = case rec.contractAddress of
         Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
         Just addr -> pure addr
-  contractAddress <- pollTransactionReceipt txHash p k
+  contractAddress <- pollTransactionReceipt p txHash k
   logger $ contractName <> " successfully deployed to " <> show contractAddress
   pure $ {contractAddress, userAddress}
 
