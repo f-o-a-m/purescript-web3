@@ -70,27 +70,40 @@ filterProducer
      FilterStreamState e
   -> Transducer Void (Filter e) Web3 (FilterStreamState e)
 filterProducer currentState = do
-    let waitForMoreBlocks = do
+    let -- hang out until the chain makes progress
+        waitForMoreBlocks = do
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
+        -- resume the filter production
+        continueTo endBlock = do
+          let endBlock' = newTo endBlock currentState.currentBlock currentState.windowSize
+              fltr = currentState.initialFilter
+                       # _fromBlock .~ BN currentState.currentBlock
+                       # _toBlock .~ BN endBlock'
+          yieldT fltr
+          filterProducer currentState { currentBlock = succ endBlock' }
     chainHead <- lift eth_blockNumber
+    -- if the chain head is less than the current block we want to process
+    -- then wait until the chain progresses
     if chainHead < currentState.currentBlock
        then waitForMoreBlocks
-       else do
-         let initialToBlock = currentState.initialFilter ^. _toBlock
-         end <- lift $ mkBlockNumber initialToBlock
-         if currentState.currentBlock > end
-           then case initialToBlock of
-                  Pending -> waitForMoreBlocks
-                  Latest -> waitForMoreBlocks
-                  _ -> pure currentState
-           else do
-             let to' = newTo end currentState.currentBlock currentState.windowSize
-                 fltr = currentState.initialFilter
-                          # _fromBlock .~ BN currentState.currentBlock
-                          # _toBlock .~ BN to'
-             yieldT fltr
-             filterProducer currentState { currentBlock = succ to' }
+       -- otherwise try make progress
+       else case currentState.initialFilter ^. _toBlock of
+         -- if the original filter goes to Pending or Latest, consume as many as possible up to the chain head
+         Pending -> continueTo chainHead
+         Latest -> continueTo chainHead
+         -- if the original fitler ends at a specific block, consume as many as possible up to that block
+         -- or terminate if we're already past it
+         BN targetEnd -> 
+           if currentState.currentBlock <= targetEnd
+             then continueTo targetEnd
+             else pure currentState
+         -- otherwsie we're in Earliest, which is a degenerate case
+         Earliest -> 
+           let genesisBlock = wrap zero
+           in if currentState.currentBlock <= genesisBlock 
+                then continueTo genesisBlock
+                else pure currentState
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper (wrap $ unwrap current + embed window)
