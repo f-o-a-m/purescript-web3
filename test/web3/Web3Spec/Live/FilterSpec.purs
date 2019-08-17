@@ -39,6 +39,13 @@ type FilterEnv m =
   { logger :: String -> m Unit 
   }
 
+{-
+Case [Past,Past] : The filter is starting and ending in the past.
+Case [Past, ∞] : The filter starts in the past but continues indefinitely into the future.
+Case [Future, ∞] : The fitler starts in the future and continues indefinitely into the future.
+Case [Future, Future] : The fitler starts in the future and ends at a later time in the future.
+-}
+
 spec' 
   :: forall m. 
      MonadAff m
@@ -50,7 +57,7 @@ spec' provider {logger} = do
   let uIntsGen = mkUIntsGen uIntV
   describe "Filters" $ parallel do
     before (deployUniqueSimpleStorage provider logger) $
-      it "can stream events starting and ending in the past" \simpleStorageCfg -> do
+      it "Case [Past, Past]" \simpleStorageCfg -> do
         let {simpleStorageAddress, setter} = simpleStorageCfg
             filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
         values <- uIntsGen 3
@@ -69,7 +76,7 @@ spec' provider {logger} = do
         liftAff $ foundValues `shouldEqual` values
 
     before (deployUniqueSimpleStorage provider logger) $
-      it "can stream events starting in the past and ending in the future" \simpleStorageCfg -> do
+      it "Case [Past, ∞]" \simpleStorageCfg -> do
         let {simpleStorageAddress, setter} = simpleStorageCfg
             filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
         firstValues <- uIntsGen 3
@@ -90,7 +97,7 @@ spec' provider {logger} = do
         liftAff $ foundValues `shouldEqual` allValues
 
     before (deployUniqueSimpleStorage provider logger) $
-      it "can stream events starting and ending in the future, unbounded" \simpleStorageCfg -> do
+      it "Case [Future, ∞]" \simpleStorageCfg -> do
         let {simpleStorageAddress, setter} = simpleStorageCfg
         values <- uIntsGen 3
         logger $ "Searching for values " <> show values
@@ -107,7 +114,7 @@ spec' provider {logger} = do
         liftAff $ foundValues `shouldEqual` values
 
     before (deployUniqueSimpleStorage provider logger) $
-      it "can stream events starting and ending in the future, bounded" \simpleStorageCfg -> do
+      it "Case [Future, Future]" \simpleStorageCfg -> do
         let {simpleStorageAddress, setter} = simpleStorageCfg
         values <- uIntsGen 3
         logger $ "Searching for values " <> show values
