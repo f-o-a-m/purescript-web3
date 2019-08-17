@@ -17,11 +17,11 @@ import Effect.Aff.AVar as AVar
 import Effect.AVar as EAVar
 import Effect.Class.Console as C
 import Effect.Unsafe (unsafePerformEffect)
-import Network.Ethereum.Web3 (Web3, BlockNumber, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address)
+import Network.Ethereum.Web3 (BlockNumber, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256, S256)
 import Partial.Unsafe (unsafeCrashWith)
-import Test.Spec (SpecT, before, beforeAll, describe, it, parallel)
+import Test.Spec (SpecT, before, describe, it, parallel)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Contract.SimpleStorage as SimpleStorage
@@ -56,6 +56,7 @@ spec' provider {logger} = do
   uIntV <- liftEffect $ EAVar.new 1
   let uIntsGen = mkUIntsGen uIntV
   describe "Filters" $ parallel do
+
     before (deployUniqueSimpleStorage provider logger) $
       it "Case [Past, Past]" \simpleStorageCfg -> do
         let {simpleStorageAddress, setter} = simpleStorageCfg
@@ -121,7 +122,8 @@ spec' provider {logger} = do
         let nValues = length values
         now <- assertWeb3 provider Api.eth_blockNumber
         let later = wrap $ unwrap now + embed 3
-            latest = wrap $ unwrap now + embed (nValues + 1)
+            -- NOTE: This isn't that clean, but 2 blocks per set should be enough time
+            latest = wrap $ unwrap later + embed (2 * nValues)
             filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                        # _fromBlock .~ BN later
                        # _toBlock   .~ BN latest
