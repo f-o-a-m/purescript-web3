@@ -104,8 +104,6 @@ instance writeFHexString :: WriteForeign BlockNumber where
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data ChainCursor =
     Latest
-  | Pending
-  | Earliest
   | BN BlockNumber
 
 derive instance genericChainCursor :: Generic ChainCursor _
@@ -117,21 +115,14 @@ instance showChainCursor :: Show ChainCursor where
   show = genericShow
 
 instance ordChainCursor :: Ord ChainCursor where
-  compare Pending Pending = EQ
   compare Latest Latest = EQ
-  compare Earliest Earliest = EQ
   compare (BN a) (BN b) = compare a b
-  compare _ Pending = LT
-  compare Pending Latest = GT
   compare _ Latest = LT
-  compare Earliest _ = LT
   compare a b = invert $ compare b a
 
 instance encodeChainCursor :: Encode ChainCursor where
   encode cm = case cm of
     Latest -> encode "latest"
-    Pending -> encode "pending"
-    Earliest -> encode "earliest"
     BN n -> encode n
 
 newtype Block

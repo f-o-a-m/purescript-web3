@@ -23,10 +23,10 @@ import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
-import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
-import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, mkBlockNumber, FilterStreamState, ChangeReceipt, EventHandler)
+import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction, eth_blockNumber)
+import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -58,7 +58,9 @@ event' :: forall e i ni.
        -> EventHandler Web3 e
        -> Web3 (Either (FilterStreamState e) ChangeReceipt)
 event' initialFilter {windowSize, trailBy} handler = do
-  currentBlock <- mkBlockNumber $ initialFilter ^. _fromBlock
+  currentBlock <- case initialFilter ^. _fromBlock of
+    BN bn -> pure bn
+    Latest -> eth_blockNumber
   let initialState = { currentBlock
                      , initialFilter
                      , windowSize

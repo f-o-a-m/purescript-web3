@@ -3,7 +3,6 @@ module Network.Ethereum.Web3.Contract.Events
  , aquireFilter
  , pollFilter
  , logsStream
- , mkBlockNumber
  , EventHandler
  , FilterStreamState
  , ChangeReceipt
@@ -76,13 +75,13 @@ filterProducer currentState = do
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
         -- resume the filter production
-        continueTo endBlock = do
-          let endBlock' = newTo endBlock currentState.currentBlock currentState.windowSize
+        continueTo maxEndBlock = do
+          let endBlock = newTo maxEndBlock currentState.currentBlock currentState.windowSize
               fltr = currentState.initialFilter
                        # _fromBlock .~ BN currentState.currentBlock
-                       # _toBlock .~ BN endBlock'
+                       # _toBlock .~ BN endBlock
           yieldT fltr
-          filterProducer currentState { currentBlock = succ endBlock' }
+          filterProducer currentState { currentBlock = succ endBlock }
     chainHead <- lift eth_blockNumber
     -- if the chain head is less than the current block we want to process
     -- then wait until the chain progresses
@@ -90,8 +89,6 @@ filterProducer currentState = do
        then waitForMoreBlocks
        -- otherwise try make progress
        else case currentState.initialFilter ^. _toBlock of
-         -- TODO: This behavior is incorrect
-         Pending -> continueTo chainHead
          -- consume as many as possible up to the chain head
          Latest -> continueTo $ over BlockNumber (\bn -> bn - embed currentState.trailBy) chainHead
          -- if the original fitler ends at a specific block, consume as many as possible up to that block
@@ -101,7 +98,10 @@ filterProducer currentState = do
            in if currentState.currentBlock <= targetEnd'
                 then continueTo targetEnd'
                 else pure currentState
+<<<<<<< HEAD
          -- otherwsie we're in Earliest, which is a degenerate case
+=======
+>>>>>>> 186d66e... added trailBy, remove Earliest and Pending
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper (wrap $ unwrap current + embed window)
@@ -213,13 +213,6 @@ processChange handler c@{rawChange: Change change} = do
        , blockNumber: change.blockNumber
        , action
        }
-
--- | Coerce a 'ChainCursor' to an actual 'BlockNumber'.
-mkBlockNumber :: ChainCursor -> Web3 BlockNumber
-mkBlockNumber bm = case bm of
-  BN bn -> pure bn
-  Earliest -> pure <<< wrap $ zero
-  _ -> eth_blockNumber
 
 stagger
   :: forall i o m a par.
