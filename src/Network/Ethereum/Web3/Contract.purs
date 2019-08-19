@@ -14,68 +14,54 @@ module Network.Ethereum.Web3.Contract
 import Prelude
 
 import Control.Coroutine (runProcess)
-import Effect.Exception (error)
-import Control.Monad.Fork.Class (bracket)
-import Control.Monad.Reader (ReaderT)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (^.), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
-import Network.Ethereum.Web3.Api (eth_blockNumber, eth_call, eth_newFilter, eth_sendTransaction, eth_uninstallFilter)
-import Network.Ethereum.Web3.Contract.Internal (reduceEventStream, pollFilter, logsStream, mkBlockNumber)
+import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
+import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, mkBlockNumber, FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), Change, ETHER, EventAction, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _toBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
 -- * Events
 --------------------------------------------------------------------------------
 
-class EventFilter a where
+class EventFilter e where
     -- | Event filter structure used by low-level subscription methods
-    eventFilter :: Proxy a -> Address -> Filter a
+    eventFilter :: Proxy e -> Address -> Filter e
 
 -- | run `event'` one block at a time.
-event :: forall a i ni.
-         DecodeEvent i ni a
-      => Filter a
-      -> (a -> ReaderT Change Web3 EventAction)
-      -> Web3 Unit
+event :: forall e i ni.
+         DecodeEvent i ni e
+      => Filter e
+      -> EventHandler Web3 e
+      -> Web3 (Either (FilterStreamState e) ChangeReceipt)
 event fltr handler = event' fltr zero handler
 
 
 -- | Takes a `Filter` and a handler, as well as a windowSize.
 -- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
 -- | `TerminateEvent` is thrown, it then transitions to polling.
-event' :: forall a i ni.
-          DecodeEvent i ni a
-       => Filter a
+event' :: forall e i ni.
+          DecodeEvent i ni e
+       => Filter e
        -> Int
-       -> (a -> ReaderT Change Web3 EventAction)
-       -> Web3 Unit
+       -> EventHandler Web3 e
+       -> Web3 (Either (FilterStreamState e) ChangeReceipt)
 event' fltr w handler = do
-  pollingFromBlock <- case fltr ^. _fromBlock of
-    BN startingBlock -> do
-      currentBlock <- eth_blockNumber
-      if startingBlock < currentBlock
-         then let initialState = { currentBlock: startingBlock
-                                 , initialFilter: fltr
-                                 , windowSize: w
-                                 }
-              in runProcess $ reduceEventStream (logsStream initialState) handler
-              else pure startingBlock
-    cursor -> mkBlockNumber cursor
-  if fltr ^. _toBlock < BN pollingFromBlock
-    then pure unit
-    else do
-      bracket
-        (eth_newFilter $ fltr # _fromBlock .~ BN pollingFromBlock)
-        (const $ void <<< eth_uninstallFilter)
-        (\filterId -> void $ runProcess $ reduceEventStream (pollFilter filterId (fltr ^. _toBlock)) handler)
+  currentBlock <- mkBlockNumber $ fltr ^. _fromBlock
+  let initialState = { currentBlock
+                     , initialFilter: fltr
+                     , windowSize: w
+                     }
+  runProcess $ reduceEventStream (logsStream initialState) handler
 
 
 --------------------------------------------------------------------------------

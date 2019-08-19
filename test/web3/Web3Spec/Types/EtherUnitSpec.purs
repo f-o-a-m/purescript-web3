@@ -1,4 +1,4 @@
-module Web3Spec.EtherUnitSpec  (etherUnitTests) where
+module Web3Spec.Types.EtherUnitSpec  (spec) where
 
 import Prelude
 
@@ -10,8 +10,8 @@ import Network.Ethereum.Web3 (Ether, Shannon, Szabo, Value, Wei, _value, convert
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-etherUnitTests:: Spec Unit
-etherUnitTests =
+spec :: Spec Unit
+spec =
     describe "conversion tests" do
 
       it "can encode convert from a higher denomination to lower" $ do
