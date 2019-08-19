@@ -156,10 +156,13 @@ fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
                    # _toBlock   .~ Latest
   fiber2 <- monitorUntil provider logger filter2 (_ == aMax secondValues) opts
   traverse_ setter secondValues
-  {foundValuesV} <- joinWeb3Fork fiber2
+  {foundValuesV,reachedTargetTrailByV} <- joinWeb3Fork fiber2
   foundValues <- liftAff $ AVar.take foundValuesV
   liftAff $ foundValues `shouldEqual` allValues
-
+  when (opts.trailBy > 0) do
+    reachedTargetTrailBy <- liftAff $ AVar.take reachedTargetTrailByV
+    logger $ "Reached 'chainHead - trailBy' : " <> show reachedTargetTrailBy
+    liftAff $ reachedTargetTrailBy `shouldEqual` true
 
 monitorUntil
   :: forall m.
@@ -174,12 +177,14 @@ monitorUntil
          ( Either Web3Error
              { endingBlockV :: AVar.AVar BlockNumber
              , foundValuesV :: AVar.AVar (Array (UIntN S256))
+             , reachedTargetTrailByV :: AVar.AVar Boolean
              }
          )
        )
 monitorUntil provider logger filter p opts = do
   endingBlockV <- liftAff AVar.empty
   foundValuesV <- liftAff $ AVar.new []
+  reachedTargetTrailByV <- liftAff $ AVar.new false
   logger $ "Creating filter with fromBlock=" <> 
     show (filter ^. _fromBlock) <> " toBlock=" <> show (filter ^. _toBlock)
   liftAff $ forkWeb3 provider $ do
@@ -188,6 +193,9 @@ monitorUntil provider logger filter p opts = do
       chainHead <- lift Api.eth_blockNumber
       when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy) $
         lift $ throwWeb3 $ error "Exceded max trailBy"
+      when (un BlockNumber chainHead - un BlockNumber c.blockNumber == embed opts.trailBy) do
+        _ <- liftAff $ AVar.take reachedTargetTrailByV
+        liftAff $ AVar.put true reachedTargetTrailByV
       foundSoFar <- liftAff $ AVar.take foundValuesV
       liftAff $ AVar.put (foundSoFar `snoc` _count) foundValuesV
       let shouldTerminate = p _count
@@ -196,7 +204,7 @@ monitorUntil provider logger filter p opts = do
           liftAff $ AVar.put c.blockNumber endingBlockV
           pure TerminateEvent
         else pure ContinueEvent
-    pure {endingBlockV, foundValuesV}
+    pure {endingBlockV, foundValuesV, reachedTargetTrailByV}
 
 
 type SimpleStorageCfg m = 
