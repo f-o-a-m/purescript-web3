@@ -21,7 +21,7 @@ import Data.Array (catMaybes)
 import Data.Either (Either(..))
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
-import Data.Newtype (wrap, unwrap, over)
+import Data.Newtype (over)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for_)
 import Data.Tuple (fst)
@@ -90,19 +90,19 @@ filterProducer currentState = do
        -- otherwise try make progress
        else case currentState.initialFilter ^. _toBlock of
          -- consume as many as possible up to the chain head
-         Latest -> continueTo $ over BlockNumber (\bn -> bn - embed currentState.trailBy) chainHead
+         Latest -> continueTo $ over BlockNumber (_ - embed currentState.trailBy) chainHead
          -- if the original fitler ends at a specific block, consume as many as possible up to that block
          -- or terminate if we're already past it
          BN targetEnd -> 
-           let targetEnd' = min targetEnd $ over BlockNumber (\bn -> bn - embed currentState.trailBy) chainHead
+           let targetEnd' = min targetEnd $ over BlockNumber (_ - embed currentState.trailBy) chainHead
            in if currentState.currentBlock <= targetEnd'
                 then continueTo targetEnd'
                 else pure currentState
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
-    newTo upper current window = min upper (wrap $ unwrap current + embed window)
+    newTo upper current window = min upper $ over BlockNumber (_ + embed window) current
     succ :: BlockNumber -> BlockNumber
-    succ bn = wrap $ unwrap bn + one
+    succ = over BlockNumber (_ + one)
 
 -- | Taking in a stream of filters, produce a stream of `FilterChange`s from querying
 -- | the getLogs method.
