@@ -89,16 +89,18 @@ filterProducer currentState = do
        then waitForMoreBlocks
        -- otherwise try make progress
        else case currentState.initialFilter ^. _toBlock of
-         -- if the original filter goes to Pending or Latest, consume as many as possible up to the chain head
+         -- NOTE: The current behavior for Pending is incorrect, but it's always been incorrect
+         -- We will fix this before the next release.
          Pending -> continueTo chainHead
+         -- if the original filter goes to Latest, consume as many as possible up to the chain head
          Latest -> continueTo chainHead
-         -- if the original fitler ends at a specific block, consume as many as possible up to that block
+         -- if the original filter ends at a specific block, consume as many as possible up to that block
          -- or terminate if we're already past it
          BN targetEnd -> 
            if currentState.currentBlock <= targetEnd
              then continueTo targetEnd
              else pure currentState
-         -- otherwsie we're in Earliest, which is a degenerate case
+         -- otherwise we're in Earliest, which is a degenerate case
          Earliest -> 
            let genesisBlock = wrap zero
            in if currentState.currentBlock <= genesisBlock 

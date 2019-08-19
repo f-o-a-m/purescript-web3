@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "npx pulp build -- --strict",
-    "test": "npx pulp test --test-path test/web3"
+    "build": "npm pulp build -- --strict",
+    "test": "npm pulp test --test-path test/web3"
   },
   "dependencies": {
     "ethjs-provider-http": "^0.1.6",
