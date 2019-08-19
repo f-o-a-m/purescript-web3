@@ -11,13 +11,12 @@ import Data.Newtype (wrap, unwrap, un)
 import Data.Ord.Down (Down(..))
 import Data.Traversable (traverse_)
 import Data.Lens ((?~), (.~), (^.))
-import Data.Tuple (Tuple(..), fst, snd)
 import Effect.Aff (Aff, Fiber, error)
 import Effect.Class (liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Aff.AVar as AVar
 import Effect.AVar as EAVar
-import Network.Ethereum.Web3 (BlockNumber(..), throwWeb3, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, event, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address, event')
+import Network.Ethereum.Web3 (BlockNumber(..), throwWeb3, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address, event')
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256, S256)
 import Partial.Unsafe (unsafeCrashWith)

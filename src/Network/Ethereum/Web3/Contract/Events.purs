@@ -98,10 +98,6 @@ filterProducer currentState = do
            in if currentState.currentBlock <= targetEnd'
                 then continueTo targetEnd'
                 else pure currentState
-<<<<<<< HEAD
-         -- otherwsie we're in Earliest, which is a degenerate case
-=======
->>>>>>> 186d66e... added trailBy, remove Earliest and Pending
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
     newTo upper current window = min upper (wrap $ unwrap current + embed window)
