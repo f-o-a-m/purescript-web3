@@ -3,7 +3,6 @@ module Network.Ethereum.Web3.Contract.Events
  , aquireFilter
  , pollFilter
  , logsStream
- , mkBlockNumber
  , EventHandler
  , FilterStreamState
  , ChangeReceipt
@@ -22,7 +21,7 @@ import Data.Array (catMaybes)
 import Data.Either (Either(..))
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (over)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for_)
 import Data.Tuple (fst)
@@ -32,7 +31,7 @@ import Network.Ethereum.Core.BigNumber (BigNumber, embed)
 import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (BlockNumber, ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
 
 --------------------------------------------------------------------------------
 -- * Types
@@ -44,6 +43,7 @@ type FilterStreamState e =
   { currentBlock :: BlockNumber
   , initialFilter :: Filter e
   , windowSize :: Int
+  , trailBy :: Int
   }
 
 type FilterChange e =
@@ -75,13 +75,13 @@ filterProducer currentState = do
           lift $ liftAff $ delay (Milliseconds 3000.0)
           filterProducer currentState
         -- resume the filter production
-        continueTo endBlock = do
-          let endBlock' = newTo endBlock currentState.currentBlock currentState.windowSize
+        continueTo maxEndBlock = do
+          let endBlock = newTo maxEndBlock currentState.currentBlock currentState.windowSize
               fltr = currentState.initialFilter
                        # _fromBlock .~ BN currentState.currentBlock
-                       # _toBlock .~ BN endBlock'
+                       # _toBlock .~ BN endBlock
           yieldT fltr
-          filterProducer currentState { currentBlock = succ endBlock' }
+          filterProducer currentState { currentBlock = succ endBlock }
     chainHead <- lift eth_blockNumber
     -- if the chain head is less than the current block we want to process
     -- then wait until the chain progresses
@@ -89,28 +89,20 @@ filterProducer currentState = do
        then waitForMoreBlocks
        -- otherwise try make progress
        else case currentState.initialFilter ^. _toBlock of
-         -- NOTE: The current behavior for Pending is incorrect, but it's always been incorrect
-         -- We will fix this before the next release.
-         Pending -> continueTo chainHead
-         -- if the original filter goes to Latest, consume as many as possible up to the chain head
-         Latest -> continueTo chainHead
-         -- if the original filter ends at a specific block, consume as many as possible up to that block
+         -- consume as many as possible up to the chain head
+         Latest -> continueTo $ over BlockNumber (_ - embed currentState.trailBy) chainHead
+         -- if the original fitler ends at a specific block, consume as many as possible up to that block
          -- or terminate if we're already past it
          BN targetEnd -> 
-           if currentState.currentBlock <= targetEnd
-             then continueTo targetEnd
-             else pure currentState
-         -- otherwise we're in Earliest, which is a degenerate case
-         Earliest -> 
-           let genesisBlock = wrap zero
-           in if currentState.currentBlock <= genesisBlock 
-                then continueTo genesisBlock
+           let targetEnd' = min targetEnd $ over BlockNumber (_ - embed currentState.trailBy) chainHead
+           in if currentState.currentBlock <= targetEnd'
+                then continueTo targetEnd'
                 else pure currentState
   where
     newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
-    newTo upper current window = min upper (wrap $ unwrap current + embed window)
+    newTo upper current window = min upper $ over BlockNumber (_ + embed window) current
     succ :: BlockNumber -> BlockNumber
-    succ bn = wrap $ unwrap bn + one
+    succ = over BlockNumber (_ + one)
 
 -- | Taking in a stream of filters, produce a stream of `FilterChange`s from querying
 -- | the getLogs method.
@@ -217,13 +209,6 @@ processChange handler c@{rawChange: Change change} = do
        , blockNumber: change.blockNumber
        , action
        }
-
--- | Coerce a 'ChainCursor' to an actual 'BlockNumber'.
-mkBlockNumber :: ChainCursor -> Web3 BlockNumber
-mkBlockNumber bm = case bm of
-  BN bn -> pure bn
-  Earliest -> pure <<< wrap $ zero
-  _ -> eth_blockNumber
 
 stagger
   :: forall i o m a par.

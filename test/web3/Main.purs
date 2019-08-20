@@ -29,7 +29,7 @@ import Web3Spec.Types.VectorSpec as VectorSpec
 
 main :: Effect Unit
 main = launchAff_ do
-  let cfg = defaultConfig {timeout = Just (Milliseconds $ 60.0 * 1000.0)}
+  let cfg = defaultConfig {timeout = Just (Milliseconds $ 120.0 * 1000.0)}
   p <- liftEffect $ httpProvider "http://localhost:8545"
   join $ runSpecT cfg [consoleReporter] do
     hoist do
