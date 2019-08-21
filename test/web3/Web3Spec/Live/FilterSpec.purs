@@ -187,23 +187,24 @@ monitorUntil provider logger filter p opts = do
   reachedTargetTrailByV <- liftAff $ AVar.new false
   logger $ "Creating filter with fromBlock=" <> 
     show (filter ^. _fromBlock) <> " toBlock=" <> show (filter ^. _toBlock)
+  let handler (SimpleStorage.CountSet {_count}) = do
+        change@(Change c) <- ask
+        chainHead <- lift Api.eth_blockNumber
+        when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy) $
+          lift $ throwWeb3 $ error "Exceded max trailBy"
+        when (un BlockNumber chainHead - un BlockNumber c.blockNumber == embed opts.trailBy) do
+          _ <- liftAff $ AVar.take reachedTargetTrailByV
+          liftAff $ AVar.put true reachedTargetTrailByV
+        foundSoFar <- liftAff $ AVar.take foundValuesV
+        liftAff $ AVar.put (foundSoFar `snoc` _count) foundValuesV
+        let shouldTerminate = p _count
+        if shouldTerminate
+          then do
+            liftAff $ AVar.put c.blockNumber endingBlockV
+            pure TerminateEvent
+          else pure ContinueEvent
   liftAff $ forkWeb3 provider $ do
-    _ <- event' filter opts \(SimpleStorage.CountSet {_count}) -> do
-      change@(Change c) <- ask
-      chainHead <- lift Api.eth_blockNumber
-      when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy) $
-        lift $ throwWeb3 $ error "Exceded max trailBy"
-      when (un BlockNumber chainHead - un BlockNumber c.blockNumber == embed opts.trailBy) do
-        _ <- liftAff $ AVar.take reachedTargetTrailByV
-        liftAff $ AVar.put true reachedTargetTrailByV
-      foundSoFar <- liftAff $ AVar.take foundValuesV
-      liftAff $ AVar.put (foundSoFar `snoc` _count) foundValuesV
-      let shouldTerminate = p _count
-      if shouldTerminate
-        then do
-          liftAff $ AVar.put c.blockNumber endingBlockV
-          pure TerminateEvent
-        else pure ContinueEvent
+    _ <- event' {ev: filter} {ev: handler} opts
     pure {endingBlockV, foundValuesV, reachedTargetTrailByV}
 
 

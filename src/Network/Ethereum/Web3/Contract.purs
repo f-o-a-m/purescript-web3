@@ -2,7 +2,6 @@ module Network.Ethereum.Web3.Contract
  ( class EventFilter
  , eventFilter
  , event
- , event'
  , class CallMethod
  , call
  , class TxMethod
@@ -13,20 +12,20 @@ module Network.Ethereum.Web3.Contract
 
 import Prelude
 
-import Control.Coroutine (runProcess)
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
-import Data.Lens ((.~), (^.), (%~), (?~))
+import Data.Lens ((.~), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
-import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction, eth_blockNumber)
-import Network.Ethereum.Web3.Contract.Events (reduceEventStream, logsStream, FilterStreamState, ChangeReceipt, EventHandler)
+import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
+import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor(..), ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _fromBlock, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
@@ -43,31 +42,18 @@ event :: forall e i ni.
       => Filter e
       -> EventHandler Web3 e
       -> Web3 (Either (FilterStreamState e) ChangeReceipt)
-event fltr handler = event' fltr {windowSize: 0, trailBy: 0} handler
-
-
--- | Takes a `Filter` and a handler, as well as a windowSize.
--- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
--- | `TerminateEvent` is thrown, it then transitions to polling.
-event' :: forall e i ni.
-          DecodeEvent i ni e
-       => Filter e
-       -> { windowSize :: Int
-          , trailBy :: Int
-          }
-       -> EventHandler Web3 e
-       -> Web3 (Either (FilterStreamState e) ChangeReceipt)
-event' initialFilter {windowSize, trailBy} handler = do
-  currentBlock <- case initialFilter ^. _fromBlock of
-    BN bn -> pure bn
-    Latest -> eth_blockNumber
-  let initialState = { currentBlock
-                     , initialFilter
-                     , windowSize
-                     , trailBy
-                     }
-  runProcess $ reduceEventStream (logsStream initialState) handler
-
+event filter handler = do
+  eRes <- event' {ev: filter} {ev: handler} {windowSize: 0, trailBy: 0} 
+  pure $ lmap f eRes
+  where
+    f :: MultiFilterStreamState (ev :: Filter e) -> FilterStreamState e
+    f (MultiFilterStreamState {currentBlock, windowSize, trailBy, filters}) =
+      let {ev: filter } = filters
+      in { currentBlock
+         , windowSize
+         , trailBy
+         , initialFilter: filter
+         }
 
 --------------------------------------------------------------------------------
 -- * Methods

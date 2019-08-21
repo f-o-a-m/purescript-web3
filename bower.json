@@ -18,11 +18,11 @@
   "dependencies": {
     "purescript-errors": "^4.0.0",
     "purescript-avar": "^3.0.0",
-    "purescript-profunctor-lenses": "^4.0.0",
+    "purescript-profunctor-lenses": "^5.0.0",
     "purescript-foreign": "^5.0.0",
-    "purescript-foreign-generic": "^7.0.0",
+    "purescript-foreign-generic": "^8.0.0",
     "purescript-proxy": "^3.0.0",
-    "purescript-eth-core": "^3.0.0",
+    "purescript-eth-core": "^4.0.0",
     "purescript-partial": "^2.0.0",
     "purescript-parsing": "^5.0.0",
     "purescript-transformers": "^4.0.0",
@@ -33,7 +33,9 @@
     "purescript-coroutines": "^5.0.0",
     "purescript-coroutine-transducers": "blinky3713/purescript-coroutine-transducers#a99537f",
     "purescript-typelevel-prelude": "^3.0.0",
-    "purescript-fork": "^4.0.0"
+    "purescript-fork": "^4.0.0",
+    "purescript-variant": "5.2.0",
+    "purescript-heterogeneous": "0.3.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
