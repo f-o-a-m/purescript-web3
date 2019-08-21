@@ -66,7 +66,7 @@ event'
   -> {windowSize :: Int, trailBy :: Int}
   -> Web3 (Either (MultiFilterStreamState fs) ChangeReceipt)
 event' filters handlerR {windowSize, trailBy} = do
-  currentBlock <- case hfoldlWithIndex MultiFilterMinToBlock Latest filters of
+  currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of
     BN bn -> pure bn
     Latest -> eth_blockNumber
   let initialState =
