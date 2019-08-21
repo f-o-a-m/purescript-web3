@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.Reader (ask)
 import Data.Array (snoc, (..), length, sort)
+import Data.Bifunctor (rmap)
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
 import Control.Parallel (parSequence_, parTraverse_)
@@ -47,12 +48,12 @@ spec provider =
         count1V <- AVar.new 0
         f1 <- forkWeb3 provider $ 
           let h1 = mkHandler (Proxy :: Proxy Multifilter.E1) provider raceV count1V (_ == length vals1) true
-          in event filter1 h1
+          in void $ event filter1 h1
 
         count2V <- AVar.new 0
         f2 <- forkWeb3 provider $ 
           let h2 = mkHandler (Proxy :: Proxy Multifilter.E2) provider raceV count2V (_ == length vals2) false
-          in event filter2 h2
+          in void $ event filter2 h2
 
         syncV <- AVar.new []
         sharedCountV <- AVar.new 0
@@ -60,14 +61,16 @@ spec provider =
             h1 = mkHandler (Proxy :: Proxy Multifilter.E1) provider syncV sharedCountV (_ == nVals) true
             h2 = mkHandler (Proxy :: Proxy Multifilter.E2) provider syncV sharedCountV (_ == nVals) false
             multiHandler = {e1: h1, e2: h2}
-        f3 <- forkWeb3 provider $ event' multiFilter multiHandler {trailBy: 0, windowSize: 0}
+        f3 <- do
+          f <- forkWeb3 provider $ event' multiFilter multiHandler {trailBy: 0, windowSize: 0}
+          pure $ (rmap (const unit) <$> f)
+
         parSequence_ $
           [ parTraverse_ fireE1 vals1
           , parTraverse_ fireE2 vals2
           ]
-        _ <- joinWeb3Fork f1
-        _ <- joinWeb3Fork f2
-        _ <- joinWeb3Fork f3
+
+        parTraverse_ joinWeb3Fork [f1, f2, f3]
         
         race <- AVar.take raceV
         sync <- AVar.take syncV
