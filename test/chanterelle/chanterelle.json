@@ -8,6 +8,7 @@
                , "PayableTest"
                , "MockERC20"
                , "SimpleErrorTest"
+               , "Multifilter"
                ],
     "dependencies": [],
     "solc-output-selection": [],
