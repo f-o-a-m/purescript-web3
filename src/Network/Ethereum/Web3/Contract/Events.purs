@@ -1,8 +1,8 @@
 module Network.Ethereum.Web3.Contract.Events
  ( event'
  , reduceEventStream
--- , aquireFilter
--- , pollFilter
+ , aquireFilter
+ , pollFilter
  , logsStream
  , EventHandler
  , FilterStreamState
@@ -13,6 +13,9 @@ module Network.Ethereum.Web3.Contract.Events
  , ModifyFilter
  , QueryAllLogs
  , MultiFilterStreamState(..)
+ , OpenMultiFilter
+ , CloseMultiFilter
+ , CheckMultiFilter
  ) where
 
 import Prelude
