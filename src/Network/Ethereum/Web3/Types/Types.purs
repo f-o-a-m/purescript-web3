@@ -61,11 +61,14 @@ import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
+import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Fiber, ParAff, attempt, forkAff, message, throwError)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error, throwException)
 import Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
+import Foreign.NullOrUndefined (undefined)
+import Foreign.Object as FO
 import Foreign.Class (class Decode, class Encode, decode, encode)
 import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
 import Foreign.Index (readProp)
@@ -249,7 +252,17 @@ instance showTransactionOptions :: Show (TransactionOptions u) where
   show = genericShow
 
 instance encodeTransactionOptions :: Encode (TransactionOptions u) where
-  encode = genericEncode (defaultOptions { unwrapSingleConstructors = true })
+  encode (TransactionOptions txOpts) =
+    let encodeMaybe :: forall a. Encode a => Maybe a -> Foreign
+        encodeMaybe = maybe undefined encode
+    in encode $ FO.fromFoldable [ Tuple "from" $ encodeMaybe txOpts.from
+                                , Tuple "to" $ encodeMaybe txOpts.to
+                                , Tuple "value" $ encodeMaybe txOpts.value
+                                , Tuple "gas" $ encodeMaybe txOpts.gas
+                                , Tuple "gasPrice" $ encodeMaybe txOpts.gasPrice
+                                , Tuple "data" $ encodeMaybe txOpts.data
+                                , Tuple "nonce" $ encodeMaybe txOpts.nonce
+                                ]
 
 defaultTransactionOptions :: TransactionOptions NoPay
 defaultTransactionOptions =
