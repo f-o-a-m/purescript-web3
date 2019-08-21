@@ -1,5 +1,6 @@
 module Network.Ethereum.Web3.Contract.Events
  ( event'
+ , pollEvent'
  , reduceEventStream
  , aquireFilter
  , pollFilter
@@ -20,7 +21,7 @@ module Network.Ethereum.Web3.Contract.Events
 
 import Prelude
 
-import Control.Coroutine (Process, producer, consumer, pullFrom, runProcess)
+import Control.Coroutine (Process, Consumer, producer, consumer, pullFrom, runProcess)
 import Control.Coroutine.Transducer (Transducer, awaitForever, fromProducer, toProducer, yieldT, (=>=))
 import Control.Monad.Fork.Class (bracket)
 import Control.Monad.Reader.Trans (ReaderT, runReaderT)
@@ -50,36 +51,6 @@ import Record as Record
 import Type.Proxy (Proxy(..))
 import Type.Row as Row
 import Prim.RowList as RowList
-
--- | Takes a `Filter` and a handler, as well as a windowSize.
--- | It runs the handler over the `eventLogs` using `reduceEventStream`. If no
--- | `TerminateEvent` is thrown, it then transitions to polling.
-event'
-  :: forall fs handlers fsList handlersList r1 r.
-     FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
-  => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
-  => Row.RowToList handlers handlersList
-  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
-  => RowList.RowToList fs fsList
-  => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
-  => Row.Union r1 () r
-  => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
-  => Record fs
-  -> Record handlers
-  -> {windowSize :: Int, trailBy :: Int}
-  -> Web3 (Either (MultiFilterStreamState fs) ChangeReceipt)
-event' filters handlerR {windowSize, trailBy} = do
-  currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of
-    BN bn -> pure bn
-    Latest -> eth_blockNumber
-  let initialState =
-        MultiFilterStreamState { currentBlock
-                               , filters
-                               , windowSize
-                               , trailBy
-                               }
-  runProcess $ reduceEventStream (logsStream initialState) handlerR
-
 
 --------------------------------------------------------------------------------
 -- * Types
@@ -119,104 +90,81 @@ type ChangeReceipt =
   , action :: EventAction
   }
 
-data MultiFilterMinToBlock = MultiFilterMinToBlock
+--------------------------------------------------------------------------------
 
-instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
-  foldingWithIndex MultiFilterMinToBlock _ acc f = min acc (f ^. _toBlock)
+-- | Takes a record of `Filter`s and a key-corresponding record of `EventHandler`s
+-- | to match. It also has options for trailing the chain head by a certain
+-- | number of blocks (where applicable), as well as a window size for requesting
+-- | larger intervals of blocks (where applicable). When the underlying coroutine
+-- | terminates, it will return either the state at the time of termination, or a
+-- | `ChangeReceipt` for the event that caused the termination.
+event'
+  :: forall fs handlers fsList handlersList r1 r.
+     FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
+  => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+  => Row.RowToList handlers handlersList
+  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
+  => RowList.RowToList fs fsList
+  => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
+  => Row.Union r1 () r
+  => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
+  => Record fs
+  -> Record handlers
+  -> {windowSize :: Int, trailBy :: Int}
+  -> Web3 (Either (MultiFilterStreamState fs) ChangeReceipt)
+event' filters handlerR {windowSize, trailBy} = do
+  currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of
+    BN bn -> pure bn
+    Latest -> eth_blockNumber
+  let initialState =
+        MultiFilterStreamState { currentBlock
+                               , filters
+                               , windowSize
+                               , trailBy
+                               }
+  runProcess $ reduceEventStream (logsStream initialState) handlerR
 
-data MultiFilterMinFromBlock = MultiFilterMinFromBlock
-
-instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
-  foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
-
-data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
-
-instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
-  mapping (ModifyFilter f) filter = f filter
-
-mkFilterChangesV
-  :: forall i ni a sym r b.
-     DecodeEvent i ni a
-  => Row.Cons sym a b r
-  => IsSymbol sym
-  => SProxy sym
-  -> Proxy a
-  -> Array Change
-  -> Array (FilterChange (Variant r))
-mkFilterChangesV sp _ cs = catMaybes $ map pairChange cs
-  where
-    pairChange rawChange = do
-      a :: a <- decodeEvent rawChange
-      pure $ FilterChange { rawChange : rawChange
-                          , event : inj sp a
-                          }
-
-data QueryAllLogs = QueryAllLogs
-
--- can't use type synonyms so must use the explicit record type here
-instance queryAllLogs ::
-  ( DecodeEvent i ni e
-  , IsSymbol sym
-  , Row.Union r' b r
-  , Row.Cons sym e r' r
-  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
-  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
-    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
-    (<>) changes <$> (map (map expand) <$> acc)
-
-data MultiFilterStreamState fs =
-  MultiFilterStreamState { currentBlock :: BlockNumber
-                         , filters :: Record fs
-                         , windowSize :: Int
-                         , trailBy :: Int
-                         }
-
-data OpenMultiFilter = OpenMultiFilter
-
-instance openMultiFilterFold ::
-  ( Row.Lacks sym r'
-  , IsSymbol sym
-  , Row.Union r' b r
-  , Row.Cons sym (Tagged e FilterId) r' r
-  ) => FoldingWithIndex OpenMultiFilter (SProxy sym) (Web3 (Record r')) (Filter e) (Web3 (Record r)) where
-  foldingWithIndex OpenMultiFilter (prop :: SProxy sym) acc filter = do
-    filterId <- eth_newFilter filter
-    Record.insert prop (tagged filterId :: Tagged e FilterId) <$> acc
-
-openMultiFilter
-    :: forall fs fis fsList.
-       FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
-    => Row.RowToList fs fsList
-    => Record fs
-    -> Web3 (Record fis)
-openMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))
-
-data CheckMultiFilter = CheckMultiFilter
-
-instance checkMultiFilterLogs ::
-  ( DecodeEvent i ni e
-  , IsSymbol sym
-  , Row.Union r' b r
-  , Row.Cons sym e r' r
-  ) => FoldingWithIndex CheckMultiFilter (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
-  foldingWithIndex CheckMultiFilter (prop :: SProxy sym) acc filterId = do
-    changes :: Array (FilterChange (Variant r)) <- mkFilterChangesV prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
-    (<>) changes <$> (map (map expand) <$> acc)
-
-data CloseMultiFilter = CloseMultiFilter
-
-instance closeMultiFilterFold ::
-  ( IsSymbol sym
-  ) => FoldingWithIndex CloseMultiFilter (SProxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
-  foldingWithIndex CloseMultiFilter (prop :: SProxy sym) acc filter = do
-    void $ eth_uninstallFilter $ untagged filter
-    acc
+pollEvent'
+  :: forall fs fsList handlers handlersList fsIds fsIdsList r r1.
+     Row.RowToList handlers handlersList
+  => RowList.RowToList fs fsList
+  => RowList.RowToList fsIds fsIdsList
+  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
+  => FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
+  => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+  => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
+  => FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds))
+  => FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit)
+  => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant r))))
+  => Row.Union r1 () r
+  => Record fs
+  -> Record handlers
+  -> Web3 (Either BlockNumber ChangeReceipt)
+pollEvent' filters handlers =
+  let processor fids stop = runProcess $
+        reduceEventStream (stagger $ pollFilter fids stop) handlers
+  in aquireFilter filters processor
 
 --------------------------------------------------------------------------------
 -- * Event Coroutines
 --------------------------------------------------------------------------------
 
--- | Taking an initial state, create a stream of filters used for querying event logs.
+eventRunner 
+  :: forall handlers handlersList r r1 f. 
+     Row.RowToList handlers handlersList
+  => Monad f
+  => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
+  => Row.Union r1 () r
+  => Record handlers
+  -> Consumer (FilterChange (Variant r)) f ChangeReceipt
+eventRunner handlersR = consumer \change -> do
+  receipt <- processChange handlersR change
+  pure case receipt.action of
+    ContinueEvent -> Nothing
+    TerminateEvent -> Just receipt
+
+
+-- | Taking an initial state, create a stream of filter records used for querying event logs.
 -- | The coroutine terminates when it has read up to the `toBlock` field, yielding
 -- | the current state.
 filterProducer
@@ -262,7 +210,7 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
     succ :: BlockNumber -> BlockNumber
     succ = over BlockNumber (_ + one)
 
--- | Taking in a stream of filters, produce a stream of `FilterChange`s from querying
+-- | Taking in a stream of filter records, produce a stream of `FilterChange`s from querying
 -- | the getLogs method.
 makeFilterChanges
   :: forall fs fsList r.
@@ -274,7 +222,7 @@ makeFilterChanges = awaitForever \fltrs -> do
   yieldT $ sort changes
 
 -- | A stateless (on the server) stream of filter changes starting from an initial
--- | filter.
+-- | filter record.
 logsStream
   :: forall fs fsList r.
      RowList.RowToList fs fsList
@@ -286,6 +234,29 @@ logsStream
 logsStream initialState =
   fst <$> (filterProducer initialState =>= stagger makeFilterChanges)
 
+-- | Aquire a record of server-side filters using the bracket operator to release the
+-- | filters on the node when done.
+aquireFilter
+  :: forall fs fsList fsIds fsIdsList r b.
+     RowList.RowToList fsIds fsIdsList
+  => RowList.RowToList fs fsList
+  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
+  => FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
+  => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
+  => FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds))
+  => FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit)
+  => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant r))))
+  => Record fs
+  -> (Record fsIds -> ChainCursor -> Web3 b)
+  -> Web3 b
+aquireFilter fltrs hs =
+  let pollingFromBlock = hfoldlWithIndex MultiFilterMinFromBlock Latest fltrs
+      fltrs' = hmap (ModifyFilter (_ # _fromBlock .~ pollingFromBlock)) fltrs
+      aquire = openMultiFilter fltrs'
+      onRelease = const $ hfoldlWithIndex CloseMultiFilter (pure unit :: Web3 Unit)
+      stopPollingAt = hfoldlWithIndex MultiFilterMinToBlock Latest fltrs
+      withFilter fids = hs fids stopPollingAt
+  in bracket aquire onRelease withFilter
 
 -- | `pollFilter` takes a `FilterId` and a max `ChainCursor` and polls a filter
 -- | for changes until the chainHead's `BlockNumber` exceeds the `ChainCursor`,
@@ -297,65 +268,39 @@ pollFilter
   => Record fids
   -> ChainCursor
   -> Transducer Void (Array (FilterChange (Variant r))) Web3 BlockNumber
-pollFilter fids stop = fromProducer $ producer do
-  bn <- eth_blockNumber
-  if BN bn > stop
-    then do
-      pure <<< Right $ bn
-    else do
-      liftAff $ delay (Milliseconds 1000.0)
-      changes <- hfoldlWithIndex CheckMultiFilter (pure [] :: Web3 (Array (FilterChange (Variant ())))) fids
-      pure <<< Left $ sort changes
+pollFilter fids stop =  do
+  fromProducer $ producer do
+    bn <- eth_blockNumber
+    if BN bn > stop
+      then do
+        pure <<< Right $ bn
+      else do
+        liftAff $ delay (Milliseconds 1000.0)
+        changes <- hfoldlWithIndex CheckMultiFilter (pure [] :: Web3 (Array (FilterChange (Variant ())))) fids
+        pure <<< Left $ sort changes
 
 --------------------------------------------------------------------------------
 -- * Utils
 --------------------------------------------------------------------------------
 
--- | `reduceEventStream` takes a handler and an initial state and attempts to run
--- | the handler over the event stream. If the machine ends without a `TerminateEvent`
--- | result, we return the current state. Otherwise we return the `ChangeReceipt`
--- | for the event that caused the termination.
+-- | Takes a producer of filter changes and a record of handlers and runs the handlers
+-- | as a consumer. If one of the handlers chooses to `TerminateEvent`, we return
+-- | the change receipt that caused the termination. Otherwise if the producer
+-- | terminates and yields an `a`, we return that.
 reduceEventStream
- :: forall f par fs r handlers handlersList r1.
+ :: forall f par r handlers handlersList r1 a.
      Monad f
   => MonadRec f
   => Parallel par f
   => Row.RowToList handlers handlersList
   => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
   => Row.Union r1 () r
-  => Transducer Void (FilterChange (Variant r)) f (MultiFilterStreamState fs)
+  => Transducer Void (FilterChange (Variant r)) f a
   -> Record handlers
-  -> Process f (Either (MultiFilterStreamState fs) ChangeReceipt)
+  -> Process f (Either a ChangeReceipt)
 reduceEventStream prod handlersR =
-    (Right <$> eventRunner) `pullFrom` (Left <$> toProducer prod)
-  where
-    eventRunner = consumer \change -> do
-      receipt <- processChange handlersR change
-      pure case receipt.action of
-        ContinueEvent -> Nothing
-        TerminateEvent -> Just receipt
+    (Right <$> eventRunner handlersR) `pullFrom` (Left <$> toProducer prod)
 
--- | Aquire a filter using the bracket operator to release the
--- | filter on the node when done.
-aquireFilter
-  :: forall fs fsList fsIds fsIdsList r b.
-     RowList.RowToList fsIds fsIdsList
-  => RowList.RowToList fs fsList
-  => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
-  => FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
-  => FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds))
-  => FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit)
-  => FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant r))))
-  => Record fs
-  -> (Record fsIds -> Web3 b)
-  -> Web3 Unit
-aquireFilter fltrs hs =
-  let pollingFromBlock = hfoldlWithIndex MultiFilterMinFromBlock Latest fltrs
-      fltrs' = hmap (ModifyFilter (_ # _fromBlock .~ pollingFromBlock)) fltrs
-      aquire = openMultiFilter fltrs'
-      onRelease = const $ hfoldlWithIndex CloseMultiFilter (pure unit :: Web3 Unit)
-      withFilter = void <<< hs
-  in bracket aquire onRelease withFilter
 
 processChange
   :: forall f r rl r1 r2.
@@ -374,6 +319,104 @@ processChange handlerRec (FilterChange {rawChange: rawChange@(Change change), ev
        , action
        }
 
+-- | Used to find the minimum `toBlock` among a record of filters.
+data MultiFilterMinToBlock = MultiFilterMinToBlock
+
+instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+  foldingWithIndex MultiFilterMinToBlock _ acc f = min acc (f ^. _toBlock)
+
+-- | Used to find the minimum `fromBlock` among a record of filters.
+data MultiFilterMinFromBlock = MultiFilterMinFromBlock
+
+instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+  foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
+
+data ModifyFilter = ModifyFilter (forall e. Filter e -> Filter e)
+
+instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
+  mapping (ModifyFilter f) filter = f filter
+
+-- | Parse an array of `Changes` into an array of `FilterChange`s
+-- | that contain this event.
+mkFilterChanges
+  :: forall i ni e sym r b.
+     DecodeEvent i ni e
+  => Row.Cons sym e b r
+  => IsSymbol sym
+  => SProxy sym
+  -> Proxy e
+  -> Array Change
+  -> Array (FilterChange (Variant r))
+mkFilterChanges sp _ cs = catMaybes $ map pairChange cs
+  where
+    pairChange rawChange = do
+      a :: e <- decodeEvent rawChange
+      pure $ FilterChange { rawChange : rawChange
+                          , event : inj sp a
+                          }
+
+-- | Used to query eth_getLogs for all the filters in record of filters.
+data QueryAllLogs = QueryAllLogs
+
+instance queryAllLogs ::
+  ( DecodeEvent i ni e
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym e r' r
+  ) => FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
+  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
+    changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
+    (<>) changes <$> (map (map expand) <$> acc)
+
+data MultiFilterStreamState fs =
+  MultiFilterStreamState { currentBlock :: BlockNumber
+                         , filters :: Record fs
+                         , windowSize :: Int
+                         , trailBy :: Int
+                         }
+
+data OpenMultiFilter = OpenMultiFilter
+
+instance openMultiFilterFold ::
+  ( Row.Lacks sym r'
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym (Tagged e FilterId) r' r
+  ) => FoldingWithIndex OpenMultiFilter (SProxy sym) (Web3 (Record r')) (Filter e) (Web3 (Record r)) where
+  foldingWithIndex OpenMultiFilter (prop :: SProxy sym) acc filter = do
+    filterId <- eth_newFilter filter
+    Record.insert prop (tagged filterId :: Tagged e FilterId) <$> acc
+
+openMultiFilter
+    :: forall fs fis fsList.
+       FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
+    => Row.RowToList fs fsList
+    => Record fs
+    -> Web3 (Record fis)
+openMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))
+
+data CheckMultiFilter = CheckMultiFilter
+
+instance checkMultiFilterLogs ::
+  ( DecodeEvent i ni e
+  , IsSymbol sym
+  , Row.Union r' b r
+  , Row.Cons sym e r' r
+  ) => FoldingWithIndex CheckMultiFilter (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
+  foldingWithIndex CheckMultiFilter (prop :: SProxy sym) acc filterId = do
+    changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
+    (<>) changes <$> (map (map expand) <$> acc)
+
+data CloseMultiFilter = CloseMultiFilter
+
+instance closeMultiFilterFold ::
+  ( IsSymbol sym
+  ) => FoldingWithIndex CloseMultiFilter (SProxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
+  foldingWithIndex CloseMultiFilter (prop :: SProxy sym) acc filter = do
+    void $ eth_uninstallFilter $ untagged filter
+    acc
+
+-- Should belong to coroutines lib.
 stagger
   :: forall i o m a par.
      Monad m
