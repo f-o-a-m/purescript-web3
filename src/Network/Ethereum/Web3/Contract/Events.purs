@@ -124,6 +124,9 @@ event' filters handlerR {windowSize, trailBy} = do
                                }
   runProcess $ reduceEventStream (logsStream initialState) handlerR
 
+-- | Takes a record of filters and a key-corresponding record of handlers.
+-- | Establishes filters for polling on the server a la the filterIds.
+-- | Automatically handles cleaning up resources on the server.
 pollEvent'
   :: forall fs fsList handlers handlersList fsIds fsIdsList r r1.
      Row.RowToList handlers handlersList
