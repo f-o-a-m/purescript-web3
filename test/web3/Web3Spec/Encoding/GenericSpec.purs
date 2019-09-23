@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.Generic (encodingGenericSpec) where
+module Web3Spec.Encoding.GenericSpec (spec) where
 
 
 import Prelude
@@ -22,8 +22,8 @@ import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-encodingGenericSpec:: Spec Unit
-encodingGenericSpec = describe "encoding-spec for generics" do
+spec:: Spec Unit
+spec = describe "encoding-spec for generics" do
   toRecordFieldsSpec
 
 

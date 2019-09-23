@@ -32,11 +32,14 @@
     "purescript-free": "^5.0.0",
     "purescript-coroutines": "^5.0.0",
     "purescript-typelevel-prelude": "^4.0.0",
-    "purescript-fork": "^4.0.0"
+    "purescript-fork": "^4.0.0",
+    "purescript-coroutine-transducers": "blinky3713/purescript-coroutine-transducers#a99537f",
+    "purescript-variant": "^6.0.0",
+    "purescript-heterogeneous": "^0.4.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
-    "purescript-spec": "^3.0.0",
+    "purescript-spec": "^4.0.0",
     "purescript-psci-support": "^4.0.0"
   }
 }
