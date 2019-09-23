@@ -22,7 +22,7 @@
     "purescript-foreign": "^5.0.0",
     "purescript-foreign-generic": "^10.0.0",
     "purescript-proxy": "^3.0.0",
-    "purescript-eth-core": "purescript-eth-core#safareli-upgrade",
+    "purescript-eth-core": "f-o-a-m/purescript-eth-core#safareli-upgrade",
     "purescript-partial": "^2.0.0",
     "purescript-parsing": "^5.0.0",
     "purescript-transformers": "^4.0.0",
