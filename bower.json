@@ -22,7 +22,7 @@
     "purescript-foreign": "^5.0.0",
     "purescript-foreign-generic": "^8.0.0",
     "purescript-proxy": "^3.0.0",
-    "purescript-eth-core": "^4.0.0",
+    "purescript-eth-core": "f-o-a-m/purescript-eth-core#0b77129",
     "purescript-partial": "^2.0.0",
     "purescript-parsing": "^5.0.0",
     "purescript-transformers": "^4.0.0",

@@ -30,7 +30,7 @@ import Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Core.HexString (HexString, hexLength, unHex)
+import Network.Ethereum.Core.HexString (HexString, hexLength)
 import Network.Ethereum.Core.BigNumber (unsafeToInt)
 import Text.Parsing.Parser (ParseError, ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
@@ -45,7 +45,7 @@ class GenericABIEncode a where
 
 -- | A class for decoding generically composed datatypes from their abi encoding
 class GenericABIDecode a where
-  genericFromDataParser :: Parser String a
+  genericFromDataParser :: Parser HexString a
 
 -- | An internally used type for encoding
 data EncodedValue =
@@ -156,7 +156,7 @@ instance abiDecodeConstructor :: GenericABIDecode a => GenericABIDecode (Constru
 genericABIDecode :: forall a rep.
                     Generic a rep
                  => GenericABIDecode rep
-                 => Parser String a
+                 => Parser HexString a
 genericABIDecode = to <$> genericFromDataParser
 
 genericFromData :: forall a rep.
@@ -164,16 +164,16 @@ genericFromData :: forall a rep.
                 => GenericABIDecode rep
                 => HexString
                 -> Either ParseError a
-genericFromData = flip runParser genericABIDecode <<< unHex
+genericFromData = flip runParser genericABIDecode
 
 -- helpers
 
-factorParser :: forall a . ABIDecode a => EncodingType a => Parser String a
+factorParser :: forall a . ABIDecode a => EncodingType a => Parser HexString a
 factorParser
   | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
   | otherwise = dParser
 
-dParser :: forall a . ABIDecode a => Parser String a
+dParser :: forall a . ABIDecode a => Parser HexString a
 dParser = do
   dataOffset <- unsafeToInt <$> fromDataParser
   lookAhead $ do
