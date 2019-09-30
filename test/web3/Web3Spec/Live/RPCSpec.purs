@@ -151,5 +151,5 @@ signatureFromByteString bs =
 
 makeRidiculousEthereumMessage :: Hex.HexString -> Hex.HexString
 makeRidiculousEthereumMessage s =
-  let prefix = Hex.fromByteString <<< BS.toUTF8 $ "\EMEthereum Signed Message:\n" <> show (Hex.hexLength s `div` 2)
+  let prefix = Hex.fromByteString <<< BS.toUTF8 $ "\xEMEthereum Signed Message:\n" <> show (Hex.hexLength s `div` 2)
   in prefix <> s

@@ -30,9 +30,9 @@ newtype Content = Content {_paidContent :: (UIntN (D2 :& D5 :& DOne D6))}
 derive instance newtypeContent :: Newtype Content _
 
 instance eventFilterContent :: EventFilter Content where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "78692973dbc680e9276487808ebf9b485db7b4fbb74c05799e397695b5c7686b")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "78692973dbc680e9276487808ebf9b485db7b4fbb74c05799e397695b5c7686b")]
 
 instance indexedEventContent :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_paidContent") (UIntN (D2 :& D5 :& DOne D6)))) Content where
   isAnonymous _ = false
@@ -40,10 +40,10 @@ instance indexedEventContent :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "
 derive instance genericContent :: Generic Content _
 
 instance eventGenericContentShow :: Show Content where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericContenteq :: Eq Content where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | SeeContentFn

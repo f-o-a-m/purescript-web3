@@ -31,9 +31,9 @@ newtype ValsSet = ValsSet {a :: (UIntN (D2 :& D5 :& DOne D6)),b :: (IntN (D2 :& 
 derive instance newtypeValsSet :: Newtype ValsSet _
 
 instance eventFilterValsSet :: EventFilter ValsSet where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "88d23351ad32a937b11ca10530404f8297d29803e94709336b48c1f82c15b3cc")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "88d23351ad32a937b11ca10530404f8297d29803e94709336b48c1f82c15b3cc")]
 
 instance indexedEventValsSet :: IndexedEvent (Tuple0 ) (Tuple9 (Tagged (SProxy "a") (UIntN (D2 :& D5 :& DOne D6))) (Tagged (SProxy "b") (IntN (D2 :& D5 :& DOne D6))) (Tagged (SProxy "c") Boolean) (Tagged (SProxy "d") (IntN (D2 :& D2 :& DOne D4))) (Tagged (SProxy "e") (Vector (DOne D2) Boolean)) (Tagged (SProxy "f") (Array (IntN (D2 :& D5 :& DOne D6)))) (Tagged (SProxy "g") String) (Tagged (SProxy "h") (BytesN (D1 :& DOne D6))) (Tagged (SProxy "i") (Array (Vector (DOne D4) (BytesN (DOne D2)))))) ValsSet where
   isAnonymous _ = false
@@ -41,10 +41,10 @@ instance indexedEventValsSet :: IndexedEvent (Tuple0 ) (Tuple9 (Tagged (SProxy "
 derive instance genericValsSet :: Generic ValsSet _
 
 instance eventGenericValsSetShow :: Show ValsSet where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericValsSeteq :: Eq ValsSet where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | BoolValFn

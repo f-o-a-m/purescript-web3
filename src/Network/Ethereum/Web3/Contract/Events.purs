@@ -102,7 +102,7 @@ event'
   :: forall fs handlers fsList handlersList r1 r.
      FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
-  => Row.RowToList handlers handlersList
+  => RowList.RowToList handlers handlersList
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
   => RowList.RowToList fs fsList
   => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
@@ -129,7 +129,7 @@ event' filters handlerR {windowSize, trailBy} = do
 -- | Automatically handles cleaning up resources on the server.
 pollEvent'
   :: forall fs fsList handlers handlersList fsIds fsIdsList r r1.
-     Row.RowToList handlers handlersList
+     RowList.RowToList handlers handlersList
   => RowList.RowToList fs fsList
   => RowList.RowToList fsIds fsIdsList
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
@@ -154,7 +154,7 @@ pollEvent' filters handlers =
 
 eventRunner 
   :: forall handlers handlersList r r1 f. 
-     Row.RowToList handlers handlersList
+     RowList.RowToList handlers handlersList
   => Monad f
   => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
   => Row.Union r1 () r
@@ -295,7 +295,7 @@ reduceEventStream
      Monad f
   => MonadRec f
   => Parallel par f
-  => Row.RowToList handlers handlersList
+  => RowList.RowToList handlers handlersList
   => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
   => Row.Union r1 () r
   => Transducer Void (FilterChange (Variant r)) f a
@@ -308,7 +308,7 @@ reduceEventStream prod handlersR =
 processChange
   :: forall f r rl r1 r2.
      Monad f
-  => Row.RowToList r rl
+  => RowList.RowToList r rl
   => VariantMatchCases rl r1 (ReaderT Change f EventAction)
   => Row.Union r1 () r2
   => Record r
@@ -393,7 +393,7 @@ instance openMultiFilterFold ::
 openMultiFilter
     :: forall fs fis fsList.
        FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fis))
-    => Row.RowToList fs fsList
+    => RowList.RowToList fs fsList
     => Record fs
     -> Web3 (Record fis)
 openMultiFilter = hfoldlWithIndex OpenMultiFilter (pure {} :: Web3 (Record ()))

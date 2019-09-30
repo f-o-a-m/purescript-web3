@@ -72,8 +72,6 @@ import Foreign.Object as FO
 import Foreign.Class (class Decode, class Encode, decode, encode)
 import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
 import Foreign.Index (readProp)
-import Foreign.NullOrUndefined (undefined)
-import Foreign.Object as FO
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
