@@ -36,11 +36,11 @@ instance encodingTypeBigNumber:: EncodingType BigNumber where
     isDynamic = const false
 
 instance encodingTypeUIntN:: IntSize n => EncodingType (UIntN n) where
-    typeName  = const $ "uint" <> (show <<< sizeVal $ DLProxy :: DLProxy n)
+    typeName  = const $ "uint" <> (show $ sizeVal (DLProxy :: DLProxy n))
     isDynamic = const false
 
 instance encodingTypeIntN :: IntSize n => EncodingType (IntN n) where
-    typeName  = const $ "int" <> (show <<< sizeVal $ DLProxy :: DLProxy n)
+    typeName  = const $ "int" <> (show $ sizeVal (DLProxy :: DLProxy n))
     isDynamic = const false
 
 instance encodingTypeString :: EncodingType String where

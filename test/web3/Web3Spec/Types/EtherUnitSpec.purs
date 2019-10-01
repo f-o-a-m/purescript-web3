@@ -35,7 +35,7 @@ spec =
             opts = defaultTransactionOptions # _value .~ Just (convert (mkValue one :: Value Ether))
 
         (noPay ^. _value) `shouldEqual` Nothing
-        (opts ^. _value) `shouldEqual` (Just $ fromMinorUnit (embed 10 `pow` 18 ) :: Value Wei)
+        (opts ^. _value) `shouldEqual` (Just (fromMinorUnit (embed 10 `pow` 18 ) :: Value Wei))
 
       it "can format currencies correctly" do
         let n = mkValue (embed 1) :: Value Ether

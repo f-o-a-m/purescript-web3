@@ -37,7 +37,7 @@ import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
 import Prim.Row as Row
-import Type.Row (class ListToRow, Cons, Nil, RLProxy(..), kind RowList)
+import Type.RowList (class ListToRow, Cons, Nil, RLProxy(..), kind RowList)
 
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
