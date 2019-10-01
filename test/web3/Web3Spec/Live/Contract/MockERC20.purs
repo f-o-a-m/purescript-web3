@@ -30,9 +30,9 @@ newtype Transfer = Transfer {to :: Address,from :: Address,amount :: (UIntN (D2 
 derive instance newtypeTransfer :: Newtype Transfer _
 
 instance eventFilterTransfer :: EventFilter Transfer where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),Nothing,Nothing]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),Nothing,Nothing]
 
 instance indexedEventTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
   isAnonymous _ = false
@@ -40,10 +40,10 @@ instance indexedEventTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Addr
 derive instance genericTransfer :: Generic Transfer _
 
 instance eventGenericTransferShow :: Show Transfer where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericTransfereq :: Eq Transfer where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | TransferFn

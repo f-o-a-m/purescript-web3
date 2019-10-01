@@ -30,9 +30,9 @@ newtype E1 = E1 {value1 :: (UIntN (D2 :& D5 :& DOne D6))}
 derive instance newtypeE1 :: Newtype E1 _
 
 instance eventFilterE1 :: EventFilter E1 where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "47e2689743f14e97f7dcfa5eec10ba1dff02f83b3d1d4b9c07b206cbbda66450")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "47e2689743f14e97f7dcfa5eec10ba1dff02f83b3d1d4b9c07b206cbbda66450")]
 
 instance indexedEventE1 :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "value1") (UIntN (D2 :& D5 :& DOne D6)))) E1 where
   isAnonymous _ = false
@@ -40,10 +40,10 @@ instance indexedEventE1 :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "value
 derive instance genericE1 :: Generic E1 _
 
 instance eventGenericE1Show :: Show E1 where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericE1eq :: Eq E1 where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | E2
@@ -55,9 +55,9 @@ newtype E2 = E2 {value2 :: (UIntN (D2 :& D5 :& DOne D6))}
 derive instance newtypeE2 :: Newtype E2 _
 
 instance eventFilterE2 :: EventFilter E2 where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "a48a6b249a5084126c3da369fbc9b16827ead8cb5cdc094b717d3f1dcd995e29")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "a48a6b249a5084126c3da369fbc9b16827ead8cb5cdc094b717d3f1dcd995e29")]
 
 instance indexedEventE2 :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "value2") (UIntN (D2 :& D5 :& DOne D6)))) E2 where
   isAnonymous _ = false
@@ -65,10 +65,10 @@ instance indexedEventE2 :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "value
 derive instance genericE2 :: Generic E2 _
 
 instance eventGenericE2Show :: Show E2 where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericE2eq :: Eq E2 where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | FireE1Fn

@@ -41,9 +41,9 @@ newtype CountSet = CountSet {_count :: (UIntN (D2 :& D5 :& DOne D6))}
 derive instance newtypeCountSet :: Newtype CountSet _
 
 instance eventFilterCountSet :: EventFilter CountSet where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435")]
 
 instance indexedEventCountSet :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_count") (UIntN (D2 :& D5 :& DOne D6)))) CountSet where
   isAnonymous _ = false
@@ -51,10 +51,10 @@ instance indexedEventCountSet :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy 
 derive instance genericCountSet :: Generic CountSet _
 
 instance eventGenericCountSetShow :: Show CountSet where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericCountSeteq :: Eq CountSet where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | Deployed
@@ -66,9 +66,9 @@ newtype Deployed = Deployed {_blockNumber :: (UIntN (D2 :& D5 :& DOne D6))}
 derive instance newtypeDeployed :: Newtype Deployed _
 
 instance eventFilterDeployed :: EventFilter Deployed where
-	eventFilter _ addr = defaultFilter
-		# _address .~ Just addr
-		# _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "b94ae47ec9f4248692e2ecf9740b67ab493f3dcc8452bedc7d9cd911c28d1ca5")]
+  eventFilter _ addr = defaultFilter
+    # _address .~ Just addr
+    # _topics .~ Just [Just ( unsafePartial $ fromJust $ mkHexString "b94ae47ec9f4248692e2ecf9740b67ab493f3dcc8452bedc7d9cd911c28d1ca5")]
 
 instance indexedEventDeployed :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy "_blockNumber") (UIntN (D2 :& D5 :& DOne D6)))) Deployed where
   isAnonymous _ = false
@@ -76,10 +76,10 @@ instance indexedEventDeployed :: IndexedEvent (Tuple0 ) (Tuple1 (Tagged (SProxy 
 derive instance genericDeployed :: Generic Deployed _
 
 instance eventGenericDeployedShow :: Show Deployed where
-	show = genericShow
+  show = genericShow
 
 instance eventGenericDeployedeq :: Eq Deployed where
-	eq = genericEq
+  eq = genericEq
 
 --------------------------------------------------------------------------------
 -- | CountFn
