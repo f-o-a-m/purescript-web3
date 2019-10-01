@@ -21,14 +21,14 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (ParseError, Parser, ParserT, fail, runParser)
-import Text.Parsing.Parser.Token (hexDigit)
+import Text.Parsing.Parser.String (anyChar)
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
   toDataBuilder :: a -> HexString
 
 class ABIDecode a where
-  fromDataParser :: Parser String a
+  fromDataParser :: Parser HexString a
 
 instance abiEncodeAlgebra :: ABIEncode BigNumber where
   toDataBuilder = int256HexBuilder
@@ -38,7 +38,7 @@ instance abiDecodeAlgebra :: ABIDecode BigNumber where
 
 -- | Parse encoded value, droping the leading `0x`
 fromData :: forall a . ABIDecode a => HexString -> Either ParseError a
-fromData = flip runParser fromDataParser <<< unHex
+fromData = flip runParser fromDataParser
 
 instance abiEncodeBool :: ABIEncode Boolean where
     toDataBuilder  = uInt256HexBuilder <<< fromBool
@@ -156,11 +156,11 @@ uInt256HexBuilder x =
   in padLeft x'
 
 -- | Parse as a signed `BigNumber`
-int256HexParser :: forall m . Monad m => ParserT String m BigNumber
+int256HexParser :: forall m . Monad m => ParserT HexString m BigNumber
 int256HexParser = toBigNumberFromSignedHexString <$> take 64
 
 -- | Parse an unsigned `BigNumber`
-uInt256HexParser :: forall m . Monad m => ParserT String m BigNumber
+uInt256HexParser :: forall m . Monad m => ParserT HexString m BigNumber
 uInt256HexParser = toBigNumber <$> take 64
 
 -- | Decode a `Boolean` as a BigNumber
@@ -172,5 +172,5 @@ toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
-take :: forall m . Monad m => Int -> ParserT String m HexString
-take n = unsafePartial fromJust <<< mkHexString <<< fromCharArray <$> replicateA n hexDigit
+take :: forall m . Monad m => Int -> ParserT HexString m HexString
+take n = unsafePartial fromJust <<< mkHexString <<< fromCharArray <$> replicateA n anyChar
