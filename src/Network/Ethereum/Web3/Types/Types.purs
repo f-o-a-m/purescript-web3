@@ -46,6 +46,7 @@ import Prelude
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Error.Util (hush)
+import Control.Lazy (class Lazy)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
@@ -347,6 +348,9 @@ derive newtype instance monadErrorWeb3 :: MonadError Error Web3
 derive newtype instance monadAskWeb3 :: MonadAsk Provider Web3
 derive newtype instance monadReaderWeb3 :: MonadReader Provider Web3
 derive newtype instance monadRecWeb3 :: MonadRec Web3
+
+instance lazyWeb3 ∷ Lazy (Web3 a) where
+  defer f = pure unit >>= f
 
 instance monadForkWeb3 :: MFork.MonadFork Fiber Web3 where
   suspend = Web3 <<< MFork.suspend <<< unWeb3
