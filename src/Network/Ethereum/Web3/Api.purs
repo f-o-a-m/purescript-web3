@@ -132,7 +132,7 @@ eth_getTransaction :: HexString -> Web3 Transaction
 eth_getTransaction hx = remote "eth_getTransactionByHash" hx
 
 -- | Call a function on a particular block's state root.
-eth_call :: TransactionOptions NoPay -> ChainCursor -> Web3 HexString
+eth_call :: forall a. TransactionOptions a -> ChainCursor -> Web3 HexString
 eth_call opts cm = remote "eth_call" opts cm
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.
