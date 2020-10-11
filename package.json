@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "pulp build -- --strict",
-    "test": "pulp test --test-path test/web3"
+    "build": "spago build",
+    "test": "spago -x test.dhall test"
   },
   "dependencies": {
     "ethjs-provider-http": "^0.1.6",
@@ -12,8 +12,8 @@
     "secp256k1": "^3.0.1"
   },
   "devDependencies": {
-    "purescript-psa": "^0.7.3",
     "purescript": "^0.13.0",
-    "pulp": "^13.0.0"
+    "purescript-psa": "^0.7.3",
+    "spago": "^0.16.0"
   }
 }
