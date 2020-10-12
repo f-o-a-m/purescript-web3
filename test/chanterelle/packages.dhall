@@ -32,7 +32,7 @@ let additions =
           , "variant"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-web3"
-        , version = "spago"
+        , version = "v3.0.0"
         }
       , web3-generator =
           { dependencies =
@@ -54,7 +54,7 @@ let additions =
             , "yargs"
             ]
           , repo = "https://github.com/f-o-a-m/purescript-web3-generator"
-          , version = "spago"
+          , version = "v3.0.0"
           }
       , chanterelle =
           { dependencies =
@@ -74,7 +74,7 @@ let additions =
             , "web3-generator"
             ]
           , repo = "https://github.com/f-o-a-m/chanterelle"
-          , version = "spago"
+          , version = "v5.0.0"
           }
       , eth-core =
         { dependencies =
@@ -123,7 +123,7 @@ let additions =
         , repo =
             "https://github.com/f-o-a-m/purescript-solc"
         , version =
-            "spago"
+            "v2.0.0"
         }
       , mkdirp =
         { dependencies =
