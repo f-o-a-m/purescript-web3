@@ -12,6 +12,7 @@
     "secp256k1": "^3.0.1"
   },
   "devDependencies": {
+    "pulp": "^15.0.0",
     "purescript": "^0.13.0",
     "purescript-psa": "^0.7.3",
     "spago": "^0.16.0"

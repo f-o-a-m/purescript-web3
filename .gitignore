@@ -11,4 +11,5 @@ node_modules/
 package-lock.json
 /.vscode
 yarn.lock
-/.spago
+/test/chanterelle/.spago
+/.spago/
