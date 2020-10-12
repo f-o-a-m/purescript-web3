@@ -5,7 +5,6 @@ import Network.Ethereum.Types (Address, HexString, BigNumber)
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
 import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit)
-import Type.Data.Boolean (kind Boolean)
 
 -- | Returns current node version string.
 web3_clientVersion :: Partial => Web3 String
