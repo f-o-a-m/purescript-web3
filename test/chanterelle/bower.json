@@ -1,8 +1,0 @@
-{
-  "name": "purescript-web3-tests",
-  "dependencies": {
-  },
-  "devDependencies": {
-    "purescript-chanterelle": "^4.0.0"
-  }
-}

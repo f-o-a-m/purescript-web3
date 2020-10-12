@@ -14,7 +14,7 @@ import Network.Ethereum.Core.Keccak256 (keccak256)
 import Network.Ethereum.Core.Signatures as Sig
 import Network.Ethereum.Web3 (Block(..), ChainCursor(..), Provider, TransactionReceipt(..), _from, _to, _value, convert, defaultTransactionOptions, fromMinorUnit, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
-import Node.Buffer.Unsafe (slice)
+import Node.Buffer.Class (slice)
 import Partial.Unsafe (unsafePartial, unsafePartialBecause)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)

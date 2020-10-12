@@ -10,3 +10,6 @@ node_modules/
 *#*
 package-lock.json
 /.vscode
+yarn.lock
+/test/chanterelle/.spago
+/.spago/
