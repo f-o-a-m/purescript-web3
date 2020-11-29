@@ -2,15 +2,14 @@ module Web3Spec.Live.MultifilterSpec (spec) where
 
 import Prelude
 
-import Control.Alt ((<|>))
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parSequence_, parTraverse_)
-import Data.Array (elem, foldl, head, last, length, snoc, sort, unsnoc, (..))
+import Data.Array (foldl, head, last, length, snoc, sort, unsnoc, (..))
 import Data.Bifunctor (rmap)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Lens ((?~))
-import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Data.Newtype (un)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
