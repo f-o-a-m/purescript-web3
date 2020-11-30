@@ -2,6 +2,7 @@ module Network.Ethereum.Web3.Contract.Events
  ( event'
  , pollEvent'
  , reduceEventStream
+ , reduceEventStream'
  , aquireFilter
  , pollFilter
  , logsStream
@@ -14,6 +15,7 @@ module Network.Ethereum.Web3.Contract.Events
  , ModifyFilter
  , QueryAllLogs
  , MultiFilterStreamState(..)
+ , MultiFilterHooks
  , OpenMultiFilter
  , CloseMultiFilter
  , CheckMultiFilter
@@ -29,13 +31,13 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Trans.Class (lift)
 import Control.Parallel (class Parallel)
 import Data.Array (catMaybes, sort)
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
+import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
 import Data.Symbol (class IsSymbol, SProxy)
-import Data.Functor.Tagged (Tagged, tagged, untagged)
-import Data.Traversable (for_)
+import Data.Traversable (for_, sequence_)
 import Data.Tuple (Tuple(..), fst)
 import Data.Variant (Variant, class VariantMatchCases, expand, inj, match)
 import Effect.Aff (delay, Milliseconds(..))
@@ -47,10 +49,11 @@ import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Option as Option
+import Prim.RowList as RowList
 import Record as Record
 import Type.Proxy (Proxy(..))
 import Type.Row as Row
-import Prim.RowList as RowList
 
 --------------------------------------------------------------------------------
 -- * Types
@@ -73,6 +76,9 @@ newtype FilterChange a =
 filterChangeToIndex :: forall a. FilterChange a -> Tuple BlockNumber BigNumber
 filterChangeToIndex (FilterChange {rawChange: Change change}) = 
   Tuple change.blockNumber change.logIndex
+
+filterChangeToChange :: forall a. FilterChange a -> Change
+filterChangeToChange (FilterChange c) = c.rawChange
 
 instance eqFilterChange :: Eq (FilterChange a) where
   eq f1 f2 = filterChangeToIndex f1 `eq` filterChangeToIndex f2
@@ -99,7 +105,7 @@ type ChangeReceipt =
 -- | terminates, it will return either the state at the time of termination, or a
 -- | `ChangeReceipt` for the event that caused the termination.
 event'
-  :: forall fs handlers fsList handlersList r1 r.
+  :: forall fs handlers fsList handlersList r1 r args.
      FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor
   => FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor
   => RowList.RowToList handlers handlersList
@@ -108,21 +114,28 @@ event'
   => VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction)
   => Row.Union r1 () r
   => FoldlRecord QueryAllLogs  (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r))))
+  => Option.FromRecord args ( windowSize :: Int, trailBy :: Int ) MultiFilterHooks'
   => Record fs
   -> Record handlers
-  -> {windowSize :: Int, trailBy :: Int}
+  -> Record args
   -> Web3 (Either (MultiFilterStreamState fs) ChangeReceipt)
-event' filters handlerR {windowSize, trailBy} = do
+event' filters handlerR args = do
   currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of
     BN bn -> pure bn
     Latest -> eth_blockNumber
   let initialState =
-        MultiFilterStreamState { currentBlock
-                               , filters
-                               , windowSize
-                               , trailBy
-                               }
-  runProcess $ reduceEventStream (logsStream initialState) handlerR
+        MultiFilterStreamState (Record.merge { currentBlock, filters } args')
+  res <- runProcess $ reduceEventStream'
+            { beforeEvent: args'.beforeEvent, afterEvent: args'.afterEvent }
+            (logsStream initialState)
+            handlerR
+  sequence_ (args'.onFilterTermination <*> hush res)
+  pure res
+
+  where optRec :: Option.Record (windowSize :: Int, trailBy :: Int) MultiFilterHooks'
+        optRec = Option.recordFromRecord args
+
+        args' = Option.recordToRecord optRec
 
 -- | Takes a record of filters and a key-corresponding record of handlers.
 -- | Establishes filters for polling on the server a la the filterIds.
@@ -158,10 +171,14 @@ eventRunner
   => Monad f
   => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
   => Row.Union r1 () r
-  => Record handlers
+  => { beforeEvent :: Maybe (Change -> f Unit), afterEvent :: Maybe (Change -> f Unit) }
+  -> Record handlers
   -> Consumer (FilterChange (Variant r)) f ChangeReceipt
-eventRunner handlersR = consumer \change -> do
+eventRunner hooks handlersR = consumer \change -> do
+  let rawChange = filterChangeToChange change
+  sequence_ $ hooks.beforeEvent <@> rawChange
   receipt <- processChange handlersR change
+  sequence_ $ hooks.afterEvent <@> rawChange
   pure case receipt.action of
     ContinueEvent -> Nothing
     TerminateEvent -> Just receipt
@@ -189,8 +206,11 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
               modify fltr = fltr # _fromBlock .~ BN currentState.currentBlock
                                  # _toBlock .~ BN endBlock
               fs' = hmap (ModifyFilter modify) currentState.filters
+
+          lift $ sequence_ (currentState.beforeFilterWindow <@> { start: currentState.currentBlock, end: endBlock })
           yieldT fs'
           filterProducer $ MultiFilterStreamState currentState { currentBlock = succ endBlock }
+
     chainHead <- lift eth_blockNumber
     -- if the chain head is less than the current block we want to process
     -- then wait until the chain progresses
@@ -301,9 +321,24 @@ reduceEventStream
   => Transducer Void (FilterChange (Variant r)) f a
   -> Record handlers
   -> Process f (Either a ChangeReceipt)
-reduceEventStream prod handlersR =
-    (Right <$> eventRunner handlersR) `pullFrom` (Left <$> toProducer prod)
+reduceEventStream = reduceEventStream' { beforeEvent: Nothing, afterEvent: Nothing }
 
+-- | Just like reduceEventStream, except you can add optional hooks around each invokation of the
+-- | event processors. reduceEventStream just calls this with no hooks under the hood...
+reduceEventStream'
+ :: forall f par r handlers handlersList r1 a.
+     Monad f
+  => MonadRec f
+  => Parallel par f
+  => RowList.RowToList handlers handlersList
+  => VariantMatchCases handlersList r1 (ReaderT Change f EventAction)
+  => Row.Union r1 () r
+  => { beforeEvent :: Maybe (Change -> f Unit), afterEvent :: Maybe (Change -> f Unit) }
+  -> Transducer Void (FilterChange (Variant r)) f a
+  -> Record handlers
+  -> Process f (Either a ChangeReceipt)
+reduceEventStream' hooks prod handlersR =
+    (Right <$> eventRunner hooks handlersR) `pullFrom` (Left <$> toProducer prod)
 
 processChange
   :: forall f r rl r1 r2.
@@ -371,11 +406,25 @@ instance queryAllLogs ::
     changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
     (<>) changes <$> (map (map expand) <$> acc)
 
+type MultiFilterHooks =
+  ( beforeFilterWindow :: Maybe ({ start :: BlockNumber, end :: BlockNumber } -> Web3 Unit)
+  , onFilterTermination :: Maybe (ChangeReceipt -> Web3 Unit)
+  , beforeEvent :: Maybe (Change -> Web3 Unit)
+  , afterEvent :: Maybe (Change -> Web3 Unit)
+  )
+type MultiFilterHooks' =
+  ( beforeFilterWindow :: { start :: BlockNumber, end :: BlockNumber } -> Web3 Unit
+  , onFilterTermination :: ChangeReceipt -> Web3 Unit
+  , beforeEvent :: Change -> Web3 Unit
+  , afterEvent :: Change -> Web3 Unit
+  )
+
 data MultiFilterStreamState fs =
   MultiFilterStreamState { currentBlock :: BlockNumber
                          , filters :: Record fs
                          , windowSize :: Int
                          , trailBy :: Int
+                         | MultiFilterHooks
                          }
 
 data OpenMultiFilter = OpenMultiFilter

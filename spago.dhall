@@ -19,6 +19,7 @@ You can edit this file as you like.
   , "free"
   , "heterogeneous"
   , "identity"
+  , "option"
   , "parsing"
   , "partial"
   , "profunctor-lenses"

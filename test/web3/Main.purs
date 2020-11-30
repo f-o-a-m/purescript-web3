@@ -42,8 +42,9 @@ main = launchAff_ do
       EtherUnitSpec.spec
     RPCSpec.spec p
     FilterSpec.spec p
-    -- payable spec can't be run in parallel :/
+    -- payable and multifilter spec can't be run in parallel :/
     PayableTestSpec.spec p
+    MultifilterSpec.spec p
     -- all of these tests only have one `it` statement and
     -- are dealing with separate contracts so they can be run
     -- in parallel
@@ -52,7 +53,6 @@ main = launchAff_ do
       ComplexStorageSpec.spec p
       MockERC20Spec.spec p
       SimpleErrorTestSpec.spec p
-      MultifilterSpec.spec p
   where
     hoist :: Spec ~> SpecT Aff Unit Aff
     hoist = mapSpecTree (pure <<< un Identity) identity
