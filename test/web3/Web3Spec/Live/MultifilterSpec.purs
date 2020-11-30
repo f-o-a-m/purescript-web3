@@ -4,12 +4,12 @@ import Prelude
 
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parSequence_, parTraverse_)
-import Data.Array (foldl, head, last, length, snoc, sort, unsnoc, (..))
+import Data.Array (foldl, length, snoc, sort, (..))
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Lens ((?~))
-import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (un)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
@@ -20,7 +20,7 @@ import Network.Ethereum.Web3 (BigNumber, BlockNumber(..), Change(..), EventActio
 import Network.Ethereum.Web3.Api (eth_blockNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
-import Test.Spec (SpecT, describe, it, beforeAll)
+import Test.Spec (SpecT, beforeAll, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual, shouldSatisfy)
 import Type.Proxy (Proxy(..))
 import Web3Spec.Live.Code.Multifilter as MultifilterCode
@@ -88,37 +88,37 @@ spec provider =
         sort sync `shouldEqual` sync
 
       it "optional multifilter hooks don't break type inference" \{contractAddress} -> do
-        let dummyEvent'NoEvents1 = event' { } { } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents2 = event' { } { } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents3 = event' { } { } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit), afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents4 = event' { } { } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit), beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents5 = event' { } { } { afterFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents6 = event' { } { } { beforeFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents7 = event' { } { } { trailBy: 0, beforeFilterWindow: (\_ -> pure unit), windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'NoEvents8 = event' { } { } { trailBy: 0, afterFilterWindow: (\_ -> pure unit), windowSize: 0 }
+        let dummyEvent'NoEvents1 = event' { } { } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents2 = event' { } { } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents3 = event' { } { } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit), afterEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents4 = event' { } { } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit), beforeEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents5 = event' { } { } { afterEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents6 = event' { } { } { beforeEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents7 = event' { } { } { trailBy: 0, beforeEvent: (\_ -> pure unit), windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'NoEvents8 = event' { } { } { trailBy: 0, afterEvent: (\_ -> pure unit), windowSize: 0 }
 
             f1 = eventFilter pE1 contractAddress
             f2 = eventFilter pE2 contractAddress
             h1 = dummyHandler pE1 Nothing
             h2 = dummyHandler pE2 Nothing
 
-            dummyEvent'OneEvent1 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent2 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent3 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit), afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent4 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit), beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent5 = event' { f1 } { f1: h1 } { afterFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent6 = event' { f1 } { f1: h1 } { beforeFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent7 = event' { f1 } { f1: h1 } { trailBy: 0, beforeFilterWindow: (\_ -> pure unit), windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'OneEvent8 = event' { f1 } { f1: h1 } { trailBy: 0, afterFilterWindow: (\_ -> pure unit), windowSize: 0 }
+            dummyEvent'OneEvent1 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent2 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent3 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit), afterEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent4 = event' { f1 } { f1: h1 } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit), beforeEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent5 = event' { f1 } { f1: h1 } { afterEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent6 = event' { f1 } { f1: h1 } { beforeEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent7 = event' { f1 } { f1: h1 } { trailBy: 0, beforeEvent: (\_ -> pure unit), windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'OneEvent8 = event' { f1 } { f1: h1 } { trailBy: 0, afterEvent: (\_ -> pure unit), windowSize: 0 }
 
-            dummyEvent'TwoEvents1 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents2 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents3 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit), afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents4 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit), beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents5 = event' { f1, f2 } { f1: h1, f2: h2 } { afterFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents6 = event' { f1, f2 } { f1: h1, f2: h2 } { beforeFilterWindow: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents7 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, beforeFilterWindow: (\_ -> pure unit), windowSize: 0, afterFilterWindow: (\_ -> pure unit) }
-            dummyEvent'TwoEvents8 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, afterFilterWindow: (\_ -> pure unit), windowSize: 0 }
+            dummyEvent'TwoEvents1 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents2 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents3 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit), afterEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents4 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit), beforeEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents5 = event' { f1, f2 } { f1: h1, f2: h2 } { afterEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, beforeEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents6 = event' { f1, f2 } { f1: h1, f2: h2 } { beforeEvent: (\_ -> pure unit), trailBy: 0, windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents7 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, beforeEvent: (\_ -> pure unit), windowSize: 0, afterEvent: (\_ -> pure unit) }
+            dummyEvent'TwoEvents8 = event' { f1, f2 } { f1: h1, f2: h2 } { trailBy: 0, afterEvent: (\_ -> pure unit), windowSize: 0 }
         pure unit
 
       it "actually runs before and after hooks in proper order" \{contractAddress, userAddress} -> do
@@ -126,7 +126,6 @@ spec provider =
         hooksAndEventsV <- AVar.new []
         counterV <- AVar.new 0
         let endBlock = startBlock + (embed 10)
-            endBlock' = endBlock + (embed 3)
             storeFW when = storeHookValue hooksAndEventsV counterV (\{ counter, v } -> { counter, v: Left { when, v } })
             multiFilter = { e1: eventFilter pE1 contractAddress, e2: eventFilter pE2 contractAddress}
             evs = 1..5
@@ -140,64 +139,49 @@ spec provider =
         f <- forkWeb3 provider $ event' multiFilter multiHandler
           { trailBy: 0
           , windowSize: 0
-          , beforeFilterWindow: storeFW "before"
-          , afterFilterWindow: storeFW "after"
+          , beforeFilterWindow: storeFW "before_window"
+          , beforeEvent: \(Change c) -> storeFW "before_event" { start: c.blockNumber, end: c.blockNumber }
+          , afterEvent: \(Change c) -> storeFW "after_event" { start: c.blockNumber, end: c.blockNumber }
           , onFilterTermination: \cr -> storeFW "filter_term" { start: cr.blockNumber, end: cr.blockNumber }
           }
         for_ evs $ \n -> fireE1 txOpts n *> fireE2 txOpts n *> awaitNextBlock provider logger
         hangOutTillBlock provider logger (BlockNumber endBlock)
 
-        -- fire one more set of events so the filters terminate...
+        -- fire one more set of events so the filters terminate
+        -- the event handlers don't store any events triggered after endBlock
         fireE1 txOpts 99
         fireE2 txOpts 99
 
         void $ joinWeb3Fork f
         hooksAndEvents <- AVar.take hooksAndEventsV
 
-        let evAsBeforeHook { counter,  v: Left { when: "before", v } } = Just { counter, v }
-            evAsBeforeHook _ = Nothing
-
-            evAsAfterHook { counter,  v: Left { when: "after", v } } = Just { counter, v }
-            evAsAfterHook _ = Nothing
-
-            evAsFilterTermHook { counter,  v: Left { when: "filter_term", v } } = Just { counter, v }
-            evAsFilterTermHook _ = Nothing
-
-            snoc' complete pending = if pending == [] then complete else snoc complete pending
-
+        let snoc' complete pending = if pending == [] then complete else snoc complete pending
             chainFolder st@{ complete, pending } ev = case ev of
-              { v: Left { when: "before" } } -> { complete: snoc' complete pending, pending: [ev] }
-              { v: Left { when: "after" } }  -> { complete: snoc complete (snoc pending ev), pending: [] }
-              { v: Left { when: "filter_term" } } -> { complete: snoc complete (snoc pending ev), pending: [] }
+              { v: Left { when: "before_event" } } -> { complete: snoc' complete pending, pending: [ev] }
+              { v: Left { when: "after_event" } } -> { complete: snoc' complete (snoc pending ev), pending: [] }
+              { v: Left _ } -> st -- drop before_windows and filter_terms
               _ -> st { pending = snoc pending ev }
             chains = foldl chainFolder { complete: [], pending: [] } hooksAndEvents
 
         for_ chains.complete $ \chain -> do
-          let start = evAsBeforeHook =<< head chain
-              end = evAsAfterHook =<< last chain
-              end' = evAsFilterTermHook =<< last chain
-              consecFolder { prevBN, prevCounter, isConsecutiveCounter, isConsecutiveBN } curr =
+          let bnZero = embed 0
+              consecFolder { prevBN, prevCounter, isConsecutiveCounter, isSameBN } curr =
                 let { counter, bn } =
                       case curr of
                         { counter, v: Right (Change { blockNumber: (BlockNumber bn) }) } -> { counter, bn }
-                        { counter, v: Left { when: "before", v: { start } } } -> { counter, bn: un BlockNumber start }
-                        { counter, v: Left { when: "after", v: { end } } } -> { counter, bn: un BlockNumber end }
+                        { counter, v: Left { when: "before_window", v: { start } } } -> { counter, bn: un BlockNumber start }
+                        { counter, v: Left { when: "before_event", v: { start } } } -> { counter, bn: un BlockNumber start }
+                        { counter, v: Left { when: "after_event", v: { end } } } -> { counter, bn: un BlockNumber end }
                         { counter } -> { counter, bn: embed 0 } -- ok to ignore when "filter_term" -- we drop it in `chainToFold`
                     consCounter' = isConsecutiveCounter && (counter >= prevCounter)
-                    consBN' = isConsecutiveBN && (bn >= prevBN)
-                 in { prevBN: bn, prevCounter: counter, isConsecutiveCounter: consCounter', isConsecutiveBN: consBN' }
+                    sameBN' = isSameBN && (prevBN == bnZero || bn == prevBN) -- handle the "first thing in the change not being == 0" case
+                 in { prevBN: bn, prevCounter: counter, isConsecutiveCounter: consCounter', isSameBN: sameBN' }
 
-              chainToFold = if isJust end' then fromMaybe [] (_.init <$> unsnoc chain) else chain
-              evsConsecutive = foldl consecFolder { prevBN: embed 0, prevCounter: -1, isConsecutiveCounter: true, isConsecutiveBN: true } chainToFold
+              evsConsec = foldl consecFolder { prevBN: bnZero, prevCounter: -1, isConsecutiveCounter: true, isSameBN: true } chain
 
-          start `shouldSatisfy` isJust
-
-          if isNothing end'
-          then end `shouldSatisfy` isJust
-          else end' `shouldSatisfy` isJust
-
-          evsConsecutive `shouldSatisfy` _.isConsecutiveCounter
-          evsConsecutive `shouldSatisfy` _.isConsecutiveBN
+          -- done like this so you can see the chain when it fails...
+          { evsConsec, chain } `shouldSatisfy` _.evsConsec.isConsecutiveCounter
+          { evsConsec, chain } `shouldSatisfy` _.evsConsec.isSameBN
 
         chains.pending `shouldEqual` []
 
@@ -229,8 +213,9 @@ storeEventValue
   -> Maybe BigNumber
   -> EventHandler Web3 a
 storeEventValue pa avar counterVar ev2e terminateBlock ev = do
-  change <- ask
-  liftAff do
+  change@(Change { blockNumber: (BlockNumber changeBN )}) <- ask
+  let shouldStore = fromMaybe true $ (changeBN <= _) <$> terminateBlock
+  when shouldStore $ liftAff do
     counter <- do
       originalVal <- AVar.take counterVar
       AVar.put (originalVal + 1) counterVar
