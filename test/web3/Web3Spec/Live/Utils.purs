@@ -142,10 +142,9 @@ deployContract ::
   MonadAff m =>
   Provider ->
   Logger m ->
-  String -- contract name ->
-    (TransactionOptions NoPay -> Web3 HexString) -- deployment transaction ->
-    m
-    ContractConfig
+  String ->
+  (TransactionOptions NoPay -> Web3 HexString) ->
+  m ContractConfig
 deployContract p logger contractName deploymentTx = do
   userAddress <-
     assertWeb3 p

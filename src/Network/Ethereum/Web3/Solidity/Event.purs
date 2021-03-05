@@ -65,9 +65,8 @@ parseChange ::
   Generic b brep =>
   GenericABIDecode brep =>
   Change ->
-  Boolean -- is anonymous ->
-    Maybe
-    (Event a b)
+  Boolean ->
+  Maybe (Event a b)
 parseChange (Change change) anonymous = do
   topics <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
   a <- genericArrayParser topics

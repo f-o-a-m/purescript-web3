@@ -52,7 +52,7 @@ infixr 6 vCons as :<
 
 -- | Get the length of a statically sized vector
 vectorLength :: forall a n. KnownSize n => Vector n a -> Int
-vectorLength (Vector as) =  -- NOTE: sizeVal could be used instead A.length as
+vectorLength (Vector as) = A.length as
 
 -- | Attempt to coerce an array into a statically sized array.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.

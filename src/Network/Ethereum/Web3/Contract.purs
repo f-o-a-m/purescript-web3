@@ -68,7 +68,7 @@ class TxMethod (selector :: Symbol) a where
     TokenUnit (Value (u ETHER)) =>
     IsSymbol selector =>
     TransactionOptions u ->
-    Tagged (SProxy selector) a -- ^ Method data ->
+    Tagged (SProxy selector) a ->
     Web3 HexString
 
 -- ^ 'Web3' wrapped tx hash
@@ -76,9 +76,9 @@ class CallMethod (selector :: Symbol) a b where
   -- | Constant call given contract 'Address' in mode and given input data
   call ::
     IsSymbol selector =>
-    TransactionOptions NoPay -- ^ TransactionOptions ->
-    ChainCursor -- ^ State mode for constant call (latest or pending) ->
-    Tagged (SProxy selector) a -- ^ Method data ->
+    TransactionOptions NoPay ->
+    ChainCursor ->
+    Tagged (SProxy selector) a ->
     Web3 (Either CallError b)
 
 -- ^ 'Web3' wrapped result
