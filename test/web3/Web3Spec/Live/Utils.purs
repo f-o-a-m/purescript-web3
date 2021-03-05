@@ -143,8 +143,9 @@ deployContract ::
   Provider ->
   Logger m ->
   String -- contract name ->
-  (TransactionOptions NoPay -> Web3 HexString) -- deployment transaction ->
-  m ContractConfig
+    (TransactionOptions NoPay -> Web3 HexString) -- deployment transaction ->
+    m
+    ContractConfig
 deployContract p logger contractName deploymentTx = do
   userAddress <-
     assertWeb3 p
