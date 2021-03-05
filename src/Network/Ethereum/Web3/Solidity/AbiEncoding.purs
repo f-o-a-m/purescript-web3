@@ -1,7 +1,6 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
-
 import Data.Array (length) as A
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
@@ -37,33 +36,32 @@ instance abiDecodeAlgebra :: ABIDecode BigNumber where
   fromDataParser = int256HexParser
 
 -- | Parse encoded value, droping the leading `0x`
-fromData :: forall a . ABIDecode a => HexString -> Either ParseError a
+fromData :: forall a. ABIDecode a => HexString -> Either ParseError a
 fromData = flip runParser fromDataParser
 
 instance abiEncodeBool :: ABIEncode Boolean where
-    toDataBuilder  = uInt256HexBuilder <<< fromBool
+  toDataBuilder = uInt256HexBuilder <<< fromBool
 
 instance abiDecodeBool :: ABIDecode Boolean where
-    fromDataParser = toBool <$> uInt256HexParser
+  fromDataParser = toBool <$> uInt256HexParser
 
 instance abiEncodeInt :: ABIEncode Int where
-    toDataBuilder  = int256HexBuilder <<< embed
+  toDataBuilder = int256HexBuilder <<< embed
 
 instance abiDecodeInt :: ABIDecode Int where
-    fromDataParser = unsafeToInt <$> int256HexParser
+  fromDataParser = unsafeToInt <$> int256HexParser
 
 instance abiEncodeAddress :: ABIEncode Address where
-    toDataBuilder addr = padLeft <<< unAddress $ addr
+  toDataBuilder addr = padLeft <<< unAddress $ addr
 
 instance abiDecodeAddress :: ABIDecode Address where
-    fromDataParser = do
-      _ <- take 24
-      maddr <- mkAddress <$> take 40
-      maybe (fail "Address is 20 bytes, receieved more") pure maddr
+  fromDataParser = do
+    _ <- take 24
+    maddr <- mkAddress <$> take 40
+    maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
 instance abiEncodeBytesD :: ABIEncode ByteString where
-  toDataBuilder bytes =
-    uInt256HexBuilder (embed $ BS.length bytes) <> bytesBuilder bytes
+  toDataBuilder bytes = uInt256HexBuilder (embed $ BS.length bytes) <> bytesBuilder bytes
 
 instance abiDecodeBytesD :: ABIDecode ByteString where
   fromDataParser = do
@@ -71,36 +69,41 @@ instance abiDecodeBytesD :: ABIDecode ByteString where
     bytesDecode <<< unHex <$> take (len * 2)
 
 instance abiEncodeString :: ABIEncode String where
-    toDataBuilder = toDataBuilder <<< BS.toUTF8
+  toDataBuilder = toDataBuilder <<< BS.toUTF8
 
 instance abiDecodeString :: ABIDecode String where
-    fromDataParser = BS.fromUTF8 <$> fromDataParser
+  fromDataParser = BS.fromUTF8 <$> fromDataParser
 
 instance abiEncodeBytesN :: ByteSize n => ABIEncode (BytesN n) where
   toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
 
 instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
   fromDataParser = do
-    let len = sizeVal (DLProxy :: DLProxy n)
-        zeroBytes = getPadLength (len * 2)
+    let
+      len = sizeVal (DLProxy :: DLProxy n)
+
+      zeroBytes = getPadLength (len * 2)
     raw <- take $ len * 2
     _ <- take $ zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
 instance abiEncodeVector :: (ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
-    toDataBuilder as = foldMap toDataBuilder as
+  toDataBuilder as = foldMap toDataBuilder as
 
 instance abiDecodeVector :: (ABIDecode a, KnownSize n) => ABIDecode (Vector n a) where
-    fromDataParser = let len = sizeVal (DLProxy :: DLProxy n)
-                     in replicateA len fromDataParser
+  fromDataParser =
+    let
+      len = sizeVal (DLProxy :: DLProxy n)
+    in
+      replicateA len fromDataParser
 
 instance abiEncodeArray :: ABIEncode a => ABIEncode (Array a) where
-    toDataBuilder as = uInt256HexBuilder (embed $ A.length as) <> foldMap toDataBuilder as
+  toDataBuilder as = uInt256HexBuilder (embed $ A.length as) <> foldMap toDataBuilder as
 
 instance abiDecodeArray :: ABIDecode a => ABIDecode (Array a) where
-    fromDataParser = do
-      len <- unsafeToInt <$> uInt256HexParser
-      replicateA len fromDataParser
+  fromDataParser = do
+    len <- unsafeToInt <$> uInt256HexParser
+    replicateA len fromDataParser
 
 instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
   toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
@@ -110,8 +113,11 @@ instance abiDecodeUint :: IntSize n => ABIDecode (UIntN n) where
     a <- uInt256HexParser
     maybe (fail $ msg a) pure <<< uIntNFromBigNumber (DLProxy :: DLProxy n) $ a
     where
-      msg n = let size = sizeVal (DLProxy :: DLProxy n)
-              in "Couldn't parse as uint" <> show size <> " : " <> show n
+    msg n =
+      let
+        size = sizeVal (DLProxy :: DLProxy n)
+      in
+        "Couldn't parse as uint" <> show size <> " : " <> show n
 
 instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
   toDataBuilder a = int256HexBuilder <<< unIntN $ a
@@ -121,8 +127,11 @@ instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
     a <- int256HexParser
     maybe (fail $ msg a) pure <<< intNFromBigNumber (DLProxy :: DLProxy n) $ a
     where
-      msg n = let size = sizeVal (DLProxy :: DLProxy n)
-              in "Couldn't parse as int" <> show size <> " : " <> show n
+    msg n =
+      let
+        size = sizeVal (DLProxy :: DLProxy n)
+      in
+        "Couldn't parse as int" <> show size <> " : " <> show n
 
 instance abiEncodeTagged :: ABIEncode a => ABIEncode (Tagged s a) where
   toDataBuilder = toDataBuilder <<< untagged
@@ -133,7 +142,6 @@ instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged s a) where
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers
 --------------------------------------------------------------------------------
-
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
 bytesBuilder = padRight <<< unsafePartial fromJust <<< mkHexString <<< flip BS.toString BS.Hex
@@ -145,22 +153,25 @@ bytesDecode s = unsafePartial $ fromJust $ flip BS.fromString BS.Hex s
 -- | Encode something that is essentaially a signed integer.
 int256HexBuilder :: BigNumber -> HexString
 int256HexBuilder x =
-  if x < zero
-    then int256HexBuilder <<< toTwosComplement $ x
-    else padLeftSigned <<< toSignedHexString $ x
+  if x < zero then
+    int256HexBuilder <<< toTwosComplement $ x
+  else
+    padLeftSigned <<< toSignedHexString $ x
 
 -- | Encode something that is essentially an unsigned integer.
 uInt256HexBuilder :: BigNumber -> HexString
 uInt256HexBuilder x =
-  let Signed _ x' = toSignedHexString x
-  in padLeft x'
+  let
+    Signed _ x' = toSignedHexString x
+  in
+    padLeft x'
 
 -- | Parse as a signed `BigNumber`
-int256HexParser :: forall m . Monad m => ParserT HexString m BigNumber
+int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
 int256HexParser = toBigNumberFromSignedHexString <$> take 64
 
 -- | Parse an unsigned `BigNumber`
-uInt256HexParser :: forall m . Monad m => ParserT HexString m BigNumber
+uInt256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
 uInt256HexParser = toBigNumber <$> take 64
 
 -- | Decode a `Boolean` as a BigNumber
@@ -172,5 +183,5 @@ toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
-take :: forall m . Monad m => Int -> ParserT HexString m HexString
+take :: forall m. Monad m => Int -> ParserT HexString m HexString
 take n = unsafePartial fromJust <<< mkHexString <<< fromCharArray <$> replicateA n anyChar

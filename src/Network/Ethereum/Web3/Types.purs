@@ -1,5 +1,4 @@
 module Network.Ethereum.Web3.Types
-
   ( module Network.Ethereum.Web3.Types.Types
   , module Network.Ethereum.Web3.Types.EtherUnit
   , module Network.Ethereum.Web3.Types.TokenUnit
