@@ -2,6 +2,8 @@
   "private": true,
   "scripts": {
     "build": "spago build",
+    "purty": "purty format src --write && purty format test --write",
+    "purty-check": "purty validate src && purty validate test",
     "test": "spago -x test.dhall test"
   },
   "dependencies": {
@@ -13,8 +15,9 @@
   },
   "devDependencies": {
     "pulp": "^15.0.0",
-    "purescript": "^0.13.0",
+    "purescript": "^0.13.8",
     "purescript-psa": "^0.7.3",
+    "purty": "^7.0.0",
     "spago": "^0.16.0"
   }
 }

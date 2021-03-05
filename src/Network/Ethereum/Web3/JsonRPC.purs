@@ -1,7 +1,6 @@
 module Network.Ethereum.Web3.JsonRPC where
 
 import Prelude
-
 import Effect.Aff (Aff, Error, attempt, error)
 import Effect.Aff.Class (liftAff)
 import Effect.Aff.Compat (fromEffectFnAff, EffectFnAff)
@@ -16,11 +15,9 @@ import Foreign.Generic (defaultOptions, genericEncodeJSON)
 import Network.Ethereum.Web3.Types (MethodName, Request, Response(..), Web3, Web3Error(..), mkRequest)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 
-
 --------------------------------------------------------------------------------
 -- * Asynchronous RPC Calls
 --------------------------------------------------------------------------------
-
 -- | Class representing a builder for a Web3 query
 class Remote a where
   remote_ :: (Provider -> Array Foreign -> Aff Foreign) -> a
@@ -38,10 +35,10 @@ instance remoteBase :: (Decode a) => Remote (Web3 a) where
           Left err -> throwError $ asError err
           Right a -> pure a
     where
-      -- NOTE: this is a bit hacky
-      -- see Network.Ethereum.Web3.Types.Types#parseMsg
-      asError :: Web3Error -> Error
-      asError e = error $ genericEncodeJSON defaultOptions e
+    -- NOTE: this is a bit hacky
+    -- see Network.Ethereum.Web3.Types.Types#parseMsg
+    asError :: Web3Error -> Error
+    asError e = error $ genericEncodeJSON defaultOptions e
 
 instance remoteInductive :: (Encode a, Remote b) => Remote (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (encode x : args)

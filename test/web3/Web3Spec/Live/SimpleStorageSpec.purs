@@ -1,7 +1,6 @@
 module Web3Spec.Live.SimpleStorageSpec (spec) where
 
 import Prelude
-
 import Data.Either (isRight)
 import Data.Lens ((?~))
 import Data.Tuple (Tuple(..))
@@ -19,18 +18,28 @@ import Web3Spec.Live.Utils (assertWeb3, defaultTestTxOptions, deployContract, mk
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
 spec provider =
-  describe "Simple Storage" $
-    beforeAll ( deployContract provider C.log "SimpleStorage" $ \txOpts ->
-                  SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
-              ) $
-      it "Can get and set a simple UInt with events" $ \simpleStorageCfg -> do
-        let {contractAddress: simpleStorageAddress, userAddress} = simpleStorageCfg
-            newCount = mkUIntN s256 1
-            txOpts = defaultTestTxOptions # _from ?~ userAddress
-                                          # _to ?~ simpleStorageAddress
-            setCountTx = SimpleStorage.setCount txOpts {_count: newCount}
-        Tuple _ (SimpleStorage.CountSet {_count}) <- assertWeb3 provider $
-          takeEvent (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress setCountTx
+  describe "Simple Storage"
+    $ beforeAll
+        ( deployContract provider C.log "SimpleStorage"
+            $ \txOpts ->
+                SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
+        )
+    $ it "Can get and set a simple UInt with events"
+    $ \simpleStorageCfg -> do
+        let
+          { contractAddress: simpleStorageAddress, userAddress } = simpleStorageCfg
+
+          newCount = mkUIntN s256 1
+
+          txOpts =
+            defaultTestTxOptions # _from ?~ userAddress
+              # _to
+              ?~ simpleStorageAddress
+
+          setCountTx = SimpleStorage.setCount txOpts { _count: newCount }
+        Tuple _ (SimpleStorage.CountSet { _count }) <-
+          assertWeb3 provider
+            $ takeEvent (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress setCountTx
         _count `shouldEqual` newCount
         eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
         eRes' `shouldSatisfy` isRight

@@ -1,7 +1,6 @@
 module Web3Spec.Types.VectorSpec (spec) where
 
 import Prelude
-
 import Data.Array (uncons)
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Web3 (Vector, nilVector, (:<))
@@ -10,24 +9,29 @@ import Partial.Unsafe (unsafeCrashWith)
 import Test.Spec (Spec, describe, it)
 import Unsafe.Coerce (unsafeCoerce)
 
-
-spec:: Spec Unit
-spec = describe "Vector-spec" do
-  it "spec module compiles" $ pure unit
+spec :: Spec Unit
+spec =
+  describe "Vector-spec" do
+    it "spec module compiles" $ pure unit
 
 unsafeVector :: forall a. Vector a Int
 unsafeVector = unsafeCoerce []
 
 vec098 :: Vector (D0 :& D9 :% D8) Int
 vec098 = unsafeVector
+
 vec990 :: Vector (D9 :& D9 :% D0) Int
 vec990 = unsafeVector
+
 vec999 :: Vector (D9 :& D9 :% D9) Int
 vec999 = unsafeVector
+
 vec99999999999999 :: Vector (D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :& D9 :% D9) Int
 vec99999999999999 = unsafeVector
+
 vec9 :: Vector (DOne D9) Int
 vec9 = unsafeVector
+
 vec2 :: Vector (DOne D2) Int
 vec2 = unsafeVector
 
@@ -38,7 +42,6 @@ test1 = 1 :< vec990
 test2 :: Vector (D1 :& D0 :& D0 :% D0) Int
 -- test2 :: Vector _ Int
 test2 = 1 :< vec999
-
 
 test3 :: Vector (D1 :% D0) Int
 -- test3 :: Vector _ Int
@@ -66,15 +69,16 @@ test8 = 1 :< 1 :< vec99999999999999
 
 test10 :: forall n. Inc n (D1 :% D0) => Vector n Int -> Vector (D1 :% D0) Int
 test10 l = 2 :< l
+
 -- test10_ :: Vector _ Int
 test10_ :: Vector (D1 :% D0) Int
 test10_ = test10 vec9
 
 test11 :: forall n. Inc n (DOne D0) => Vector n Int -> Vector (DOne D0) Int
 test11 l = 2 :< l
+
 -- As expected `test11` can be written, but can't be called
 -- test11_ = test11 nilVector
-
 -- we can write uncons like this, but when it's used see `test12` if you
 -- remove type annotation code will fail to compile. if inc and all
 -- classes which it's using had reverse functional dependencies

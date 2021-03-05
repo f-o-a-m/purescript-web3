@@ -13,27 +13,28 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromRecordFields)
 import Type.Proxy (Proxy(..))
 import Partial.Unsafe (unsafePartial)
-
 import Network.Ethereum.Web3.Solidity.AbiEncoding (toDataBuilder)
-
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
-
-spec:: Spec Unit
+spec :: Spec Unit
 spec =
-    describe "data maker" do
+  describe "data maker" do
+    it "can make the approval data" do
+      let
+        addr = unsafePartial fromJust $ (mkAddress =<< mkHexString "78534a937a855e15be172de35f2211626f92f8ec")
 
-      it "can make the approval data" do
-        let addr = unsafePartial fromJust $ (mkAddress =<< mkHexString "78534a937a855e15be172de35f2211626f92f8ec")
-            val = unsafePartial fromJust $ uIntNFromBigNumber s256 one
-            approvalD = mkDataField (Proxy :: Proxy ApproveFn) {_spender: addr, _value: val}
-            sel = toSelector "approve(address,uint256)"
-            fullDat = sel <> toDataBuilder addr <> toDataBuilder val
-        approvalD `shouldEqual` fullDat
+        val = unsafePartial fromJust $ uIntNFromBigNumber s256 one
 
-type ApproveFn = Tagged (SProxy "approve(address,uint256)") (Tuple2 (Tagged (SProxy "_spender") Address) (Tagged (SProxy "_value") (UIntN (D2 :& D5 :& DOne D6))))
+        approvalD = mkDataField (Proxy :: Proxy ApproveFn) { _spender: addr, _value: val }
 
+        sel = toSelector "approve(address,uint256)"
+
+        fullDat = sel <> toDataBuilder addr <> toDataBuilder val
+      approvalD `shouldEqual` fullDat
+
+type ApproveFn
+  = Tagged (SProxy "approve(address,uint256)") (Tuple2 (Tagged (SProxy "_spender") Address) (Tagged (SProxy "_value") (UIntN (D2 :& D5 :& DOne D6))))
 
 approve :: TransactionOptions NoPay -> { _spender :: Address, _value :: (UIntN (D2 :& D5 :& DOne D6)) } -> Web3 HexString
 approve txOpts r = sendTx txOpts (tagged (genericFromRecordFields r) :: ApproveFn)
