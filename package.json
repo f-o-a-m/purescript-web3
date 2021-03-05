@@ -3,6 +3,7 @@
   "scripts": {
     "build": "spago build",
     "purty": "purty format src --write && purty format test --write",
+    "purty-check": "purty validate src && purty validate test",
     "test": "spago -x test.dhall test"
   },
   "dependencies": {

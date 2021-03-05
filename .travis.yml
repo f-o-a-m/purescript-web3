@@ -6,11 +6,26 @@ services:
   - docker
 install:
   - npm install
-script:
   - npm run build
-  - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:latest
-  - sleep 10
-  - npm -s test
+
+
+jobs:
+  include:
+
+  - stage: Test libraries
+    name: "Test all libs"
+    script:
+    - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:latest
+    - sleep 10
+    - npm -s test
+
+  - stage: So fresh and so clean-clean (Purescript)
+    name: "Ensure that code matches style guidleines for PRs to master (Purescript)"
+    if: branch = master
+    script:
+    - echo "test formatting"
+    - npm run purty-check
+
 after_success:
 - >-
   test $TRAVIS_TAG &&
