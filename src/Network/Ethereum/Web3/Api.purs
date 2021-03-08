@@ -3,7 +3,7 @@ module Network.Ethereum.Web3.Api where
 import Data.Maybe (Maybe, fromMaybe)
 import Network.Ethereum.Types (Address, HexString, BigNumber)
 import Network.Ethereum.Web3.JsonRPC (remote)
-import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, NoPay, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
+import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
 import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit)
 
 -- | Returns current node version string.
