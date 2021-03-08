@@ -48,6 +48,8 @@ derive newtype instance showValue :: Show (Value a)
 
 derive newtype instance decodeValue :: Decode (Value a)
 
+derive newtype instance ordValue :: Ord (Value a)
+
 instance encodeNoPay :: Encode (Value (NoPay t)) where
   encode _ = encode (zero :: BigNumber)
 else instance encodeValue :: Encode (Value a) where
