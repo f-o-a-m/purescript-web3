@@ -237,8 +237,8 @@ getAllDirectories = do
 validateRootedDir ::
   forall m.
   MonadAff m =>
-  FilePath -- prefix ->
-  FilePath -- dirname ->
+  FilePath ->
+  FilePath ->
   m (Maybe FilePath)
 validateRootedDir prefix dir =
   liftAff
@@ -273,8 +273,8 @@ getJsonFilesInDirectory = do
 validateFile ::
   forall m.
   MonadAff m =>
-  FilePath -- dir ->
-  FilePath -- filepath ->
+  FilePath ->
+  FilePath ->
   m (Maybe FilePath)
 validateFile dir f =
   liftAff
