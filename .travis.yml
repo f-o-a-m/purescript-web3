@@ -29,9 +29,11 @@ jobs:
     script:
     - echo "test formatting"
     - cd web3
+    - npm i
     - npm run purty-check
     - cd ..
     - cd web3-generator
+    - npm i
     - npm run purty-check
     - cd ..
 
