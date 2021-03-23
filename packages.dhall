@@ -146,6 +146,23 @@ let additions =
       , version =
           "v6.0.0"
       }
+   , mkdirp =
+        { dependencies =
+            [ "console"
+            , "effect"
+            , "either"
+            , "exceptions"
+            , "functions"
+            , "node-fs"
+            , "nullable"
+            , "prelude"
+            , "psci-support"
+            ]
+        , repo =
+            "https://github.com/f-o-a-m/purescript-mkdirp"
+        , version =
+            "v1.0.0"
+        }
   , tagged =
       { dependencies =
           [ "identity"
@@ -159,3 +176,5 @@ let additions =
   }
 
 in  upstream // overrides // additions
+  with web3 = ./web3/spago.dhall as Location
+  with web3-generator = ./web3-generator/spago.dhall as Location

@@ -1,0 +1,33 @@
+[
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "n",
+				"type": "uint256"
+			}
+		],
+		"name": "_dumbFunction",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "n",
+				"type": "uint256"
+			}
+		],
+		"name": "_BadEventName",
+		"type": "event"
+	}
+]

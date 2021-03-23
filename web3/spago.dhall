@@ -29,6 +29,6 @@ You can edit this file as you like.
   , "typelevel-prelude"
   , "variant"
   ]
-, packages = ./packages.dhall
+, packages = ../packages.dhall
 , sources = [ "src/**/*.purs" ]
 }

@@ -1,0 +1,15 @@
+/bower_components/
+node_modules/
+/.pulp-cache/
+/output/
+/generated-docs/
+/.psc*
+/.purs*
+/.psa*
+*.swp
+*#*
+package-lock.json
+/.vscode
+yarn.lock
+/test/chanterelle/.spago
+/.spago/
