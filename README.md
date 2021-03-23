@@ -10,22 +10,17 @@
 
 `purescript-web3` is a library for interacting with an ethereum node purescript. At the moment it covers most endpoints of the web3 api, which means it is suitable for sending transactions, querying blockchain state and metadata, and monitoring events.
 
-Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator) it is also possible (and recommended) to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
-
-We do not yet have a build tool similar to truffle, but if you are looking for a template of how to use truffle and write your tests using purescript, check out out the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests)
+Using web3-generator it is also possible (and recommended) to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
 
 To see an example project using all of the purescript-web3 tools and with thermite/react ui, check out [purescript-web3-example](https://github.com/f-o-a-m/purescript-web3-example).
 
 ## Build Instructions
 ```
+> cd web3
 > npm install
 > npm run build
 > npm run test
 ```
-
-## Documentation
-
-Module documentation is [published on Pursuit](http://pursuit.purescript.org/packages/purescript-web3).
 
 ## Examples
 
@@ -48,7 +43,7 @@ contract TupleStorage {
 }
 ```
 
-If we used [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator), we are given a function with the following signature:
+If we used web3-generator, we are given a function with the following signature:
 
 ```purescript
 setTuple :: forall e.
@@ -89,3 +84,67 @@ For more examples, check out the foam [kitty monitor](https://github.com/f-o-a-m
  
  - [web3 RPC spec](https://github.com/ethereum/wiki/wiki/JSON-RPC)
  - [solidity documentation](http://solidity.readthedocs.io/en/develop/index.html)
+
+
+
+# purescript-web3-generator
+
+Generats purescript modules from Solidity ABIs
+
+## Requirements
+
+- `npm`
+
+## Getting Started
+```
+> cd web3-generator
+> npm install
+> npm run build
+> npm run test
+```
+
+## How to use it
+
+For a complete example that follows the steps below, see [`purescript-web3-example`](https://github.com/f-o-a-m/purescript-web3-example).
+
+We use `purescript-web3-generator` in the absence of template-purescript. Suggested usage is as follows:
+
+1. Create a directory `generator/` in your project with a file that looks like this
+
+```purescript
+
+module Generator where
+
+import Data.GeneratorMain (generatorMain)
+
+main = generatorMain
+
+```
+
+2. From there, add a build step 
+
+```sh
+
+pulp run -m Generator --src-path generator -- --abis <abis> --dest src --module Contracts
+
+```
+
+(note that we specify both a different source directory than `src` and a different module `Generator` that `purs` is looking for `main` in)
+
+
+Until [this issue](https://github.com/purescript-contrib/pulp/issues/309) is fixed, we have to temporarily replace the step above with something like this
+
+```sh
+pulp build -m Generator --src-path generator --to generator.js
+node generator.js --abis <abis> --dest src --module Contracts
+rm generator.js
+```
+
+3. Now you should have created contract modules for each contract into your `src/Contracts` directory that your code can depend on.
+  you could use `--module MyApp.Contracts` for example too and it will result in modules created in `src/MyApp/Contracts`
+
+## Resources
+
+ - [web3.js repo](https://github.com/ethereum/web3.js)
+ - [web3 Javascript API wiki](https://github.com/ethereum/wiki/wiki/JavaScript-API)
+
