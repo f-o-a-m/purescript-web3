@@ -1,7 +1,6 @@
 module Data.AbiParser where
 
 import Prelude
-
 import Control.Alternative ((<|>))
 import Control.Error.Util (note)
 import Data.Argonaut as A
@@ -29,16 +28,14 @@ import Text.Parsing.StringParser.CodePoints (anyDigit, string, char, eof)
 import Text.Parsing.StringParser.Combinators (choice, lookAhead, manyTill, many1, optionMaybe)
 
 --------------------------------------------------------------------------------
-
 class Format a where
   format :: a -> String
 
 --------------------------------------------------------------------------------
 -- | Solidity Type Parsers
 --------------------------------------------------------------------------------
-
-data SolidityType =
-    SolidityBool
+data SolidityType
+  = SolidityBool
   | SolidityAddress
   | SolidityUint Int
   | SolidityInt Int
@@ -91,9 +88,9 @@ parseDigits = fromCharArray <<< fromFoldable <$> many1 (try anyDigit)
 
 asInt :: String -> Parser Int
 asInt n = case fromString n of
-    Nothing -> do
-      fail $ "Couldn't parse as Int : " <> n
-    Just n' -> pure $ n'
+  Nothing -> do
+    fail $ "Couldn't parse as Int : " <> n
+  Just n' -> pure $ n'
 
 parseBytes :: Parser SolidityType
 parseBytes = do
@@ -105,44 +102,45 @@ parseBytes = do
       n <- asInt ns
       pure $ SolidityBytesN n
 
-
 parseAddress :: Parser SolidityType
 parseAddress = string "address" >>= \_ -> pure SolidityAddress
 
 solidityBasicTypeParser :: Parser SolidityType
 solidityBasicTypeParser =
-    choice [ parseUint
-           , parseInt
-           , parseAddress
-           , parseBool
-           , parseString
-           , parseBytes
-           , parseAddress
-           ]
+  choice
+    [ parseUint
+    , parseInt
+    , parseAddress
+    , parseBool
+    , parseString
+    , parseBytes
+    , parseAddress
+    ]
 
 vectoDimentionsParser :: Parser (List Int)
-vectoDimentionsParser = manyTill
-  (char '[' *> (parseDigits >>= asInt) <* char ']')
-  (lookAhead $ void (string "[]") <|> eof)
+vectoDimentionsParser =
+  manyTill
+    (char '[' *> (parseDigits >>= asInt) <* char ']')
+    (lookAhead $ void (string "[]") <|> eof)
 
 solidityTypeParser :: Parser SolidityType
 solidityTypeParser = do
   t <- solidityBasicTypeParser
   mbVectorDims <- vectoDimentionsParser
-  let 
+  let
     t' = case mbVectorDims of
       Nil -> t
       Cons n ns -> SolidityVector (NonEmptyList $ n :| ns) t
   (SolidityArray t' <$ string "[]") <|> pure t'
 
-
 parseSolidityType :: String -> Either JsonDecodeError SolidityType
 parseSolidityType s = parseSolidityType' s # lmap \err -> Named err $ UnexpectedValue (encodeJson s)
 
 parseSolidityType' :: String -> Either String SolidityType
-parseSolidityType' s = runParser (solidityTypeParser <* eof) s # lmap \err ->
-  "Failed to parse SolidityType " <> show s <> " with error: " <> show err
-
+parseSolidityType' s =
+  runParser (solidityTypeParser <* eof) s
+    # lmap \err ->
+        "Failed to parse SolidityType " <> show s <> " with error: " <> show err
 
 instance decodeJsonSolidityType :: DecodeJson SolidityType where
   decodeJson json = do
@@ -153,11 +151,11 @@ instance decodeJsonSolidityType :: DecodeJson SolidityType where
 --------------------------------------------------------------------------------
 -- | Solidity Function Parser
 --------------------------------------------------------------------------------
-
-newtype FunctionInput =
-  FunctionInput { name :: String
-                , type :: SolidityType
-                }
+newtype FunctionInput
+  = FunctionInput
+  { name :: String
+  , type :: SolidityType
+  }
 
 derive instance genericFunctionInput :: Generic FunctionInput _
 
@@ -173,17 +171,18 @@ instance decodeFunctionInput :: DecodeJson FunctionInput where
     n <- obj .: "name"
     t <- obj .: "type"
     typ <- parseSolidityType t
-    pure $ FunctionInput {type: typ, name: n}
+    pure $ FunctionInput { type: typ, name: n }
 
-data SolidityFunction =
-  SolidityFunction { name :: String
-                   , inputs :: Array FunctionInput
-                   , outputs :: Array SolidityType
-                   , constant :: Boolean
-                   , payable :: Boolean
-                   , isConstructor :: Boolean
-                   , isUnCurried :: Boolean
-                   }
+data SolidityFunction
+  = SolidityFunction
+    { name :: String
+    , inputs :: Array FunctionInput
+    , outputs :: Array SolidityType
+    , constant :: Boolean
+    , payable :: Boolean
+    , isConstructor :: Boolean
+    , isUnCurried :: Boolean
+    }
 
 derive instance genericSolidityFunction :: Generic SolidityFunction _
 
@@ -196,40 +195,45 @@ instance decodeJsonSolidityFunction :: DecodeJson SolidityFunction where
     nm <- obj .: "name"
     is <- obj .: "inputs"
     os <- obj .: "outputs"
-    let parseStateMutability = do
-          sm <- obj .: "stateMutability"
-          str <- decodeJson sm
-          case str of
-            "pure" -> pure { constant: true, payable: false }
-            "view" -> pure { constant: true, payable: false }
-            "payable" -> pure { constant: false, payable: true }
-            "nonpayable" -> pure { constant: false, payable: false }
-            _ -> Left $ Named "Expecting \"stateMutabiltiy\" to be one of \"pure\", \"view\", \"payable\", or \"nonpayable\"" $ UnexpectedValue sm
-    let parseConstantPayableFields = do
-          constant <- obj .: "constant"
-          payable <- obj .: "payable"
-          pure { constant, payable }
-        fallback = Left $ Named "Expected a \"stateMutability\" field or a combination of \"constant\" and \"payable\" fields" $ UnexpectedValue json
-    cp <- parseStateMutability <|> parseConstantPayableFields <|> fallback
-    pure $ SolidityFunction { name : nm
-                            , inputs : is
-                            , outputs : os
-                            , constant : cp.constant
-                            , payable: cp.payable
-                            , isConstructor: false
-                            , isUnCurried: all (\(FunctionInput fi) -> fi.name /= "") is
-                                             && not (null is)
-                            }
+    let
+      parseStateMutability = do
+        sm <- obj .: "stateMutability"
+        str <- decodeJson sm
+        case str of
+          "pure" -> pure { constant: true, payable: false }
+          "view" -> pure { constant: true, payable: false }
+          "payable" -> pure { constant: false, payable: true }
+          "nonpayable" -> pure { constant: false, payable: false }
+          _ -> Left $ Named "Expecting \"stateMutabiltiy\" to be one of \"pure\", \"view\", \"payable\", or \"nonpayable\"" $ UnexpectedValue sm
+    let
+      parseConstantPayableFields = do
+        constant <- obj .: "constant"
+        payable <- obj .: "payable"
+        pure { constant, payable }
 
+      fallback = Left $ Named "Expected a \"stateMutability\" field or a combination of \"constant\" and \"payable\" fields" $ UnexpectedValue json
+    cp <- parseStateMutability <|> parseConstantPayableFields <|> fallback
+    pure
+      $ SolidityFunction
+          { name: nm
+          , inputs: is
+          , outputs: os
+          , constant: cp.constant
+          , payable: cp.payable
+          , isConstructor: false
+          , isUnCurried:
+              all (\(FunctionInput fi) -> fi.name /= "") is
+                && not (null is)
+          }
 
 --------------------------------------------------------------------------------
 -- | Solidity Constructor Parser
 --------------------------------------------------------------------------------
-
-data SolidityConstructor =
-  SolidityConstructor { inputs :: Array FunctionInput
-                      , isUnCurried :: Boolean
-                      }
+data SolidityConstructor
+  = SolidityConstructor
+    { inputs :: Array FunctionInput
+    , isUnCurried :: Boolean
+    }
 
 derive instance genericSolidityConstructor :: Generic SolidityConstructor _
 
@@ -240,20 +244,23 @@ instance decodeJsonSolidityConstructor :: DecodeJson SolidityConstructor where
   decodeJson json = do
     obj <- decodeJson json
     is <- obj .: "inputs"
-    pure $ SolidityConstructor { inputs : is
-                               , isUnCurried: all (\(FunctionInput fi) -> fi.name /= "") is
-                                   && not (null is)
-                               }
+    pure
+      $ SolidityConstructor
+          { inputs: is
+          , isUnCurried:
+              all (\(FunctionInput fi) -> fi.name /= "") is
+                && not (null is)
+          }
 
 --------------------------------------------------------------------------------
 -- | Solidity Events Parser
 --------------------------------------------------------------------------------
-
-data IndexedSolidityValue =
-  IndexedSolidityValue { type :: SolidityType
-                       , name :: String
-                       , indexed :: Boolean
-                       }
+data IndexedSolidityValue
+  = IndexedSolidityValue
+    { type :: SolidityType
+    , name :: String
+    , indexed :: Boolean
+    }
 
 derive instance genericSolidityIndexedValue :: Generic IndexedSolidityValue _
 
@@ -270,16 +277,19 @@ instance decodeJsonIndexedSolidityValue :: DecodeJson IndexedSolidityValue where
     ts <- obj .: "type"
     t <- parseSolidityType ts
     ixed <- obj .: "indexed"
-    pure $ IndexedSolidityValue { name : nm
-                                , type : t
-                                , indexed : ixed
-                                }
+    pure
+      $ IndexedSolidityValue
+          { name: nm
+          , type: t
+          , indexed: ixed
+          }
 
-data SolidityEvent =
-  SolidityEvent { name :: String
-                , anonymous :: Boolean
-                , inputs :: Array IndexedSolidityValue
-                }
+data SolidityEvent
+  = SolidityEvent
+    { name :: String
+    , anonymous :: Boolean
+    , inputs :: Array IndexedSolidityValue
+    }
 
 derive instance genericSolidityEvent :: Generic SolidityEvent _
 
@@ -291,13 +301,16 @@ instance decodeJsonSolidityEvent :: DecodeJson SolidityEvent where
     obj <- decodeJson json
     nm <- obj .: "name"
     is <- obj .: "inputs"
-    a <- obj  .: "anonymous"
-    pure $ SolidityEvent { name : nm
-                         , inputs : is
-                         , anonymous : a
-                         }
+    a <- obj .: "anonymous"
+    pure
+      $ SolidityEvent
+          { name: nm
+          , inputs: is
+          , anonymous: a
+          }
 
-data SolidityFallback = SolidityFallback
+data SolidityFallback
+  = SolidityFallback
 
 derive instance genericSolidityFallback :: Generic SolidityFallback _
 
@@ -311,9 +324,8 @@ instance decodeJsonSolidityFallback :: DecodeJson SolidityFallback where
 --------------------------------------------------------------------------------
 -- | ABI
 --------------------------------------------------------------------------------
-
-data AbiType =
-    AbiFunction SolidityFunction
+data AbiType
+  = AbiFunction SolidityFunction
   | AbiConstructor SolidityConstructor
   | AbiEvent SolidityEvent
   | AbiFallback SolidityFallback
@@ -327,7 +339,8 @@ instance decodeJsonAbiType :: DecodeJson AbiType where
   decodeJson json = do
     obj <- decodeJson json
     t <- obj .: "type"
-    let json' = fromObject obj
+    let
+      json' = fromObject obj
     case t of
       "function" -> AbiFunction <$> decodeJson json'
       "constructor" -> AbiConstructor <$> decodeJson json'
@@ -335,27 +348,30 @@ instance decodeJsonAbiType :: DecodeJson AbiType where
       "fallback" -> AbiFallback <$> decodeJson json'
       _ -> Left $ Named "Unkown abi type" $ UnexpectedValue json
 
+newtype Abi f
+  = Abi (Array (f AbiType))
 
-newtype Abi f = Abi (Array (f AbiType))
+newtype AbiDecodeError
+  = AbiDecodeError { idx :: Int, error :: String }
 
-newtype AbiDecodeError = AbiDecodeError { idx :: Int, error :: String }
-
-type AbiWithErrors = Abi (Either AbiDecodeError)
+type AbiWithErrors
+  = Abi (Either AbiDecodeError)
 
 instance decodeJsonAbi :: DecodeJson (Abi (Either AbiDecodeError)) where
   decodeJson json = do
-    arr <- note (Named "Failed to decode ABI as Array type." $ UnexpectedValue json)  $ A.toArray json
+    arr <- note (Named "Failed to decode ABI as Array type." $ UnexpectedValue json) $ A.toArray json
     pure $ Abi $ mapWithIndex safeDecode arr
     where
-    safeDecode idx json' = decodeJson json' # lmap \error -> AbiDecodeError {idx , error: printJsonDecodeError error}
+    safeDecode idx json' = decodeJson json' # lmap \error -> AbiDecodeError { idx, error: printJsonDecodeError error }
 
 instance showAbi ::
   ( Functor f
   , Show (f TacitString.TacitString)
-  ) => Show (Abi f) where
+  ) =>
+  Show (Abi f) where
   show (Abi abis) = "(Abi " <> show (map showFAbiType abis) <> ")"
     where
-      showFAbiType = map (show >>> TacitString.hush)
+    showFAbiType = map (show >>> TacitString.hush)
 
 instance showAbiDecodeError :: Show AbiDecodeError where
   show (AbiDecodeError r) = "(AbiDecodeError " <> show r <> ")"
