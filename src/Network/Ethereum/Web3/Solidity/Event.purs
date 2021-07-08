@@ -117,17 +117,17 @@ class
   IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
   decodeEvent :: Change -> Maybe c
 
--- instance defaultInstance ::
---   ( ArrayParser aargs
---   , RecordFieldsIso aargs afields al
---   , Generic a (Constructor aname aargs)
---   , RecordFieldsIso bargs bfields bl
---   , Generic b (Constructor bname bargs)
---   , GenericABIDecode bargs
---   , Row.Union bfields afields cfields
---   , Row.Nub cfields cfieldsRes
---   , Newtype c (Record cfieldsRes)
---   , IndexedEvent a b c
---   ) =>
---   DecodeEvent a b c where
---   decodeEvent = decodeEventDef
+instance defaultInstance ::
+  ( ArrayParser aargs
+  , RecordFieldsIso aargs afields al
+  , Generic a (Constructor aname aargs)
+  , RecordFieldsIso bargs bfields bl
+  , Generic b (Constructor bname bargs)
+  , GenericABIDecode bargs
+  , Row.Union bfields afields cfields
+  , Row.Nub cfields cfieldsRes
+  , Newtype c (Record cfieldsRes)
+  , IndexedEvent a b c
+  ) =>
+  DecodeEvent a b c where
+  decodeEvent = decodeEventDef
