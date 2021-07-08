@@ -22,7 +22,6 @@ You can edit this file as you like.
   , "parsing"
   , "partial"
   , "profunctor-lenses"
-  , "proxy"
   , "psci-support"
   , "tagged"
   , "transformers"

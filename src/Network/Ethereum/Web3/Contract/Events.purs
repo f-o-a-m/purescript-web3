@@ -57,6 +57,7 @@ import Prim.RowList as RowList
 type EventHandler f e
   = e -> ReaderT Change f EventAction
 
+type FilterStreamState :: forall (k :: Type) (e :: k). Type -> Type
 type FilterStreamState e
   = { currentBlock :: BlockNumber
     , initialFilter :: Filter e
@@ -190,7 +191,7 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
       let
         endBlock = newTo maxEndBlock currentState.currentBlock currentState.windowSize
 
-        modify :: forall e. Filter e -> Filter e
+        modify :: forall (k :: Type) (e :: k). Filter e -> Filter e
         modify fltr =
           fltr # _fromBlock .~ BN currentState.currentBlock
             # _toBlock
@@ -353,8 +354,9 @@ data MultiFilterMinFromBlock
 instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
   foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
 
+-- data ModifyFilter :: Type
 data ModifyFilter
-  = ModifyFilter (forall e. Filter e -> Filter e)
+  = ModifyFilter (forall (k :: Type) (e :: k). Filter e -> Filter e)
 
 instance modifyFilter :: Mapping ModifyFilter (Filter e) (Filter e) where
   mapping (ModifyFilter f) filter = f filter

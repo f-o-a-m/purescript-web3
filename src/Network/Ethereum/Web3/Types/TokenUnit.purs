@@ -1,11 +1,11 @@
 module Network.Ethereum.Web3.Types.TokenUnit
-  ( class TokenUnit
+  ( class TokenUnitC
   , fromMinorUnit
   , toMinorUnit
   , class TokenUnitSpec
   , divider
-  , kind Token
-  , kind TokenUnit
+  , Token
+  , TokenUnit
   , ProxyTU(..)
   , Value
   , convert
@@ -31,9 +31,9 @@ import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
 import Partial.Unsafe (unsafePartial)
 
-foreign import kind Token
+data Token
 
-foreign import kind TokenUnit
+data TokenUnit
 
 -- | A value of some token in specific denomination
 newtype Value (a :: TokenUnit)
@@ -65,7 +65,7 @@ instance modukeTokenUnitSpec :: TokenUnitSpec a => LeftModule (Value a) Int wher
   msubL (Value a) (Value b) = Value $ a - b
   mmulL a (Value b) = Value $ a ^* b
 
-instance unitTokenUnitSpec :: TokenUnitSpec a => TokenUnit (Value a) where
+instance unitTokenUnitSpec :: TokenUnitSpec a => TokenUnitC (Value a) where
   fromMinorUnit = Value
   toMinorUnit = unValue
 
@@ -73,12 +73,12 @@ unValue :: forall a. Value a -> BigNumber
 unValue (Value a) = a
 
 -- | Useful for converting to and from the base denomination
-class TokenUnit a where
+class TokenUnitC a where
   fromMinorUnit :: BigNumber -> a
   toMinorUnit :: a -> BigNumber
 
 -- | Convert between two denominations
-convert :: forall a b. TokenUnit a => TokenUnit b => a -> b
+convert :: forall a b. TokenUnitC a => TokenUnitC b => a -> b
 convert = fromMinorUnit <<< toMinorUnit
 
 class TokenUnitSpec (a :: TokenUnit) where

@@ -34,7 +34,7 @@ module Network.Ethereum.Web3.Solidity.Size
 
 import Prelude
 import Data.Int (pow)
-import Type.Data.Boolean (class If, BProxy, False, True, kind Boolean)
+import Type.Data.Boolean (class If, BProxy, False, True)
 
 -- | `Digit` is a new `Kind` used to represent digits in base 10 counting system.
 -- | Alongside this kind we have types `D0`, `D1` ... `D9`, which have kind `Digit`.
@@ -52,7 +52,7 @@ import Type.Data.Boolean (class If, BProxy, False, True, kind Boolean)
 -- | But they will have kind `Type` and it's not good as one could
 -- | use them incorrectly. for example this will compile:
 -- |
--- | ``` purescript 
+-- | ``` purescript
 -- | data D1
 -- | data D2
 -- | ....
@@ -62,12 +62,12 @@ import Type.Data.Boolean (class If, BProxy, False, True, kind Boolean)
 -- | x = []
 -- | ```
 -- |
--- | It compiles as Array kas kind `Type -> Type`, i.e. it's type constructor, 
+-- | It compiles as Array kas kind `Type -> Type`, i.e. it's type constructor,
 -- | it takes a `Type` and returns `Type`. We want such program to be rejected by compiler,
 -- | so to be more type-safe, we create new kind `Digit`, and our types representing digits,
 -- | will be of this kind instead of "default" kind `Type`.
 -- |
--- | ``` purescript 
+-- | ``` purescript
 -- | foreign import kind Digit
 -- | foreign import data D0 :: Digit
 -- | foreign import data D2 :: Digit
@@ -101,20 +101,20 @@ foreign import data D9 :: Digit
 -- | As we have kind `Digit` we introduce kind DigitList for list of digits.
 -- | in value level this could be represented as:
 -- |
--- | ``` purescript 
+-- | ``` purescript
 -- | data DigitList = DCons Digit DigitList | DOne Digit
 -- | ```
 -- |
 -- | Note: you can't have empty list here as terminal node takes a `Digit`.
 -- | the builtin `Array` in purescript could be defined like this
 -- |
--- | ``` purescript 
+-- | ``` purescript
 -- | foreign import data Array ∷ Type -> Type
 -- | ```
 -- |
 -- | Similarly we are defining `DCons` and `DOne`, but with kinds we have defined already:
 -- |
--- | ``` purescript 
+-- | ``` purescript
 -- | foreign import data DCons ∷ Digit -> DigitList -> DigitList
 -- | foreign import data DOne ∷ Digit -> DigitList
 -- | ```
@@ -134,7 +134,7 @@ foreign import data D9 :: Digit
 -- | type MyNum = D1 :& D9 :& D9 :& DOne D5
 -- | ```
 -- |
--- | the `_ :& DOne _` part is a bit annoying, so we fix it with a new type alisa for such 
+-- | the `_ :& DOne _` part is a bit annoying, so we fix it with a new type alisa for such
 -- | types and an operator for it :%:
 -- |
 -- | ``` purescript
@@ -270,7 +270,7 @@ instance incD9 :: IncD D9 D0 True
 -- | uncons :: forall a n nDec. Inc nDec n => Vector n a -> { head :: a, tail :: Vector nDec a }
 -- | ```
 -- | see [Network.Ethereum.Web3.Solidity.Vector](/Network.Ethereum.Web3.Solidity.Vector#v:vCons)
--- 
+--
 class Inc (input :: DigitList) (output :: DigitList) | input -> output
 
 instance inc ::

@@ -36,7 +36,7 @@ import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
 import Prim.Row as Row
-import Type.RowList (class ListToRow, Cons, Nil, RLProxy(..), kind RowList)
+import Type.RowList (class ListToRow, Cons, Nil, RLProxy(..), RowList)
 
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
@@ -219,9 +219,10 @@ dParser = do
         fromDataParser
 
 --------------------------------------------------------------------------------
--- * Generator Helpers
---------------------------------------------------------------------------------
-class ArgsToRowListProxy args (l :: RowList) | args -> l, l -> args where
+  -- * Generator Helpers
+  --------------------------------------------------------------------------------
+  class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
+class ArgsToRowListProxy args l | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l
 
 instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where

@@ -1,6 +1,7 @@
 module Network.Ethereum.Web3.Solidity.Event
   ( class DecodeEvent
   , decodeEvent
+  , decodeEventDef
   , class ArrayParser
   , arrayParser
   , genericArrayParser
@@ -21,6 +22,7 @@ import Network.Ethereum.Web3.Types (Change(..))
 import Prim.Row as Row
 import Record.Builder (build, merge)
 import Type.Proxy (Proxy(..))
+import Safe.Coerce (coerce)
 
 --------------------------------------------------------------------------------
 -- Array Parsers
@@ -29,7 +31,7 @@ class ArrayParser a where
   arrayParser :: Array HexString -> Maybe a
 
 instance arrayParserNoArgs :: ArrayParser NoArguments where
-  arrayParser hxs = Just NoArguments
+  arrayParser _ = Just NoArguments
 
 instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of
@@ -84,8 +86,9 @@ combineChange ::
   Newtype c (Record cfieldsRes) =>
   Event a b ->
   c
-combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
+combineChange (Event a b) = coerce $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
+class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
@@ -109,21 +112,22 @@ decodeEventDef change = do
   (e :: Event a b) <- parseChange change anonymous
   pure $ combineChange e
 
+class DecodeEvent :: forall k1 k2. k1 -> k2 -> Type -> Constraint
 class
   IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
   decodeEvent :: Change -> Maybe c
 
-instance defaultInstance ::
-  ( ArrayParser aargs
-  , RecordFieldsIso aargs afields al
-  , Generic a (Constructor aname aargs)
-  , RecordFieldsIso bargs bfields bl
-  , Generic b (Constructor bname bargs)
-  , GenericABIDecode bargs
-  , Row.Union bfields afields cfields
-  , Row.Nub cfields cfieldsRes
-  , Newtype c (Record cfieldsRes)
-  , IndexedEvent a b c
-  ) =>
-  DecodeEvent a b c where
-  decodeEvent = decodeEventDef
+-- instance defaultInstance ::
+--   ( ArrayParser aargs
+--   , RecordFieldsIso aargs afields al
+--   , Generic a (Constructor aname aargs)
+--   , RecordFieldsIso bargs bfields bl
+--   , Generic b (Constructor bname bargs)
+--   , GenericABIDecode bargs
+--   , Row.Union bfields afields cfields
+--   , Row.Nub cfields cfieldsRes
+--   , Newtype c (Record cfieldsRes)
+--   , IndexedEvent a b c
+--   ) =>
+--   DecodeEvent a b c where
+--   decodeEvent = decodeEventDef

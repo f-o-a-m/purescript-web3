@@ -55,8 +55,8 @@ import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Eq.Generic (genericEq)
+import Data.Show.Generic (genericShow)
 import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
@@ -75,7 +75,7 @@ import Foreign.Index (readProp)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
-import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
+import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnitC, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 
 --------------------------------------------------------------------------------
@@ -314,7 +314,7 @@ _data =
   lens (\(TransactionOptions txOpt) -> txOpt.data)
     (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts { data = dat })
 
-_value :: forall u. TokenUnit (Value (u ETHER)) => Lens (TransactionOptions u) (TransactionOptions MinorUnit) (Maybe (Value (u ETHER))) (Maybe (Value Wei))
+_value :: forall u. TokenUnitC (Value (u ETHER)) => Lens (TransactionOptions u) (TransactionOptions MinorUnit) (Maybe (Value (u ETHER))) (Maybe (Value Wei))
 _value =
   lens (\(TransactionOptions txOpt) -> txOpt.value)
     (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts { value = map convert val })
