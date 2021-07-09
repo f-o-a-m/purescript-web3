@@ -25,7 +25,7 @@ import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnitC, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
 
 
 --------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ event filter handler = do
   eRes <- event' { ev: filter } { ev: handler } { windowSize: 0, trailBy: 0 }
   pure $ lmap f eRes
   where
-  --f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
+  f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
   f (MultiFilterStreamState { currentBlock, windowSize, trailBy, filters }) =
     let
       { ev: filter } = filters
@@ -67,7 +67,7 @@ class TxMethod (selector :: Symbol) a where
   -- | Send a transaction for given contract 'Address', value and input data
   sendTx ::
     forall u.
-    TokenUnitC (Value (u ETHER)) =>
+    TokenUnit (Value (u ETHER)) =>
     IsSymbol selector =>
     TransactionOptions u ->
     Tagged (Proxy selector) a ->
@@ -95,7 +95,7 @@ _sendTransaction ::
   IsSymbol selector =>
   Generic a rep =>
   GenericABIEncode rep =>
-  TokenUnitC (Value (u ETHER)) =>
+  TokenUnit (Value (u ETHER)) =>
   TransactionOptions u ->
   Tagged (Proxy selector) a ->
   Web3 HexString

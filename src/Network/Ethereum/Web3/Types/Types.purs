@@ -75,7 +75,7 @@ import Foreign.Index (readProp)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
-import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnitC, MinorUnit, NoPay, Value, convert)
+import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 
 --------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ instance decodeTransactionStatus :: Decode TransactionStatus where
     case str of
       "0x1" -> pure Succeeded
       "0x0" -> pure Failed
-      otherwise -> fail $ TypeMismatch "TransactionStatus" str
+      _     -> fail $ TypeMismatch "TransactionStatus" str
 
 newtype TransactionReceipt
   = TransactionReceipt
@@ -314,7 +314,7 @@ _data =
   lens (\(TransactionOptions txOpt) -> txOpt.data)
     (\(TransactionOptions txOpts) dat -> TransactionOptions $ txOpts { data = dat })
 
-_value :: forall u. TokenUnitC (Value (u ETHER)) => Lens (TransactionOptions u) (TransactionOptions MinorUnit) (Maybe (Value (u ETHER))) (Maybe (Value Wei))
+_value :: forall u. TokenUnit (Value (u ETHER)) => Lens (TransactionOptions u) (TransactionOptions MinorUnit) (Maybe (Value (u ETHER))) (Maybe (Value Wei))
 _value =
   lens (\(TransactionOptions txOpt) -> txOpt.value)
     (\(TransactionOptions txOpts) val -> TransactionOptions $ txOpts { value = map convert val })
@@ -462,6 +462,7 @@ forkWeb3' web3Action = do
 -- * Filters
 --------------------------------------------------------------------------------
 -- | Low-level event filter data structure
+newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
   { address :: Maybe Address

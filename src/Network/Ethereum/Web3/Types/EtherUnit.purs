@@ -10,9 +10,9 @@ module Network.Ethereum.Web3.Types.EtherUnit
   , KEther
   ) where
 
-import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit, MinorUnitE12, MinorUnitE15, MinorUnitE18, MinorUnitE21, MinorUnitE3, MinorUnitE6, MinorUnitE9, kind Token)
+import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit, MinorUnitE12, MinorUnitE15, MinorUnitE18, MinorUnitE21, MinorUnitE3, MinorUnitE6, MinorUnitE9, TokenK)
 
-foreign import data ETHER :: Token
+foreign import data ETHER :: TokenK
 
 type Wei
   = MinorUnit ETHER
