@@ -22,8 +22,6 @@ import Network.Ethereum.Web3.Types (Change(..))
 import Prim.Row as Row
 import Record.Builder (build, merge)
 import Type.Proxy (Proxy(..))
-import Safe.Coerce (class Coercible, coerce)
-import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- Array Parsers
@@ -87,7 +85,7 @@ combineChange ::
   Newtype c (Record cfieldsRes) =>
   Event a b ->
   c
-combineChange (Event a b) = unsafeCoerce $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
+combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
 class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
@@ -101,7 +99,6 @@ decodeEventDef ::
   RecordFieldsIso bargs bfields bl =>
   Generic b (Constructor bname bargs) =>
   GenericABIDecode bargs =>
-  Row.Union bfields afields cfields =>
   Row.Union afields bfields cfields =>
   Row.Nub cfields cfieldsRes =>
   Newtype c (Record cfieldsRes) =>
@@ -126,7 +123,6 @@ instance defaultInstance ::
   , RecordFieldsIso bargs bfields bl
   , Generic b (Constructor bname bargs)
   , GenericABIDecode bargs
-  , Row.Union bfields afields cfields
   , Row.Union afields bfields cfields
   , Row.Nub cfields cfieldsRes
   , Newtype c (Record cfieldsRes)

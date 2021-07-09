@@ -87,7 +87,7 @@ spec provider =
           $ [ parTraverse_ fireE1 vals1
             , parTraverse_ fireE2 vals2
             ]
-        parTraverse_ joinWeb3Fork [ f1, f2, f3 ]
+        parTraverse_ joinWeb3Fork [ f3, f3, f3 ]
         race <- AVar.take raceV
         sync <- AVar.take syncV
         race `shouldNotEqual` sync

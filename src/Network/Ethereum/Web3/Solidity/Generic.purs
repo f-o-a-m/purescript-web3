@@ -26,7 +26,7 @@ import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Maybe (Maybe(..))
 import Record as Record
-import Data.Symbol (class IsSymbol, SProxy(..))
+import Data.Symbol (class IsSymbol)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Core.HexString (HexString, hexLength)
@@ -228,9 +228,9 @@ class ArgsToRowListProxy args l | args -> l, l -> args where
 instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where
   argsToRowListProxy _ = RLProxy
 
-instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (SProxy s) a)) (Cons s a Nil) where
+instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (Proxy s) a)) (Cons s a Nil) where
   argsToRowListProxy _ = RLProxy
-else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (SProxy s) a)) as) (Cons s a l) where
+else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (Proxy s) a)) as) (Cons s a l) where
   argsToRowListProxy _ = RLProxy
 
 class RecordFieldsIso args fields rowList | args -> rowList, rowList -> args fields where
@@ -242,9 +242,9 @@ instance isoRecordBase ::
   , Row.Cons s a () r
   , Row.Lacks s ()
   ) =>
-  RecordFieldsIso (Argument (Tagged (SProxy s) a)) r (Cons s a Nil) where
-  toRecordFields _ (Argument a) = Record.insert (SProxy :: SProxy s) (untagged a) {}
-  fromRecordFields _ r = Argument (tagged $ Record.get (SProxy :: SProxy s) r)
+  RecordFieldsIso (Argument (Tagged (Proxy s) a)) r (Cons s a Nil) where
+  toRecordFields _ (Argument a) = Record.insert (Proxy :: Proxy s) (untagged a) {}
+  fromRecordFields _ r = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
 
 instance isoRecordBaseNull :: RecordFieldsIso NoArguments () Nil where
   toRecordFields _ _ = {}
@@ -257,15 +257,15 @@ instance isoRecordInductive ::
   , IsSymbol s
   , ListToRow (Cons ls la ll) r1
   ) =>
-  RecordFieldsIso (Product (Argument (Tagged (SProxy s) a)) as) r2 (Cons s a (Cons ls la ll)) where
-  toRecordFields _ (Product (Argument a) as) = Record.insert (SProxy :: SProxy s) (untagged a) rest
+  RecordFieldsIso (Product (Argument (Tagged (Proxy s) a)) as) r2 (Cons s a (Cons ls la ll)) where
+  toRecordFields _ (Product (Argument a) as) = Record.insert (Proxy :: Proxy s) (untagged a) rest
     where
     rest = (toRecordFields (RLProxy :: RLProxy (Cons ls la ll)) as :: Record r1)
   fromRecordFields _ r =
     let
-      a = Argument (tagged $ Record.get (SProxy :: SProxy s) r)
+      a = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
 
-      before = Record.delete (SProxy :: SProxy s) r :: Record r1
+      before = Record.delete (Proxy :: Proxy s) r :: Record r1
 
       rest = fromRecordFields (RLProxy :: RLProxy (Cons ls la ll)) before
     in

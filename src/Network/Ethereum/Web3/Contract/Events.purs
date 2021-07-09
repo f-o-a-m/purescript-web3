@@ -32,7 +32,7 @@ import Data.Either (Either(..))
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
-import Data.Symbol (class IsSymbol, SProxy)
+import Data.Symbol (class IsSymbol)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Traversable (for_)
 import Data.Tuple (Tuple(..), fst)
@@ -344,14 +344,14 @@ processChange handlerRec (FilterChange { rawChange: rawChange@(Change change), e
 data MultiFilterMinToBlock
   = MultiFilterMinToBlock
 
-instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (Proxy sym) ChainCursor (Filter e) ChainCursor where
   foldingWithIndex MultiFilterMinToBlock _ acc f = min acc (f ^. _toBlock)
 
 -- | Used to find the minimum `fromBlock` among a record of filters.
 data MultiFilterMinFromBlock
   = MultiFilterMinFromBlock
 
-instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (SProxy sym) ChainCursor (Filter e) ChainCursor where
+instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (Proxy sym) ChainCursor (Filter e) ChainCursor where
   foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
 
 -- data ModifyFilter :: Type
@@ -368,7 +368,7 @@ mkFilterChanges ::
   DecodeEvent i ni e =>
   Row.Cons sym e b r =>
   IsSymbol sym =>
-  SProxy sym ->
+  Proxy sym ->
   Proxy e ->
   Array Change ->
   Array (FilterChange (Variant r))
@@ -392,8 +392,8 @@ instance queryAllLogs ::
   , Row.Union r' b r
   , Row.Cons sym e r' r
   ) =>
-  FoldingWithIndex QueryAllLogs (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
-  foldingWithIndex QueryAllLogs (prop :: SProxy sym) acc filter = do
+  FoldingWithIndex QueryAllLogs (Proxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
+  foldingWithIndex QueryAllLogs (prop :: Proxy sym) acc filter = do
     changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
     (<>) changes <$> (map (map expand) <$> acc)
 
@@ -414,8 +414,8 @@ instance openMultiFilterFold ::
   , Row.Union r' b r
   , Row.Cons sym (Tagged e FilterId) r' r
   ) =>
-  FoldingWithIndex OpenMultiFilter (SProxy sym) (Web3 (Record r')) (Filter e) (Web3 (Record r)) where
-  foldingWithIndex OpenMultiFilter (prop :: SProxy sym) acc filter = do
+  FoldingWithIndex OpenMultiFilter (Proxy sym) (Web3 (Record r')) (Filter e) (Web3 (Record r)) where
+  foldingWithIndex OpenMultiFilter (prop :: Proxy sym) acc filter = do
     filterId <- eth_newFilter filter
     Record.insert prop (tagged filterId :: Tagged e FilterId) <$> acc
 
@@ -436,8 +436,8 @@ instance checkMultiFilterLogs ::
   , Row.Union r' b r
   , Row.Cons sym e r' r
   ) =>
-  FoldingWithIndex CheckMultiFilter (SProxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
-  foldingWithIndex CheckMultiFilter (prop :: SProxy sym) acc filterId = do
+  FoldingWithIndex CheckMultiFilter (Proxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
+  foldingWithIndex CheckMultiFilter (prop :: Proxy sym) acc filterId = do
     changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
     (<>) changes <$> (map (map expand) <$> acc)
 
@@ -447,8 +447,8 @@ data CloseMultiFilter
 instance closeMultiFilterFold ::
   ( IsSymbol sym
     ) =>
-  FoldingWithIndex CloseMultiFilter (SProxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
-  foldingWithIndex CloseMultiFilter (_ :: SProxy sym) acc filter = do
+  FoldingWithIndex CloseMultiFilter (Proxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
+  foldingWithIndex CloseMultiFilter (_ :: Proxy sym) acc filter = do
     void $ eth_uninstallFilter $ untagged filter
     acc
 

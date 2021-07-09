@@ -17,7 +17,8 @@ import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (%~), (?~))
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Type.Proxy (Proxy(..))
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
@@ -25,8 +26,7 @@ import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
 import Network.Ethereum.Web3.Types (class TokenUnitC, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
-import Type.Proxy (Proxy)
-import Partial.Unsafe (unsafeCrashWith)
+
 
 --------------------------------------------------------------------------------
   -- * Events
@@ -44,21 +44,20 @@ event ::
   EventHandler Web3 e ->
   Web3 (Either (FilterStreamState e) ChangeReceipt)
 event filter handler = do
-  unsafeCrashWith "implement event" 0
+  eRes <- event' { ev: filter } { ev: handler } { windowSize: 0, trailBy: 0 }
+  pure $ lmap f eRes
+  where
+  --f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
+  f (MultiFilterStreamState { currentBlock, windowSize, trailBy, filters }) =
+    let
+      { ev: filter } = filters
+    in
+      { currentBlock
+      , windowSize
+      , trailBy
+      , initialFilter: filter
+      }
 
--- eRes <- event' { ev: filter } { ev: handler } { windowSize: 0, trailBy: 0 }
--- pure $ lmap f eRes
--- where
--- f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
--- f (MultiFilterStreamState { currentBlock, windowSize, trailBy, filters }) =
---   let
---     { ev: filter } = filters
---   in
---     { currentBlock
---     , windowSize
---     , trailBy
---     , initialFilter: filter
---     }
 --------------------------------------------------------------------------------
 -- * Methods
 --------------------------------------------------------------------------------
@@ -71,7 +70,7 @@ class TxMethod (selector :: Symbol) a where
     TokenUnitC (Value (u ETHER)) =>
     IsSymbol selector =>
     TransactionOptions u ->
-    Tagged (SProxy selector) a ->
+    Tagged (Proxy selector) a ->
     Web3 HexString
 
 -- ^ 'Web3' wrapped tx hash
@@ -81,7 +80,7 @@ class CallMethod (selector :: Symbol) a b where
     IsSymbol selector =>
     TransactionOptions NoPay ->
     ChainCursor ->
-    Tagged (SProxy selector) a ->
+    Tagged (Proxy selector) a ->
     Web3 (Either CallError b)
 
 -- ^ 'Web3' wrapped result
@@ -98,11 +97,11 @@ _sendTransaction ::
   GenericABIEncode rep =>
   TokenUnitC (Value (u ETHER)) =>
   TransactionOptions u ->
-  Tagged (SProxy selector) a ->
+  Tagged (Proxy selector) a ->
   Web3 HexString
 _sendTransaction txOptions dat = do
   let
-    sel = toSelector <<< reflectSymbol $ (SProxy :: SProxy selector)
+    sel = toSelector <<< reflectSymbol $ (Proxy :: Proxy selector)
   eth_sendTransaction $ txdata $ sel <> (genericABIEncode <<< untagged $ dat)
   where
   txdata d =
@@ -119,11 +118,11 @@ _call ::
   GenericABIDecode brep =>
   TransactionOptions NoPay ->
   ChainCursor ->
-  Tagged (SProxy selector) a ->
+  Tagged (Proxy selector) a ->
   Web3 (Either CallError b)
 _call txOptions cursor dat = do
   let
-    sig = reflectSymbol $ (SProxy :: SProxy selector)
+    sig = reflectSymbol $ (Proxy :: Proxy selector)
 
     sel = toSelector sig
 
@@ -166,12 +165,12 @@ mkDataField ::
   Generic a (Constructor name args) =>
   RecordFieldsIso args fields l =>
   GenericABIEncode (Constructor name args) =>
-  Proxy (Tagged (SProxy selector) a) ->
+  Proxy (Tagged (Proxy selector) a) ->
   Record fields ->
   HexString
 mkDataField _ r =
   let
-    sig = reflectSymbol (SProxy :: SProxy selector)
+    sig = reflectSymbol (Proxy :: Proxy selector)
 
     sel = toSelector sig
 
