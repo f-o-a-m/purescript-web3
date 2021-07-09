@@ -22,7 +22,8 @@ import Network.Ethereum.Web3.Types (Change(..))
 import Prim.Row as Row
 import Record.Builder (build, merge)
 import Type.Proxy (Proxy(..))
-import Safe.Coerce (coerce)
+import Safe.Coerce (class Coercible, coerce)
+import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- Array Parsers
@@ -76,17 +77,17 @@ parseChange (Change change) anonymous = do
   pure $ Event a b
 
 combineChange ::
-  forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes.
+  forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes.
   RecordFieldsIso aargs afields al =>
   Generic a (Constructor aname aargs) =>
   RecordFieldsIso bargs bfields bl =>
   Generic b (Constructor bname bargs) =>
-  Row.Union bfields afields cfields =>
+  Row.Union afields bfields cfields =>
   Row.Nub cfields cfieldsRes =>
   Newtype c (Record cfieldsRes) =>
   Event a b ->
   c
-combineChange (Event a b) = coerce $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
+combineChange (Event a b) = unsafeCoerce $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
 class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
@@ -101,6 +102,7 @@ decodeEventDef ::
   Generic b (Constructor bname bargs) =>
   GenericABIDecode bargs =>
   Row.Union bfields afields cfields =>
+  Row.Union afields bfields cfields =>
   Row.Nub cfields cfieldsRes =>
   Newtype c (Record cfieldsRes) =>
   IndexedEvent a b c =>
@@ -125,6 +127,7 @@ instance defaultInstance ::
   , Generic b (Constructor bname bargs)
   , GenericABIDecode bargs
   , Row.Union bfields afields cfields
+  , Row.Union afields bfields cfields
   , Row.Nub cfields cfieldsRes
   , Newtype c (Record cfieldsRes)
   , IndexedEvent a b c

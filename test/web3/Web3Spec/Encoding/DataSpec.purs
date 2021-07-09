@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.DataSpec (spec) where
+module Web3Spec.Encoding.DataSpec (spec, approve) where
 
 import Prelude
 import Data.Maybe (fromJust)

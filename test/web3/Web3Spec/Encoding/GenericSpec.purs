@@ -5,8 +5,8 @@ import Control.Error.Util (hush)
 import Data.Array (unsafeIndex, uncons)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Eq.Generic (genericEq)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Record.Builder (build, merge)
@@ -14,11 +14,11 @@ import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
-import Network.Ethereum.Web3.Solidity.Size (type (:%))
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+import Network.Ethereum.Web3.Solidity.Sizes (S256)
 
 spec :: Spec Unit
 spec =
@@ -91,9 +91,9 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 newtype Transfer
-  = Transfer { to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :% D6) }
+  = Transfer { to :: Address, from :: Address, amount :: UIntN S256 }
 
-derive instance newtypeTransfer :: Newtype Transfer (Record ( to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& DOne D6) )) _
+derive instance newtypeTransfer :: Newtype Transfer _
 
 -- instance newtypeTransfer :: Newtype Transfer (Record ( to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& DOne D6) )) where
 --   wrap = Transfer

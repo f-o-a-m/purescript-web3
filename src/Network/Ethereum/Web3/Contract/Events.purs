@@ -448,7 +448,7 @@ instance closeMultiFilterFold ::
   ( IsSymbol sym
     ) =>
   FoldingWithIndex CloseMultiFilter (SProxy sym) (Web3 Unit) (Tagged e FilterId) (Web3 Unit) where
-  foldingWithIndex CloseMultiFilter (prop :: SProxy sym) acc filter = do
+  foldingWithIndex CloseMultiFilter (_ :: SProxy sym) acc filter = do
     void $ eth_uninstallFilter $ untagged filter
     acc
 

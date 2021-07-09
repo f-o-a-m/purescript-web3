@@ -26,10 +26,12 @@ import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event'
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
 import Network.Ethereum.Web3.Types (class TokenUnitC, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
 import Type.Proxy (Proxy)
+import Partial.Unsafe (unsafeCrashWith)
 
 --------------------------------------------------------------------------------
--- * Events
---------------------------------------------------------------------------------
+  -- * Events
+  --------------------------------------------------------------------------------
+class EventFilter :: forall k. k -> Constraint
 class EventFilter e where
   -- | Event filter structure used by low-level subscription methods
   eventFilter :: Proxy e -> Address -> Filter e
@@ -42,20 +44,21 @@ event ::
   EventHandler Web3 e ->
   Web3 (Either (FilterStreamState e) ChangeReceipt)
 event filter handler = do
-  eRes <- event' { ev: filter } { ev: handler } { windowSize: 0, trailBy: 0 }
-  pure $ lmap f eRes
-  where
-  f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
-  f (MultiFilterStreamState { currentBlock, windowSize, trailBy, filters }) =
-    let
-      { ev: filter } = filters
-    in
-      { currentBlock
-      , windowSize
-      , trailBy
-      , initialFilter: filter
-      }
+  unsafeCrashWith "implement event" 0
 
+-- eRes <- event' { ev: filter } { ev: handler } { windowSize: 0, trailBy: 0 }
+-- pure $ lmap f eRes
+-- where
+-- f :: MultiFilterStreamState ( ev :: Filter e ) -> FilterStreamState e
+-- f (MultiFilterStreamState { currentBlock, windowSize, trailBy, filters }) =
+--   let
+--     { ev: filter } = filters
+--   in
+--     { currentBlock
+--     , windowSize
+--     , trailBy
+--     , initialFilter: filter
+--     }
 --------------------------------------------------------------------------------
 -- * Methods
 --------------------------------------------------------------------------------
