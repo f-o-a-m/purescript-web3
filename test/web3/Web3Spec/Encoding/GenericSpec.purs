@@ -95,9 +95,6 @@ newtype Transfer
 
 derive instance newtypeTransfer :: Newtype Transfer _
 
--- instance newtypeTransfer :: Newtype Transfer (Record ( to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& DOne D6) )) where
---   wrap = Transfer
---   unwrap (Transfer t) = t
 derive instance genericTransfer :: Generic Transfer _
 
 instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where

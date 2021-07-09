@@ -252,8 +252,6 @@ intNTests =
 falseOrObjectTests :: Spec Unit
 falseOrObjectTests =
   describe "FalseOrObject tests" do
-    -- let
-    --   opts = defaultOptions { unwrapSingleConstructors = true }
     it "can decode FalseOrObject instances that are false" do
       let
         decodedFalse = (runExcept $ decodeJSON "false") :: (Either (NonEmptyList ForeignError) (FalseOrObject SyncStatus))
