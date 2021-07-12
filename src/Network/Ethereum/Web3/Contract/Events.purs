@@ -57,8 +57,7 @@ import Prim.RowList as RowList
 type EventHandler f e
   = e -> ReaderT Change f EventAction
 
-type FilterStreamState :: forall (k :: Type) (e :: k). Type -> Type
-type FilterStreamState e
+type FilterStreamState (e :: Type)
   = { currentBlock :: BlockNumber
     , initialFilter :: Filter e
     , windowSize :: Int
