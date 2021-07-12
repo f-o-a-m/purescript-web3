@@ -5,20 +5,20 @@ import Control.Error.Util (hush)
 import Data.Array (unsafeIndex, uncons)
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Eq.Generic (genericEq)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Record.Builder (build, merge)
-import Data.Symbol (SProxy)
+import Type.Proxy (Proxy(..))
 import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
-import Network.Ethereum.Web3.Solidity.Size (type (:%))
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+import Network.Ethereum.Web3.Solidity.Sizes (S256)
 
 spec :: Spec Unit
 spec =
@@ -30,7 +30,7 @@ toRecordFieldsSpec =
   describe "test ToRecordFields class" do
     it "pass toRecordFields basic test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (SProxy "a") Int) (Tagged (SProxy "d") String) (Tagged (SProxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
       WeirdTuple (genericToRecordFields as)
         `shouldEqual`
           WeirdTuple
@@ -40,9 +40,9 @@ toRecordFieldsSpec =
             }
     it "passes the merging test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (SProxy "a") Int) (Tagged (SProxy "d") String) (Tagged (SProxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
 
-        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (SProxy "b") Int) (Tagged (SProxy "c") String)
+        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (Proxy "b") Int) (Tagged (Proxy "c") String)
 
         c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
       c `shouldEqual` CombinedTuple { a: 1, b: 2, c: "bye", d: "hello", e: 'c' }
@@ -50,7 +50,7 @@ toRecordFieldsSpec =
       let
         (Transfer t) = transfer
 
-        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)
+        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)
       hush (fromData (unsafePartial $ unsafeIndex addressArray 1)) `shouldEqual` Just t.to
       genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
     it "can combine events" do
@@ -91,15 +91,13 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 newtype Transfer
-  = Transfer { to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :% D6) }
+  = Transfer { to :: Address, from :: Address, amount :: UIntN S256 }
 
-instance newtypeTransfer :: Newtype Transfer (Record ( to :: Address, from :: Address, amount :: UIntN (D2 :& D5 :& DOne D6) )) where
-  wrap = Transfer
-  unwrap (Transfer t) = t
+derive instance newtypeTransfer :: Newtype Transfer _
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (SProxy "to") Address) (Tagged (SProxy "from") Address)) (Tuple1 (Tagged (SProxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
   isAnonymous _ = false
 
 instance showTransfer :: Show Transfer where

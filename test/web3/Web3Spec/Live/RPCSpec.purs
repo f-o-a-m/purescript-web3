@@ -14,7 +14,7 @@ import Network.Ethereum.Core.Signatures as Sig
 import Network.Ethereum.Web3 (Block(..), ChainCursor(..), Provider, TransactionReceipt(..), _from, _to, _value, convert, defaultTransactionOptions, fromMinorUnit, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
 import Node.Buffer.Class (slice)
-import Partial.Unsafe (unsafePartial, unsafePartialBecause)
+import Partial.Unsafe (unsafePartial)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Type.Quotient (mkQuotient, runQuotient)
@@ -55,13 +55,13 @@ spec provider =
         runWeb3 provider
           $ do
               accounts <- Api.eth_getAccounts
-              Api.eth_getBalance (unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0) Latest
+              Api.eth_getBalance (unsafePartial fromJust $ accounts !! 0) Latest
       eRes `shouldSatisfy` isRight
     it "Can call eth_getTransactionCount" do
       eRes <-
         runWeb3 provider do
           accounts <- Api.eth_getAccounts
-          Api.eth_getTransactionCount (unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0) Latest
+          Api.eth_getTransactionCount (unsafePartial fromJust $ accounts !! 0) Latest
       eRes `shouldSatisfy` isRight
     it "Can call eth_getBlockByNumber, eth_getBlockTransactionCountByHash, getBlockTransactionCountByNumber" do
       Tuple count1 count2 <-
@@ -69,7 +69,7 @@ spec provider =
           bn <- Api.eth_blockNumber
           Block block <- Api.eth_getBlockByNumber (BN bn)
           let
-            bHash = unsafePartialBecause "Block is not pending" $ fromJust block.hash
+            bHash = unsafePartial fromJust block.hash
           count1 <- Api.eth_getBlockTransactionCountByHash bHash
           count2 <- Api.eth_getBlockTransactionCountByNumber (BN bn)
           pure $ Tuple count1 count2
@@ -80,7 +80,7 @@ spec provider =
           bn <- Api.eth_blockNumber
           Block block <- Api.eth_getBlockByNumber (BN bn)
           let
-            bHash = unsafePartialBecause "Block is not pending" $ fromJust block.hash
+            bHash = unsafePartial fromJust block.hash
           count1 <- Api.eth_getUncleCountByBlockHash bHash
           count2 <- Api.eth_getUncleCountByBlockNumber (BN bn)
           pure $ Tuple count1 count2
@@ -91,7 +91,7 @@ spec provider =
           bn <- Api.eth_blockNumber
           Block block <- Api.eth_getBlockByNumber (BN bn)
           let
-            bHash = unsafePartialBecause "Block is not pending" $ fromJust block.hash
+            bHash = unsafePartial fromJust block.hash
           Api.eth_getBlockByHash bHash
       eRes `shouldSatisfy` isRight
     -- TODO: validate this with eth-core lib
@@ -104,7 +104,7 @@ spec provider =
         assertWeb3 provider do
           accounts <- Api.eth_getAccounts
           let
-            signer = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
+            signer = unsafePartial fromJust $ accounts !! 0
           signatureHex <- Api.personal_sign msgBody signer (Just "password123")
           signer' <- Api.personal_ecRecover msgBody signatureHex
           pure $ { signer, signer', signatureHex }
@@ -122,9 +122,9 @@ spec provider =
         assertWeb3 provider do
           accounts <- Api.eth_getAccounts
           let
-            sender = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
+            sender = unsafePartial fromJust $ accounts !! 0
 
-            receiver = unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 1
+            receiver = unsafePartial fromJust $ accounts !! 1
 
             txOpts =
               defaultTransactionOptions # _from ?~ sender
