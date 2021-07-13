@@ -216,7 +216,7 @@ monitorUntil provider logger filter p opts = do
     <> show (filter ^. _toBlock)
   let
     handler (SimpleStorage.CountSet { _count }) = do
-      change@(Change c) <- ask
+      Change c <- ask
       chainHead <- lift Api.eth_blockNumber
       when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy)
         $ lift

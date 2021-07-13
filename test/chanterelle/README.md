@@ -3,7 +3,7 @@
 This directory contains a [chanterelle](https://github.com/f-o-a-m/chanterelle) project used for generating the FFI and bytecode needed for the actual test suite, rooted in `../web3`. To avoid circular dependencies, we cannot actually use the chanterelle package in the test suite itself, only to compile and generate code -- we are currently checking in generated FFI. You can regenerate it or overwrite it by running 
 
 ```bash
-> chanterelle codegen
+> chanterelle build
 ```
 
 in this directory. 
