@@ -27,7 +27,7 @@ let additions =
           , "simple-json"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core.git"
-        , version = "v0.14"
+        , version = "v7.0.0"
         }
       , tagged =
         { dependencies = [ "identity", "profunctor" ]
