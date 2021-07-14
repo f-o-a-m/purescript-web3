@@ -1,6 +1,7 @@
 module Network.Ethereum.Web3.Solidity.Event
   ( class DecodeEvent
   , decodeEvent
+  , decodeEventDef
   , class ArrayParser
   , arrayParser
   , genericArrayParser
@@ -29,7 +30,7 @@ class ArrayParser a where
   arrayParser :: Array HexString -> Maybe a
 
 instance arrayParserNoArgs :: ArrayParser NoArguments where
-  arrayParser hxs = Just NoArguments
+  arrayParser _ = Just NoArguments
 
 instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of
@@ -74,18 +75,19 @@ parseChange (Change change) anonymous = do
   pure $ Event a b
 
 combineChange ::
-  forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes.
+  forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes.
   RecordFieldsIso aargs afields al =>
   Generic a (Constructor aname aargs) =>
   RecordFieldsIso bargs bfields bl =>
   Generic b (Constructor bname bargs) =>
-  Row.Union bfields afields cfields =>
+  Row.Union afields bfields cfields =>
   Row.Nub cfields cfieldsRes =>
   Newtype c (Record cfieldsRes) =>
   Event a b ->
   c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
+class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
@@ -97,7 +99,7 @@ decodeEventDef ::
   RecordFieldsIso bargs bfields bl =>
   Generic b (Constructor bname bargs) =>
   GenericABIDecode bargs =>
-  Row.Union bfields afields cfields =>
+  Row.Union afields bfields cfields =>
   Row.Nub cfields cfieldsRes =>
   Newtype c (Record cfieldsRes) =>
   IndexedEvent a b c =>
@@ -109,6 +111,7 @@ decodeEventDef change = do
   (e :: Event a b) <- parseChange change anonymous
   pure $ combineChange e
 
+class DecodeEvent :: forall k1 k2. k1 -> k2 -> Type -> Constraint
 class
   IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
   decodeEvent :: Change -> Maybe c
@@ -120,7 +123,7 @@ instance defaultInstance ::
   , RecordFieldsIso bargs bfields bl
   , Generic b (Constructor bname bargs)
   , GenericABIDecode bargs
-  , Row.Union bfields afields cfields
+  , Row.Union afields bfields cfields
   , Row.Nub cfields cfieldsRes
   , Newtype c (Record cfieldsRes)
   , IndexedEvent a b c

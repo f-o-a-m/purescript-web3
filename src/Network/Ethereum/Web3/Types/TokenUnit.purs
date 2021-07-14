@@ -4,8 +4,8 @@ module Network.Ethereum.Web3.Types.TokenUnit
   , toMinorUnit
   , class TokenUnitSpec
   , divider
-  , kind Token
-  , kind TokenUnit
+  , TokenK
+  , TokenUnitK
   , ProxyTU(..)
   , Value
   , convert
@@ -31,15 +31,15 @@ import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
 import Partial.Unsafe (unsafePartial)
 
-foreign import kind Token
+data TokenK
 
-foreign import kind TokenUnit
+data TokenUnitK
 
 -- | A value of some token in specific denomination
-newtype Value (a :: TokenUnit)
+newtype Value (a :: TokenUnitK)
   = Value BigNumber
 
-data ProxyTU (a :: TokenUnit)
+data ProxyTU (a :: TokenUnitK)
   = ProxyTU
 
 derive newtype instance eqValue :: Eq (Value a)
@@ -73,6 +73,7 @@ unValue :: forall a. Value a -> BigNumber
 unValue (Value a) = a
 
 -- | Useful for converting to and from the base denomination
+class TokenUnit :: Type -> Constraint
 class TokenUnit a where
   fromMinorUnit :: BigNumber -> a
   toMinorUnit :: a -> BigNumber
@@ -81,7 +82,7 @@ class TokenUnit a where
 convert :: forall a b. TokenUnit a => TokenUnit b => a -> b
 convert = fromMinorUnit <<< toMinorUnit
 
-class TokenUnitSpec (a :: TokenUnit) where
+class TokenUnitSpec (a :: TokenUnitK) where
   divider :: ProxyTU a -> BigNumber
 
 formatValue :: forall a. TokenUnitSpec a => Value a -> String
@@ -91,47 +92,47 @@ formatValue v = show $ toMinorUnit v `divide` divider (ProxyTU :: ProxyTU a)
 mkValue :: forall a. TokenUnitSpec a => BigNumber -> Value a
 mkValue = Value <<< floorBigNumber <<< (mul (divider (ProxyTU :: ProxyTU a)))
 
-foreign import data NoPay :: Token -> TokenUnit
+foreign import data NoPay :: TokenK -> TokenUnitK
 
 instance unitSpecNoPay :: TokenUnitSpec (NoPay t) where
   divider = const zero
 
-foreign import data MinorUnit :: Token -> TokenUnit
+foreign import data MinorUnit :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnit :: TokenUnitSpec (MinorUnit t) where
   divider = createDivider 0
 
-foreign import data MinorUnitE3 :: Token -> TokenUnit
+foreign import data MinorUnitE3 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE3 :: TokenUnitSpec (MinorUnitE3 t) where
   divider = createDivider 3
 
-foreign import data MinorUnitE6 :: Token -> TokenUnit
+foreign import data MinorUnitE6 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE6 :: TokenUnitSpec (MinorUnitE6 t) where
   divider = createDivider 6
 
-foreign import data MinorUnitE9 :: Token -> TokenUnit
+foreign import data MinorUnitE9 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE9 :: TokenUnitSpec (MinorUnitE9 t) where
   divider = createDivider 9
 
-foreign import data MinorUnitE12 :: Token -> TokenUnit
+foreign import data MinorUnitE12 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE12 :: TokenUnitSpec (MinorUnitE12 t) where
   divider = createDivider 12
 
-foreign import data MinorUnitE15 :: Token -> TokenUnit
+foreign import data MinorUnitE15 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE15 :: TokenUnitSpec (MinorUnitE15 t) where
   divider = createDivider 15
 
-foreign import data MinorUnitE18 :: Token -> TokenUnit
+foreign import data MinorUnitE18 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE18 :: TokenUnitSpec (MinorUnitE18 t) where
   divider = createDivider 18
 
-foreign import data MinorUnitE21 :: Token -> TokenUnit
+foreign import data MinorUnitE21 :: TokenK -> TokenUnitK
 
 instance unitSpecMinorUnitE21 :: TokenUnitSpec (MinorUnitE21 t) where
   divider = createDivider 21

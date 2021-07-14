@@ -1,10 +1,9 @@
 # purescript-web3
 <img src=https://github.com/f-o-a-m/purescript-web3/blob/master/purescript-web3-logo.png width="75">
 
-
 [![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
 [![purescript-web3 on Pursuit](https://pursuit.purescript.org/packages/purescript-web3/badge)](https://pursuit.purescript.org/packages/purescript-web3)
-[![Build status](https://travis-ci.org/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.org/f-o-a-m/purescript-web3?branch=master)
+[![Build status](https://travis-ci.com/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.com/f-o-a-m/purescript-web3?branch=master)
 
 # A Purescript Client for the Web3 API
 

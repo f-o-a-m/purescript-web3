@@ -55,8 +55,8 @@ import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Eq.Generic (genericEq)
+import Data.Show.Generic (genericShow)
 import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
@@ -219,7 +219,7 @@ instance decodeTransactionStatus :: Decode TransactionStatus where
     case str of
       "0x1" -> pure Succeeded
       "0x0" -> pure Failed
-      otherwise -> fail $ TypeMismatch "TransactionStatus" str
+      _     -> fail $ TypeMismatch "TransactionStatus" str
 
 newtype TransactionReceipt
   = TransactionReceipt
@@ -462,6 +462,7 @@ forkWeb3' web3Action = do
 -- * Filters
 --------------------------------------------------------------------------------
 -- | Low-level event filter data structure
+newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
   { address :: Maybe Address

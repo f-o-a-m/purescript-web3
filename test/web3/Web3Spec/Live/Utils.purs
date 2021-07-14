@@ -18,11 +18,11 @@ import Effect.Class.Console as C
 import Test.Spec (ComputationType(..), SpecT, hoistSpec)
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, embed, event, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, DLProxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
-import Partial.Unsafe (unsafeCrashWith, unsafePartial, unsafePartialBecause)
+import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Type.Proxy (Proxy)
 
 type Logger m
@@ -150,10 +150,9 @@ deployContract p logger contractName deploymentTx = do
     assertWeb3 p
       $ do
           accounts <- Api.eth_getAccounts
-          pure $ unsafePartialBecause "there is more than one account" $ fromJust $ accounts !! 0
+          pure $ unsafePartial fromJust $ accounts !! 0
   txHash <-
     assertWeb3 p do
-      accounts <- Api.eth_getAccounts
       let
         txOpts = defaultTestTxOptions # _from ?~ userAddress
       txHash <- deploymentTx txOpts
@@ -182,7 +181,7 @@ joinWeb3Fork fiber =
 mkHexString' ::
   String ->
   HexString
-mkHexString' hx = unsafePartialBecause "I know how to make a HexString" $ fromJust $ mkHexString hx
+mkHexString' hx = unsafePartial fromJust $ mkHexString hx
 
 mkUIntN ::
   forall n.
@@ -190,7 +189,7 @@ mkUIntN ::
   DLProxy n ->
   Int ->
   UIntN n
-mkUIntN p n = unsafePartialBecause "I know how to make a UInt" $ fromJust $ uIntNFromBigNumber p $ embed n
+mkUIntN p n = unsafePartial fromJust $ uIntNFromBigNumber p $ embed n
 
 mkIntN ::
   forall n.
@@ -198,7 +197,7 @@ mkIntN ::
   DLProxy n ->
   Int ->
   IntN n
-mkIntN p n = unsafePartialBecause "I know how to make an Int" $ fromJust $ intNFromBigNumber p $ embed n
+mkIntN p n = unsafePartial fromJust $ intNFromBigNumber p $ embed n
 
 mkBytesN ::
   forall n.
@@ -206,7 +205,7 @@ mkBytesN ::
   DLProxy n ->
   String ->
   BytesN n
-mkBytesN p s = unsafePartialBecause "I know how to make Bytes" $ fromJust $ fromByteString p =<< flip BS.fromString BS.Hex s
+mkBytesN p s = unsafePartial fromJust $ fromByteString p =<< flip BS.fromString BS.Hex s
 
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions = defaultTransactionOptions # _gas ?~ bigGasLimit

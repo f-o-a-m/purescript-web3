@@ -1,4 +1,4 @@
-module Web3Spec.Encoding.DataSpec (spec) where
+module Web3Spec.Encoding.DataSpec (spec, approve) where
 
 import Prelude
 import Data.Maybe (fromJust)
@@ -7,7 +7,6 @@ import Network.Ethereum.Web3.Solidity.Size (type (:&), D2, D5, D6, DOne)
 import Network.Ethereum.Web3.Solidity.Sizes (s256)
 import Network.Ethereum.Web3.Types (Address, HexString, TransactionOptions, NoPay, Web3, mkHexString, mkAddress)
 import Data.Functor.Tagged (Tagged, tagged)
-import Data.Symbol (SProxy)
 import Network.Ethereum.Web3.Contract (sendTx, mkDataField)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromRecordFields)
@@ -34,7 +33,7 @@ spec =
       approvalD `shouldEqual` fullDat
 
 type ApproveFn
-  = Tagged (SProxy "approve(address,uint256)") (Tuple2 (Tagged (SProxy "_spender") Address) (Tagged (SProxy "_value") (UIntN (D2 :& D5 :& DOne D6))))
+  = Tagged (Proxy "approve(address,uint256)") (Tuple2 (Tagged (Proxy "_spender") Address) (Tagged (Proxy "_value") (UIntN (D2 :& D5 :& DOne D6))))
 
 approve :: TransactionOptions NoPay -> { _spender :: Address, _value :: (UIntN (D2 :& D5 :& DOne D6)) } -> Web3 HexString
 approve txOpts r = sendTx txOpts (tagged (genericFromRecordFields r) :: ApproveFn)
