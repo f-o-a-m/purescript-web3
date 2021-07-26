@@ -552,8 +552,8 @@ instance eqEventAction :: Eq EventAction where
 --------------------------------------------------------------------------------
 -- * Raw Event Log Changes
 --------------------------------------------------------------------------------
--- | Changes pulled by low-level call 'eth_getFilterChanges', 'eth_getLogs',
--- | and 'eth_getFilterLogs'
+-- | Changes pulled by low-level call `eth_getFilterChanges`, `eth_getLogs`,
+-- | and `eth_getFilterLogs`
 newtype Change
   = Change
   { logIndex :: BigNumber

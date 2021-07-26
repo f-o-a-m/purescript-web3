@@ -64,7 +64,7 @@ event filter handler = do
 -- | Class paramaterized by values which are ABIEncodable, allowing the templating of
 -- | of a transaction with this value as the payload.
 class TxMethod (selector :: Symbol) a where
-  -- | Send a transaction for given contract 'Address', value and input data
+  -- | Send a transaction for given contract `Address`, value and input data
   sendTx ::
     forall u.
     TokenUnit (Value (u ETHER)) =>
@@ -73,9 +73,9 @@ class TxMethod (selector :: Symbol) a where
     Tagged (Proxy selector) a ->
     Web3 HexString
 
--- ^ 'Web3' wrapped tx hash
+-- ^ `Web3` wrapped tx hash
 class CallMethod (selector :: Symbol) a b where
-  -- | Constant call given contract 'Address' in mode and given input data
+  -- | Constant call given contract `Address` in mode and given input data
   call ::
     IsSymbol selector =>
     TransactionOptions NoPay ->
@@ -83,7 +83,7 @@ class CallMethod (selector :: Symbol) a b where
     Tagged (Proxy selector) a ->
     Web3 (Either CallError b)
 
--- ^ 'Web3' wrapped result
+-- ^ `Web3` wrapped result
 instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod s a where
   sendTx = _sendTransaction
 
