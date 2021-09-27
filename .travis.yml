@@ -14,7 +14,7 @@ jobs:
   - stage: Test libraries
     name: "Test all libs"
     script:
-    - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:latest
+    - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:v1.9.12
     - sleep 10
     - npm -s test
 
