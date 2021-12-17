@@ -458,11 +458,6 @@ forkWeb3' web3Action = do
   p <- ask
   liftAff $ forkWeb3 p web3Action
 
---------------------------------------------------------------------------------
-  -- * Filters
---------------------------------------------------------------------------------
-
--- Low-level event filter data structure
 newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
