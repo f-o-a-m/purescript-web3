@@ -29,8 +29,9 @@ import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor,
 
 --------------------------------------------------------------------------------
   -- * Events
-  --------------------------------------------------------------------------------
-  class EventFilter :: forall k. k -> Constraint
+--------------------------------------------------------------------------------
+
+class EventFilter :: forall k. k -> Constraint
 class EventFilter e where
   -- | Event filter structure used by low-level subscription methods
   eventFilter :: Proxy e -> Address -> Filter e

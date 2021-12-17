@@ -83,7 +83,7 @@ instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
     let
       len = sizeVal (DLProxy :: DLProxy n)
 
-      zeroBytes = getPadLength len
+      zeroBytes = 32 - len
     raw <- takeBytes len
     _ <- takeBytes zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw

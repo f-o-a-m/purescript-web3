@@ -219,9 +219,10 @@ dParser = do
         fromDataParser
 
 --------------------------------------------------------------------------------
-  -- * Generator Helpers
-  --------------------------------------------------------------------------------
-  class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
+-- * Generator Helpers
+--------------------------------------------------------------------------------
+
+class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
 class ArgsToRowListProxy args l | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l
 

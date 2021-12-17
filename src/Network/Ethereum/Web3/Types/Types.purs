@@ -460,9 +460,10 @@ forkWeb3' web3Action = do
 
 --------------------------------------------------------------------------------
   -- * Filters
-  --------------------------------------------------------------------------------
-  -- | Low-level event filter data structure
-  newtype Filter :: forall k. k -> Type
+--------------------------------------------------------------------------------
+
+-- Low-level event filter data structure
+newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
   { address :: Maybe Address

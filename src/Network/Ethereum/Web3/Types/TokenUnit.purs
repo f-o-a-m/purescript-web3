@@ -72,8 +72,8 @@ instance unitTokenUnitSpec :: TokenUnitSpec a => TokenUnit (Value a) where
 unValue :: forall a. Value a -> BigNumber
 unValue (Value a) = a
 
--- | Useful for converting to and from the base denomination
-  class TokenUnit :: Type -> Constraint
+-- Useful for converting to and from the base denomination
+class TokenUnit :: Type -> Constraint
 class TokenUnit a where
   fromMinorUnit :: BigNumber -> a
   toMinorUnit :: a -> BigNumber
