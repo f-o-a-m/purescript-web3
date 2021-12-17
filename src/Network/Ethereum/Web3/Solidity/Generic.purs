@@ -27,7 +27,7 @@ import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArgumen
 import Data.Maybe (Maybe(..))
 import Record as Record
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, takeBytes, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Core.HexString (HexString, hexLength)
 import Network.Ethereum.Core.BigNumber (unsafeToInt)
@@ -215,13 +215,13 @@ dParser = do
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
-        _ <- take (dataOffset * 2 - (p.column - 1))
+        _ <- takeBytes (dataOffset - (p.column - 1))
         fromDataParser
 
 --------------------------------------------------------------------------------
   -- * Generator Helpers
   --------------------------------------------------------------------------------
-class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
+  class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
 class ArgsToRowListProxy args l | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l
 

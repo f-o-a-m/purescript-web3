@@ -14,9 +14,9 @@ import Network.Ethereum.Types (Address, BigNumber)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
--- | Encoding Types
---------------------------------------------------------------------------------
-class EncodingType :: forall k. k -> Constraint
+  -- | Encoding Types
+  --------------------------------------------------------------------------------
+  class EncodingType :: forall k. k -> Constraint
 class EncodingType a where
   typeName :: Proxy a -> String
   isDynamic :: Proxy a -> Boolean

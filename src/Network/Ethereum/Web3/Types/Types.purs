@@ -219,7 +219,7 @@ instance decodeTransactionStatus :: Decode TransactionStatus where
     case str of
       "0x1" -> pure Succeeded
       "0x0" -> pure Failed
-      _     -> fail $ TypeMismatch "TransactionStatus" str
+      _ -> fail $ TypeMismatch "TransactionStatus" str
 
 newtype TransactionReceipt
   = TransactionReceipt
@@ -459,10 +459,10 @@ forkWeb3' web3Action = do
   liftAff $ forkWeb3 p web3Action
 
 --------------------------------------------------------------------------------
--- * Filters
---------------------------------------------------------------------------------
--- | Low-level event filter data structure
-newtype Filter :: forall k. k -> Type
+  -- * Filters
+  --------------------------------------------------------------------------------
+  -- | Low-level event filter data structure
+  newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
   { address :: Maybe Address
