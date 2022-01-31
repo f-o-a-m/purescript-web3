@@ -20,20 +20,20 @@ module Network.Ethereum.Web3.Types.Types
   , Web3(..)
   , Web3Par
   , throwWeb3
-  , Filter
+  , Filter(..)
   , defaultFilter
   , _address
   , _topics
   , _fromBlock
   , _toBlock
-  , FilterId
+  , FilterId(..)
   , EventAction(..)
   , Change(..)
   , FalseOrObject(..)
   , unFalseOrObject
   , SyncStatus(..)
   , MethodName
-  , Request
+  , Request(..)
   , mkRequest
   , Response(..)
   , Web3Error(..)

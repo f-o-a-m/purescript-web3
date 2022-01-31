@@ -20,9 +20,9 @@ module Network.Ethereum.Web3.Solidity.Size
   , class ByteSize
   , class Inc
   -- more low level staff
-  , kind Digit
+  , Digit
   , DProxy(..)
-  , kind DigitList
+  , DigitList
   , DTwo
   , class IncP
   , class IncD
@@ -76,7 +76,7 @@ import Type.Data.Boolean (class If, BProxy, False, True)
 -- | ```
 -- |
 -- | now you can't  have `x :: Array D3` will not compile at all.
-foreign import kind Digit
+data Digit
 
 foreign import data D0 :: Digit
 
@@ -148,7 +148,7 @@ foreign import data D9 :: Digit
 -- | Note in typeclass instances type aliases can't be used, which `DTwo` and `:%` are.
 -- | so this will not compile `instance myInstance :: SomeCls (D1 :% D0)`
 -- | instead it should be written as `instance myInstance :: SomeCls (D1 :& DOne D0)`
-foreign import kind DigitList
+data DigitList
 
 foreign import data DCons ∷ Digit -> DigitList -> DigitList
 
