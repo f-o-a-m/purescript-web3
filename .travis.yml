@@ -15,6 +15,9 @@ jobs:
     name: "Test all libs"
     script:
     - docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:v1.9.12
+    # wait for port (from https://stackoverflow.com/a/50055449/3574379)
+    - timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8545
+    # prevent "RpcError { code: -32000, message: "invalid transaction v, r, s values" }"
     - sleep 10
     - npm -s test
 
