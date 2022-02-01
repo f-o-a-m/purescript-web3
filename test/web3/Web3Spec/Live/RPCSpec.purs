@@ -141,8 +141,8 @@ spec provider =
           pure $ Tuple tx tx'
       tx `shouldEqual` tx'
 
-signatureToByteString :: Sig.Signature -> BS.ByteString
-signatureToByteString (Sig.Signature sig) = Hex.toByteString sig.r <> Hex.toByteString sig.s <> BS.singleton (mkQuotient sig.v)
+-- | signatureToByteString :: Sig.Signature -> BS.ByteString
+-- | signatureToByteString (Sig.Signature sig) = Hex.toByteString sig.r <> Hex.toByteString sig.s <> BS.singleton (mkQuotient sig.v)
 
 signatureFromByteString :: BS.ByteString -> Sig.Signature
 signatureFromByteString bs =
