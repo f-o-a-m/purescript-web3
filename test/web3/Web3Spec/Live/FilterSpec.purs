@@ -279,7 +279,8 @@ mkSetter { contractAddress, userAddress } provider logger _count = do
         ?~ contractAddress
   logger $ "Setting count to " <> show _count
   txHash <- assertWeb3 provider $ SimpleStorage.setCount txOptions { _count }
-  pollTransactionReceipt provider txHash mempty
+  _ <- pollTransactionReceipt provider txHash
+  pure unit
 
 mkUIntsGen ::
   forall m.

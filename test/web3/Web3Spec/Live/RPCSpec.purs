@@ -17,7 +17,7 @@ import Node.Buffer.Class (slice)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
-import Type.Quotient (mkQuotient, runQuotient)
+import Type.Quotient (runQuotient)
 import Web3Spec.Live.Utils (assertWeb3, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
@@ -133,7 +133,7 @@ spec provider =
                 # _value
                 ?~ fromMinorUnit one
           Api.eth_sendTransaction txOpts
-      TransactionReceipt txReceipt <- pollTransactionReceipt provider txHash pure
+      TransactionReceipt txReceipt <- pollTransactionReceipt provider txHash
       Tuple tx tx' <-
         assertWeb3 provider do
           tx <- Api.eth_getTransactionByBlockHashAndIndex txReceipt.blockHash zero

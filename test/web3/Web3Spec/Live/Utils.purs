@@ -88,21 +88,20 @@ assertStorageCall p f =
       Left err -> unsafeCrashWith $ "expected Right in `assertStorageCall`, got error" <> show err
 
 pollTransactionReceipt ::
-  forall m a.
+  forall m.
   MonadAff m =>
   Provider ->
   HexString ->
-  (TransactionReceipt -> Aff a) ->
-  m a
-pollTransactionReceipt provider txHash k =
+  m TransactionReceipt
+pollTransactionReceipt provider txHash =
   liftAff do
     eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
     case eRes of
       Left _ -> do
         delay (Milliseconds 2000.0)
-        pollTransactionReceipt provider txHash k
+        pollTransactionReceipt provider txHash
       Right receipt@(TransactionReceipt res) -> case res.status of
-        Succeeded -> k receipt
+        Succeeded -> pure receipt
         Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
 
 hangOutTillBlock ::
@@ -157,12 +156,11 @@ deployContract p logger contractName deploymentTx = do
         txOpts = defaultTestTxOptions # _from ?~ userAddress
       txHash <- deploymentTx txOpts
       pure txHash
-  logger $ "Submitted " <> contractName <> " deployment : " <> show txHash
-  let
-    k (TransactionReceipt rec) = case rec.contractAddress of
-      Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
-      Just addr -> pure addr
-  contractAddress <- pollTransactionReceipt p txHash k
+  logger $ "Submitted " <> contractName <> " deployment : " <> show { txHash, userAddress }
+  (TransactionReceipt rec) <- pollTransactionReceipt p txHash
+  contractAddress <- case rec.contractAddress of
+    Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
+    Just contractAddress -> pure contractAddress
   logger $ contractName <> " successfully deployed to " <> show contractAddress
   pure $ { contractAddress, userAddress }
 
