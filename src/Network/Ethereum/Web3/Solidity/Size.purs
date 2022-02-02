@@ -225,7 +225,7 @@ class KnownSize (d :: DigitList) where
   sizeVal :: DLProxy d -> Int
 
 instance knownSizeBase :: KnownDigit head => KnownSize (DOne head) where
-  sizeVal p = digitVal (DProxy :: DProxy head)
+  sizeVal _p = digitVal (DProxy :: DProxy head)
 
 instance knownSizeLoop ::
   ( DigitCount (rest)
