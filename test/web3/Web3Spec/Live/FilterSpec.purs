@@ -56,13 +56,13 @@ spec' ::
 spec' provider { logger } = do
   uIntV <- liftEffect $ EAVar.new 1
   let
-    gen = mkUIntsGen uIntV
+    uIntsGen = mkUIntsGen uIntV
   describe "Filters"
     $ parallel do
-        before (deployUniqueSimpleStorage provider logger gen)
+        before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Past, Past]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter, uIntsGen } = simpleStorageCfg
+                { simpleStorageAddress, setter } = simpleStorageCfg
 
                 filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
               values <- uIntsGen 3
@@ -83,16 +83,16 @@ spec' provider { logger } = do
               { foundValuesV } <- joinWeb3Fork fiber'
               foundValues <- liftAff $ AVar.take foundValuesV
               liftAff $ foundValues `shouldEqual` values
-        before (deployUniqueSimpleStorage provider logger gen)
+        before (deployUniqueSimpleStorage provider logger)
           $ do
               it "Case [Past, ∞] No Trail" \simpleStorageCfg -> do
-                fromPastToFutureTrailingBy simpleStorageCfg provider logger defaultFilterOpts
+                fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger defaultFilterOpts
               it "Case [Past, ∞] With Trail" \simpleStorageCfg -> do
-                fromPastToFutureTrailingBy simpleStorageCfg provider logger { trailBy: 3, windowSize: 2 }
-        before (deployUniqueSimpleStorage provider logger gen)
+                fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger { trailBy: 3, windowSize: 2 }
+        before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Future, ∞]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter, uIntsGen } = simpleStorageCfg
+                { simpleStorageAddress, setter } = simpleStorageCfg
               values <- uIntsGen 3
               logger $ "Searching for values " <> show values
               now <- assertWeb3 provider Api.eth_blockNumber
@@ -111,10 +111,10 @@ spec' provider { logger } = do
               { foundValuesV } <- joinWeb3Fork fiber
               foundValues <- liftAff $ AVar.take foundValuesV
               liftAff $ foundValues `shouldEqual` values
-        before (deployUniqueSimpleStorage provider logger gen)
+        before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Future, Future]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter, uIntsGen } = simpleStorageCfg
+                { simpleStorageAddress, setter } = simpleStorageCfg
               values <- uIntsGen 3
               logger $ "Searching for values " <> show values
               let
@@ -153,14 +153,15 @@ defaultFilterOpts = { trailBy: 0, windowSize: 0 }
 fromPastToFutureTrailingBy ::
   forall m.
   MonadAff m =>
+  (Int -> m (Array (UIntN S256))) ->
   SimpleStorageCfg m ->
   Provider ->
   Logger m ->
   FilterOpts ->
   m Unit
-fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
+fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger opts = do
   let
-    { simpleStorageAddress, setter, uIntsGen } = simpleStorageCfg
+    { simpleStorageAddress, setter } = simpleStorageCfg
 
     filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
   firstValues <- uIntsGen 7
@@ -242,7 +243,6 @@ monitorUntil provider logger filter p opts = do
 type SimpleStorageCfg m
   = { simpleStorageAddress :: Address
     , setter :: UIntN S256 -> m Unit
-    , uIntsGen :: Int -> m (Array (UIntN S256))
     }
 
 deployUniqueSimpleStorage ::
@@ -250,9 +250,8 @@ deployUniqueSimpleStorage ::
   MonadAff m =>
   Provider ->
   Logger m ->
-  (Int -> m (Array (UIntN S256))) ->
   m (SimpleStorageCfg m)
-deployUniqueSimpleStorage provider logger uIntsGen = do
+deployUniqueSimpleStorage provider logger = do
   contractConfig <-
     deployContract provider logger "SimpleStorage"
       $ \txOpts ->
@@ -260,7 +259,6 @@ deployUniqueSimpleStorage provider logger uIntsGen = do
   pure
     { simpleStorageAddress: contractConfig.contractAddress
     , setter: mkSetter contractConfig provider logger
-    , uIntsGen
     }
 
 mkSetter ::
