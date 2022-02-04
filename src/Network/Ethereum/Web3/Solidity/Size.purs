@@ -15,13 +15,11 @@ module Network.Ethereum.Web3.Solidity.Size
   , DCons
   , class KnownSize
   , sizeVal
-  , DLProxy(..)
   , class IntSize
   , class ByteSize
   , class Inc
   -- more low level staff
   , Digit
-  , DProxy(..)
   , DigitList
   , DTwo
   , class IncP
@@ -35,6 +33,7 @@ module Network.Ethereum.Web3.Solidity.Size
 import Prelude
 import Data.Int (pow)
 import Type.Data.Boolean (class If, BProxy, False, True)
+import Type.Proxy (Proxy(..))
 
 -- | `Digit` is a new `Kind` used to represent digits in base 10 counting system.
 -- | Alongside this kind we have types `D0`, `D1` ... `D9`, which have kind `Digit`.
@@ -161,30 +160,19 @@ infixr 6 type DTwo as :%
 
 infixr 6 type DCons as :&
 
--- | For types of kind `Type` there is already [`Type.Proxy`](https://pursuit.purescript.org/packages/purescript-proxy/2.1.0/docs/Type.Proxy).
--- | this is basicity the same thing but for types of kind `DigitList`.
--- | Documentation of `Type.Proxy` module has motivation for why would
--- | one need a Proxy for some type which we will not cover here.
-data DLProxy (d :: DigitList)
-  = DLProxy
-
--- | Same as `DLProxy` but for types of kind `Digit`
-data DProxy (d :: Digit)
-  = DProxy
-
 class DigitCount (d :: DigitList) where
   -- | Given proxy of a DigitList returns number of digits in the list.
-  digitCount :: DLProxy d -> Int
+  digitCount :: Proxy d -> Int
 
 instance countBase :: DigitCount (DOne a) where
   digitCount _ = 1
 
 instance countLoop :: DigitCount rest => DigitCount (a :& rest) where
-  digitCount _ = digitCount (DLProxy :: DLProxy rest) + 1
+  digitCount _ = digitCount (Proxy :: Proxy rest) + 1
 
 class KnownDigit (d :: Digit) where
   -- | Given proxy of a Digit returns a digit it represents
-  digitVal :: DProxy d -> Int
+  digitVal :: Proxy d -> Int
 
 instance sizeD0 :: KnownDigit D0 where
   digitVal _ = 0
@@ -220,12 +208,12 @@ class KnownSize (d :: DigitList) where
   -- | Given proxy of a Digit returns a number it represents
   -- |
   -- | ``` purescript
-  -- | 1995 == sizeVal (DLProxy :: DLProxy (D1 :& D9 :& D9 :% D5))
+  -- | 1995 == sizeVal (Proxy :: Proxy (D1 :& D9 :& D9 :% D5))
   -- | ```
-  sizeVal :: DLProxy d -> Int
+  sizeVal :: Proxy d -> Int
 
 instance knownSizeBase :: KnownDigit head => KnownSize (DOne head) where
-  sizeVal _p = digitVal (DProxy :: DProxy head)
+  sizeVal _ = digitVal (Proxy :: Proxy head)
 
 instance knownSizeLoop ::
   ( DigitCount (rest)
@@ -235,11 +223,11 @@ instance knownSizeLoop ::
   KnownSize (a :& rest) where
   sizeVal _ =
     let
-      currentPow = digitCount (DLProxy :: DLProxy rest)
+      currentPow = digitCount (Proxy :: Proxy rest)
 
-      head = (10 `pow` currentPow) * (digitVal (DProxy :: DProxy a))
+      head = (10 `pow` currentPow) * (digitVal (Proxy :: Proxy a))
     in
-      head + sizeVal (DLProxy :: DLProxy rest)
+      head + sizeVal (Proxy :: Proxy rest)
 
 class IncD (input :: Digit) (output :: Digit) (carry :: Boolean) | input -> output carry
 
@@ -275,7 +263,7 @@ class Inc (input :: DigitList) (output :: DigitList) | input -> output
 
 instance inc ::
   ( IncP a aInc carry
-  , If carry (DLProxy (D1 :& aInc)) (DLProxy aInc) (DLProxy out)
+  , If carry (Proxy (D1 :& aInc)) (Proxy aInc) (Proxy out)
   ) =>
   Inc a out
 
@@ -290,7 +278,7 @@ instance incPLoop1 ::
   ( IncP rest restIncOut restIncTrue
   , IncD a aInc aCarry
   , If restIncTrue (BProxy aCarry) (BProxy False) (BProxy carryOut)
-  , If restIncTrue (DLProxy (aInc :& restIncOut)) (DLProxy (a :& restIncOut)) (DLProxy out)
+  , If restIncTrue (Proxy (aInc :& restIncOut)) (Proxy (a :& restIncOut)) (Proxy out)
   ) =>
   IncP (a :& rest) out carryOut
 

@@ -62,14 +62,14 @@ spec' provider { logger } = do
         before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Past, Past]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter } = simpleStorageCfg
+                { simpleStorageAddress, simpleStorageSetter } = simpleStorageCfg
 
                 filter = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
               values <- uIntsGen 3
               logger $ "Searching for values " <> show values
               fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
               start <- assertWeb3 provider Api.eth_blockNumber
-              traverse_ setter values
+              traverse_ simpleStorageSetter values
               { endingBlockV } <- joinWeb3Fork fiber
               end <- liftAff $ AVar.take endingBlockV
               let
@@ -92,7 +92,7 @@ spec' provider { logger } = do
         before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Future, ∞]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter } = simpleStorageCfg
+                { simpleStorageAddress, simpleStorageSetter } = simpleStorageCfg
               values <- uIntsGen 3
               logger $ "Searching for values " <> show values
               now <- assertWeb3 provider Api.eth_blockNumber
@@ -107,14 +107,14 @@ spec' provider { logger } = do
                     .~ Latest
               fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
               hangOutTillBlock provider logger later
-              traverse_ setter values
+              traverse_ simpleStorageSetter values
               { foundValuesV } <- joinWeb3Fork fiber
               foundValues <- liftAff $ AVar.take foundValuesV
               liftAff $ foundValues `shouldEqual` values
         before (deployUniqueSimpleStorage provider logger)
           $ it "Case [Future, Future]" \simpleStorageCfg -> do
               let
-                { simpleStorageAddress, setter } = simpleStorageCfg
+                { simpleStorageAddress, simpleStorageSetter } = simpleStorageCfg
               values <- uIntsGen 3
               logger $ "Searching for values " <> show values
               let
@@ -134,7 +134,7 @@ spec' provider { logger } = do
                     .~ BN latest
               fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
               hangOutTillBlock provider logger later
-              traverse_ setter values
+              traverse_ simpleStorageSetter values
               { foundValuesV } <- joinWeb3Fork fiber
               foundValues <- liftAff $ AVar.take foundValuesV
               liftAff $ foundValues `shouldEqual` values
@@ -161,7 +161,7 @@ fromPastToFutureTrailingBy ::
   m Unit
 fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger opts = do
   let
-    { simpleStorageAddress, setter } = simpleStorageCfg
+    { simpleStorageAddress, simpleStorageSetter } = simpleStorageCfg
 
     filter1 = eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
   firstValues <- uIntsGen 7
@@ -171,7 +171,7 @@ fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger opts = do
   logger $ "Searching for values " <> show allValues
   fiber1 <- monitorUntil provider logger filter1 (_ == aMax firstValues) defaultFilterOpts
   start <- assertWeb3 provider Api.eth_blockNumber
-  traverse_ setter firstValues
+  traverse_ simpleStorageSetter firstValues
   _ <- joinWeb3Fork fiber1
   let
     filter2 =
@@ -181,7 +181,7 @@ fromPastToFutureTrailingBy uIntsGen simpleStorageCfg provider logger opts = do
         # _toBlock
         .~ Latest
   fiber2 <- monitorUntil provider logger filter2 (_ == aMax secondValues) opts
-  traverse_ setter secondValues
+  traverse_ simpleStorageSetter secondValues
   { foundValuesV, reachedTargetTrailByV } <- joinWeb3Fork fiber2
   foundValues <- liftAff $ AVar.take foundValuesV
   liftAff $ foundValues `shouldEqual` allValues
@@ -207,7 +207,7 @@ monitorUntil ::
             }
         )
     )
-monitorUntil provider logger filter p opts = do
+monitorUntil provider logger filter predicate filterOpts = do
   endingBlockV <- liftAff AVar.empty
   foundValuesV <- liftAff $ AVar.new []
   reachedTargetTrailByV <- liftAff $ AVar.new false
@@ -219,17 +219,17 @@ monitorUntil provider logger filter p opts = do
     handler (SimpleStorage.CountSet { _count }) = do
       Change c <- ask
       chainHead <- lift Api.eth_blockNumber
-      when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed opts.trailBy)
+      when (un BlockNumber chainHead - un BlockNumber c.blockNumber < embed filterOpts.trailBy)
         $ lift
         $ throwWeb3
         $ error "Exceded max trailBy"
-      when (un BlockNumber chainHead - un BlockNumber c.blockNumber == embed opts.trailBy) do
+      when (un BlockNumber chainHead - un BlockNumber c.blockNumber == embed filterOpts.trailBy) do
         _ <- liftAff $ AVar.take reachedTargetTrailByV
         liftAff $ AVar.put true reachedTargetTrailByV
       foundSoFar <- liftAff $ AVar.take foundValuesV
       liftAff $ AVar.put (foundSoFar `snoc` _count) foundValuesV
       let
-        shouldTerminate = p _count
+        shouldTerminate = predicate _count
       if shouldTerminate then do
         liftAff $ AVar.put c.blockNumber endingBlockV
         pure TerminateEvent
@@ -237,12 +237,12 @@ monitorUntil provider logger filter p opts = do
         pure ContinueEvent
   liftAff $ forkWeb3 provider
     $ do
-        _ <- event' { ev: filter } { ev: handler } opts
+        _ <- event' { ev: filter } { ev: handler } filterOpts
         pure { endingBlockV, foundValuesV, reachedTargetTrailByV }
 
 type SimpleStorageCfg m
   = { simpleStorageAddress :: Address
-    , setter :: UIntN S256 -> m Unit
+    , simpleStorageSetter :: UIntN S256 -> m Unit
     }
 
 deployUniqueSimpleStorage ::
@@ -258,7 +258,7 @@ deployUniqueSimpleStorage provider logger = do
           SimpleStorage.constructor txOpts SimpleStorageCode.deployBytecode
   pure
     { simpleStorageAddress: contractConfig.contractAddress
-    , setter: mkSetter contractConfig provider logger
+    , simpleStorageSetter: mkSetter contractConfig provider logger
     }
 
 mkSetter ::

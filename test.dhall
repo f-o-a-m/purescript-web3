@@ -34,5 +34,6 @@ in    conf
             , "avar"
             , "console"
             , "identity"
+            , "node-process"
             ]
       }

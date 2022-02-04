@@ -121,364 +121,365 @@ module Network.Ethereum.Web3.Solidity.Sizes
   , s256
   ) where
 
-import Network.Ethereum.Web3.Solidity.Size (type (:%), type (:&), D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, DLProxy(..), DOne)
+import Network.Ethereum.Web3.Solidity.Size (type (:%), type (:&), D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, DOne)
+import Type.Proxy (Proxy(..))
 
 type S1
   = DOne D1
 
-s1 :: DLProxy S1
-s1 = DLProxy
+s1 :: Proxy S1
+s1 = Proxy
 
 type S2
   = DOne D2
 
-s2 :: DLProxy S2
-s2 = DLProxy
+s2 :: Proxy S2
+s2 = Proxy
 
 type S3
   = DOne D3
 
-s3 :: DLProxy S3
-s3 = DLProxy
+s3 :: Proxy S3
+s3 = Proxy
 
 type S4
   = DOne D4
 
-s4 :: DLProxy S4
-s4 = DLProxy
+s4 :: Proxy S4
+s4 = Proxy
 
 type S5
   = DOne D5
 
-s5 :: DLProxy S5
-s5 = DLProxy
+s5 :: Proxy S5
+s5 = Proxy
 
 type S6
   = DOne D6
 
-s6 :: DLProxy S6
-s6 = DLProxy
+s6 :: Proxy S6
+s6 = Proxy
 
 type S7
   = DOne D7
 
-s7 :: DLProxy S7
-s7 = DLProxy
+s7 :: Proxy S7
+s7 = Proxy
 
 type S8
   = DOne D8
 
-s8 :: DLProxy S8
-s8 = DLProxy
+s8 :: Proxy S8
+s8 = Proxy
 
 type S9
   = DOne D9
 
-s9 :: DLProxy S9
-s9 = DLProxy
+s9 :: Proxy S9
+s9 = Proxy
 
 type S10
   = D1 :% D0
 
-s10 :: DLProxy S10
-s10 = DLProxy
+s10 :: Proxy S10
+s10 = Proxy
 
 type S11
   = D1 :% D1
 
-s11 :: DLProxy S11
-s11 = DLProxy
+s11 :: Proxy S11
+s11 = Proxy
 
 type S12
   = D1 :% D2
 
-s12 :: DLProxy S12
-s12 = DLProxy
+s12 :: Proxy S12
+s12 = Proxy
 
 type S13
   = D1 :% D3
 
-s13 :: DLProxy S13
-s13 = DLProxy
+s13 :: Proxy S13
+s13 = Proxy
 
 type S14
   = D1 :% D4
 
-s14 :: DLProxy S14
-s14 = DLProxy
+s14 :: Proxy S14
+s14 = Proxy
 
 type S15
   = D1 :% D5
 
-s15 :: DLProxy S15
-s15 = DLProxy
+s15 :: Proxy S15
+s15 = Proxy
 
 type S16
   = D1 :% D6
 
-s16 :: DLProxy S16
-s16 = DLProxy
+s16 :: Proxy S16
+s16 = Proxy
 
 type S17
   = D1 :% D7
 
-s17 :: DLProxy S17
-s17 = DLProxy
+s17 :: Proxy S17
+s17 = Proxy
 
 type S18
   = D1 :% D8
 
-s18 :: DLProxy S18
-s18 = DLProxy
+s18 :: Proxy S18
+s18 = Proxy
 
 type S19
   = D1 :% D9
 
-s19 :: DLProxy S19
-s19 = DLProxy
+s19 :: Proxy S19
+s19 = Proxy
 
 type S20
   = D2 :% D0
 
-s20 :: DLProxy S20
-s20 = DLProxy
+s20 :: Proxy S20
+s20 = Proxy
 
 type S21
   = D2 :% D1
 
-s21 :: DLProxy S21
-s21 = DLProxy
+s21 :: Proxy S21
+s21 = Proxy
 
 type S22
   = D2 :% D2
 
-s22 :: DLProxy S22
-s22 = DLProxy
+s22 :: Proxy S22
+s22 = Proxy
 
 type S23
   = D2 :% D3
 
-s23 :: DLProxy S23
-s23 = DLProxy
+s23 :: Proxy S23
+s23 = Proxy
 
 type S24
   = D2 :% D4
 
-s24 :: DLProxy S24
-s24 = DLProxy
+s24 :: Proxy S24
+s24 = Proxy
 
 type S25
   = D2 :% D5
 
-s25 :: DLProxy S25
-s25 = DLProxy
+s25 :: Proxy S25
+s25 = Proxy
 
 type S26
   = D2 :% D6
 
-s26 :: DLProxy S26
-s26 = DLProxy
+s26 :: Proxy S26
+s26 = Proxy
 
 type S27
   = D2 :% D7
 
-s27 :: DLProxy S27
-s27 = DLProxy
+s27 :: Proxy S27
+s27 = Proxy
 
 type S28
   = D2 :% D8
 
-s28 :: DLProxy S28
-s28 = DLProxy
+s28 :: Proxy S28
+s28 = Proxy
 
 type S29
   = D2 :% D9
 
-s29 :: DLProxy S29
-s29 = DLProxy
+s29 :: Proxy S29
+s29 = Proxy
 
 type S30
   = D3 :% D0
 
-s30 :: DLProxy S30
-s30 = DLProxy
+s30 :: Proxy S30
+s30 = Proxy
 
 type S31
   = D3 :% D1
 
-s31 :: DLProxy S31
-s31 = DLProxy
+s31 :: Proxy S31
+s31 = Proxy
 
 type S32
   = D3 :% D2
 
-s32 :: DLProxy S32
-s32 = DLProxy
+s32 :: Proxy S32
+s32 = Proxy
 
 type S40
   = D4 :% D0
 
-s40 :: DLProxy S40
-s40 = DLProxy
+s40 :: Proxy S40
+s40 = Proxy
 
 type S48
   = D4 :% D8
 
-s48 :: DLProxy S48
-s48 = DLProxy
+s48 :: Proxy S48
+s48 = Proxy
 
 type S56
   = D5 :% D6
 
-s56 :: DLProxy S56
-s56 = DLProxy
+s56 :: Proxy S56
+s56 = Proxy
 
 type S64
   = D6 :% D4
 
-s64 :: DLProxy S64
-s64 = DLProxy
+s64 :: Proxy S64
+s64 = Proxy
 
 type S72
   = D7 :% D2
 
-s72 :: DLProxy S72
-s72 = DLProxy
+s72 :: Proxy S72
+s72 = Proxy
 
 type S80
   = D8 :% D0
 
-s80 :: DLProxy S80
-s80 = DLProxy
+s80 :: Proxy S80
+s80 = Proxy
 
 type S88
   = D8 :% D8
 
-s88 :: DLProxy S88
-s88 = DLProxy
+s88 :: Proxy S88
+s88 = Proxy
 
 type S96
   = D9 :% D6
 
-s96 :: DLProxy S96
-s96 = DLProxy
+s96 :: Proxy S96
+s96 = Proxy
 
 type S104
   = D1 :& D0 :% D4
 
-s104 :: DLProxy S104
-s104 = DLProxy
+s104 :: Proxy S104
+s104 = Proxy
 
 type S112
   = D1 :& D1 :% D2
 
-s112 :: DLProxy S112
-s112 = DLProxy
+s112 :: Proxy S112
+s112 = Proxy
 
 type S120
   = D1 :& D2 :% D0
 
-s120 :: DLProxy S120
-s120 = DLProxy
+s120 :: Proxy S120
+s120 = Proxy
 
 type S128
   = D1 :& D2 :% D8
 
-s128 :: DLProxy S128
-s128 = DLProxy
+s128 :: Proxy S128
+s128 = Proxy
 
 type S136
   = D1 :& D3 :% D6
 
-s136 :: DLProxy S136
-s136 = DLProxy
+s136 :: Proxy S136
+s136 = Proxy
 
 type S144
   = D1 :& D4 :% D4
 
-s144 :: DLProxy S144
-s144 = DLProxy
+s144 :: Proxy S144
+s144 = Proxy
 
 type S152
   = D1 :& D5 :% D2
 
-s152 :: DLProxy S152
-s152 = DLProxy
+s152 :: Proxy S152
+s152 = Proxy
 
 type S160
   = D1 :& D6 :% D0
 
-s160 :: DLProxy S160
-s160 = DLProxy
+s160 :: Proxy S160
+s160 = Proxy
 
 type S168
   = D1 :& D6 :% D8
 
-s168 :: DLProxy S168
-s168 = DLProxy
+s168 :: Proxy S168
+s168 = Proxy
 
 type S176
   = D1 :& D7 :% D6
 
-s176 :: DLProxy S176
-s176 = DLProxy
+s176 :: Proxy S176
+s176 = Proxy
 
 type S184
   = D1 :& D8 :% D4
 
-s184 :: DLProxy S184
-s184 = DLProxy
+s184 :: Proxy S184
+s184 = Proxy
 
 type S192
   = D1 :& D9 :% D2
 
-s192 :: DLProxy S192
-s192 = DLProxy
+s192 :: Proxy S192
+s192 = Proxy
 
 type S200
   = D2 :& D0 :% D0
 
-s200 :: DLProxy S200
-s200 = DLProxy
+s200 :: Proxy S200
+s200 = Proxy
 
 type S208
   = D2 :& D0 :% D8
 
-s208 :: DLProxy S208
-s208 = DLProxy
+s208 :: Proxy S208
+s208 = Proxy
 
 type S216
   = D2 :& D1 :% D6
 
-s216 :: DLProxy S216
-s216 = DLProxy
+s216 :: Proxy S216
+s216 = Proxy
 
 type S224
   = D2 :& D2 :% D4
 
-s224 :: DLProxy S224
-s224 = DLProxy
+s224 :: Proxy S224
+s224 = Proxy
 
 type S232
   = D2 :& D3 :% D2
 
-s232 :: DLProxy S232
-s232 = DLProxy
+s232 :: Proxy S232
+s232 = Proxy
 
 type S240
   = D2 :& D4 :% D0
 
-s240 :: DLProxy S240
-s240 = DLProxy
+s240 :: Proxy S240
+s240 = Proxy
 
 type S248
   = D2 :& D4 :% D8
 
-s248 :: DLProxy S248
-s248 = DLProxy
+s248 :: Proxy S248
+s248 = Proxy
 
 type S256
   = D2 :& D5 :% D6
 
-s256 :: DLProxy S256
-s256 = DLProxy
+s256 :: Proxy S256
+s256 = Proxy

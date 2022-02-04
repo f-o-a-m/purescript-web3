@@ -1,13 +1,17 @@
 module Test.Main where
 
 import Prelude
+
+import Control.Monad.Error.Class (throwError)
 import Data.Identity (Identity(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (un)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Exception (error)
 import Network.Ethereum.Web3.Types.Provider (httpProvider)
+import Node.Process as Node.Process
 import Test.Spec (Spec, SpecT, parallel, mapSpecTree)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -15,23 +19,24 @@ import Web3Spec.Encoding.ContainersSpec as EncodingContainersSpec
 import Web3Spec.Encoding.DataSpec as EncodingDataSpec
 import Web3Spec.Encoding.GenericSpec as EncodingGenericSpec
 import Web3Spec.Encoding.SimpleSpec as EncodingSimpleSpec
-import Web3Spec.Live.SimpleStorageSpec as SimpleStorageSpec
 import Web3Spec.Live.ComplexStorageSpec as ComplexStorageSpec
-import Web3Spec.Live.MockERC20Spec as MockERC20Spec
-import Web3Spec.Live.PayableTestSpec as PayableTestSpec
-import Web3Spec.Live.SimpleErrorTestSpec as SimpleErrorTestSpec
-import Web3Spec.Live.MultifilterSpec as MultifilterSpec
-import Web3Spec.Live.RPCSpec as RPCSpec
 import Web3Spec.Live.FilterSpec as FilterSpec
+import Web3Spec.Live.MockERC20Spec as MockERC20Spec
+import Web3Spec.Live.MultifilterSpec as MultifilterSpec
+import Web3Spec.Live.PayableTestSpec as PayableTestSpec
+import Web3Spec.Live.RPCSpec as RPCSpec
+import Web3Spec.Live.SimpleErrorTestSpec as SimpleErrorTestSpec
+import Web3Spec.Live.SimpleStorageSpec as SimpleStorageSpec
 import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
 import Web3Spec.Types.VectorSpec as VectorSpec
 
 main :: Effect Unit
-main =
+main = do
+  providerUrl <- Node.Process.lookupEnv "PROVIDER_URL" >>= maybe (throwError $ error "PROVIDER_URL is empty") pure
   launchAff_ do
     let
       cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
-    p <- liftEffect $ httpProvider "http://localhost:8545"
+    p <- liftEffect $ httpProvider providerUrl
     join
       $ runSpecT cfg [ consoleReporter ] do
           hoist do

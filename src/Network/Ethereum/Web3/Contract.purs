@@ -118,7 +118,7 @@ _call ::
   Web3 (Either CallError b)
 _call txOptions cursor dat = do
   let
-    sig = reflectSymbol $ (Proxy :: Proxy selector)
+    sig = reflectSymbol (Proxy :: Proxy selector)
 
     sel = toSelector sig
 

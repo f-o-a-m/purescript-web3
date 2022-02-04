@@ -6,7 +6,6 @@ module Network.Ethereum.Web3.Types.TokenUnit
   , divider
   , TokenK
   , TokenUnitK
-  , ProxyTU(..)
   , Value
   , convert
   , formatValue
@@ -30,6 +29,7 @@ import Data.String (joinWith)
 import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
 import Partial.Unsafe (unsafePartial)
+import Type.Proxy (Proxy(..))
 
 data TokenK
 
@@ -38,9 +38,6 @@ data TokenUnitK
 -- | A value of some token in specific denomination
 newtype Value (a :: TokenUnitK)
   = Value BigNumber
-
-data ProxyTU (a :: TokenUnitK)
-  = ProxyTU
 
 derive newtype instance eqValue :: Eq (Value a)
 
@@ -84,14 +81,14 @@ convert :: forall a b. TokenUnit a => TokenUnit b => a -> b
 convert = fromMinorUnit <<< toMinorUnit
 
 class TokenUnitSpec (a :: TokenUnitK) where
-  divider :: ProxyTU a -> BigNumber
+  divider :: Proxy a -> BigNumber
 
 formatValue :: forall a. TokenUnitSpec a => Value a -> String
-formatValue v = show $ toMinorUnit v `divide` divider (ProxyTU :: ProxyTU a)
+formatValue v = show $ toMinorUnit v `divide` divider (Proxy :: Proxy a)
 
 -- | Convert a big number into value, first using `floor` function to take the integer part
 mkValue :: forall a. TokenUnitSpec a => BigNumber -> Value a
-mkValue = Value <<< floorBigNumber <<< (mul (divider (ProxyTU :: ProxyTU a)))
+mkValue = Value <<< floorBigNumber <<< (mul (divider (Proxy :: Proxy a)))
 
 foreign import data NoPay :: TokenK -> TokenUnitK
 

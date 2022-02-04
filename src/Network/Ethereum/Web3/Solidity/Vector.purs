@@ -15,7 +15,8 @@ import Data.Foldable (class Foldable)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (class Traversable)
 import Data.Unfoldable (class Unfoldable, class Unfoldable1)
-import Network.Ethereum.Web3.Solidity.Size (class Inc, class KnownSize, D0, DLProxy(DLProxy), DOne, sizeVal, DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class Inc, class KnownSize, D0, DOne, sizeVal, DigitList)
+import Type.Proxy (Proxy(..))
 
 -- | Represents a statically sized vector of length `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
@@ -56,9 +57,9 @@ vectorLength (Vector as) = A.length as
 
 -- | Attempt to coerce an array into a statically sized array.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-toVector :: forall a n. KnownSize n => DLProxy n -> Array a -> Maybe (Vector n a)
+toVector :: forall a n. KnownSize n => Proxy n -> Array a -> Maybe (Vector n a)
 toVector _ as =
-  if sizeVal (DLProxy :: DLProxy n) /= A.length as then
+  if sizeVal (Proxy :: Proxy n) /= A.length as then
     Nothing
   else
     Just (Vector as)

@@ -19,7 +19,7 @@ jobs:
     - timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8545
     # prevent "RpcError { code: -32000, message: "invalid transaction v, r, s values" }"
     - sleep 10
-    - npm -s test
+    - PROVIDER_URL="http://localhost:8545" npm -s test
 
   - stage: So fresh and so clean-clean (Purescript)
     name: "Ensure that code matches style guidleines for PRs to master (Purescript)"
