@@ -32,18 +32,18 @@ Suppose we have the following solidity smart contract:
 
 ```solidity
 contract TupleStorage {
-    
+
     uint x;
     uint y;
-    
+
     event TupleSet(uint newX, uint newY);
-    
+
     function setTuple(uint _x, uint _y) public {
         x = _x;
         y = _y;
         TupleSet(_x, _y);
     }
-    
+
 }
 ```
 
@@ -51,9 +51,9 @@ If we used [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web
 
 ```purescript
 setTuple :: forall e.
-            TransactionOptions NoPay 
-         -> {_x :: UIntN (D2 :& D5 :& DOne D6), _y :: UIntN (D2 :& D5 :& DOne D6)} 
-         -> Web3 HexString 
+            TransactionOptions NoPay
+         -> {_x :: UIntN (D2 :& D5 :& DOne D6), _y :: UIntN (D2 :& D5 :& DOne D6)}
+         -> Web3 HexString
 ```
 
 It's pretty clear what this function is doing, but let's look at the `TransactionOptions`. This record keeps track of, for example, who is the transaction from, what contract address is it going to, is there ether being sent, etc. In this case, the function is not "payable", so this is indicated in the type of the `TransactionOptions`. It is set using lenses like:
@@ -68,7 +68,7 @@ Now for the `TupleSet` event. In order to start an event watcher, we need to est
 
 ```purescript
 tupleFilter :: Filter TupleSet
-tupleFilter = eventFilter (Proxy :: Proxy TupleSet) tupleStorageAddress 
+tupleFilter = eventFilter (Proxy :: Proxy TupleSet) tupleStorageAddress
            # _fromBlock .~ BN 100
 ```
 
@@ -76,7 +76,7 @@ We also need to pass a callback to the event watcher that performs some action a
 
 ```purescript
 event tupleFilter $ \(TupleSet {newX,newY} -> do
-  liftAff <<< log $ "Received New Tuple : " <> show (Tuple newX newY) 
+  liftAff <<< log $ "Received New Tuple : " <> show (Tuple newX newY)
   if newX == newY
     then pure TerminateEvent
     else do
@@ -86,7 +86,17 @@ event tupleFilter $ \(TupleSet {newX,newY} -> do
 
 For more examples, check out the foam [kitty monitor](https://github.com/f-o-a-m/purescript-kitty-monitor), the [example](https://github.com/f-o-a-m/purescript-web3-example) project using thermite, or the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests) repo.
 
+## How to run tests
+
+```sh
+(docker stop $(docker ps -a -q) || true) && (docker rm $(docker ps -a -q) || true) && \
+  docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:v1.9.12 && timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8545 && sleep 6 && \
+  rm -frd output .spago node_modules && spago --config test.dhall install && npm install --only=prod && \
+  (cd test/chanterelle/ && npm run build) && \
+  PROVIDER_URL=http://localhost:8545 npm -s test
+```
+
 ## Resources
- 
+
  - [web3 RPC spec](https://github.com/ethereum/wiki/wiki/JSON-RPC)
  - [solidity documentation](http://solidity.readthedocs.io/en/develop/index.html)
