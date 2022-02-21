@@ -1,6 +1,8 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
+
+import Control.Monad.State (get, put)
 import Data.Array (length, fold) as A
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
@@ -10,8 +12,8 @@ import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
 import Data.Unfoldable (replicateA)
-import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, hexLength)
+import Network.Ethereum.Core.BigNumber (negativeBigNumberToTwosComplement, unsafeToInt)
+import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, hexLength, toHexString)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
@@ -19,10 +21,12 @@ import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser (ParseError, Parser, ParseState(..), ParserT, fail, runParser)
-import Control.Monad.State (get, put)
+import Text.Parsing.Parser (ParseError, ParseState(..), Parser, ParserT, fail, position, runParser)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
+import Text.Parsing.Parser.Token (hexDigit)
+import Data.String.NonEmpty (NonEmptyString)
+
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
@@ -144,6 +148,9 @@ instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged s a) where
 --------------------------------------------------------------------------------
 -- | Special Builders and Parsers
 --------------------------------------------------------------------------------
+
+-- TODO(srghma): why ethereum developers decided to padRight?
+-- https://ethereum.stackexchange.com/questions/121971/why-bytesn-elements-padded-to-the-right-but-all-other-elements-e-g-uintn ?
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
 bytesBuilder = padRight <<< unsafePartial fromJust <<< mkHexString <<< flip BS.toString BS.Hex
@@ -153,10 +160,14 @@ bytesDecode :: String -> ByteString
 bytesDecode s = unsafePartial $ fromJust $ flip BS.fromString BS.Hex s
 
 -- | Encode something that is essentaially a signed integer.
+
+-- int256HexBuilder 1  == 0000000000000000000000000000000000000000000000000000000000000001
+-- int256HexBuilder -1 == ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- int256HexBuilder -2 == fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
 int256HexBuilder :: BigNumber -> HexString
 int256HexBuilder x =
   if x < zero then
-    int256HexBuilder <<< toTwosComplement $ x
+    toHexString <<< negativeBigNumberToTwosComplement $ x -- not using `int256HexBuild` instead of `toHexString`, b.c. `toTwosComplement` doesn't return BigNumber with `-` prepended
   else
     padLeftSigned <<< toSignedHexString $ x
 
