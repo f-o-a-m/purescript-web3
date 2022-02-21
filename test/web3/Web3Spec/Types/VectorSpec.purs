@@ -17,7 +17,7 @@ spec =
 unsafeVector :: forall a. Vector a Int
 unsafeVector = unsafeCoerce []
 
-vec098 :: Vector (D0 :& D9 :% D8) Int
+vec098 :: Vector (D0 :& D9 :% D8) Int -- actually not possible, b.c. `string[0]` would throw `TypeError: Array with zero length specified`
 vec098 = unsafeVector
 
 vec990 :: Vector (D9 :& D9 :% D0) Int
@@ -37,7 +37,7 @@ vec2 = unsafeVector
 
 test1 :: Vector (D9 :& D9 :% D1) Int
 -- test1 :: Vector _ Int
-test1 = 1 :< vec990
+test1 = 1 :< vec990 -- same as to append `1` to array with 990 elements `[x, y, ...]` - you will get array `[1, x, y, ...]`
 
 test2 :: Vector (D1 :& D0 :& D0 :% D0) Int
 -- test2 :: Vector _ Int
@@ -82,7 +82,7 @@ test11 l = 2 :< l
 -- we can write uncons like this, but when it's used see `test12` if you
 -- remove type annotation code will fail to compile. if inc and all
 -- classes which it's using had reverse functional dependencies
--- then compiler could potentially infer type, but we don't have 
+-- then compiler could potentially infer type, but we don't have
 -- such implementation for `Inc` and even with such version [1]
 -- compiler still gives horrible error
 -- https://gist.github.com/safareli/e1d3805a48a0a772d72ed895945c3607#file-digitswithsupperclass-purs-L38-L103

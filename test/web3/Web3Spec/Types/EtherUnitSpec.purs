@@ -15,14 +15,14 @@ spec =
     it "can encode convert from a higher denomination to lower"
       $ do
           let
-            inEth = convert (mkValue one :: Value Ether)
+            eth = mkValue one :: Value Ether -- the internal representation is "1000000000000000000"
 
-            inWei = (mkValue $ (embed 10) `pow` 18) :: Value Wei
-          inEth `shouldEqual` inWei
+            wei = mkValue $ embed 10 `pow` 18 :: Value Wei -- the internal representation is "1000000000000000000"
+          convert eth `shouldEqual` wei -- `convert` doesn't do any computation, it just changes types
           let
-            shannon = mkValue (embed 10 `pow` 3) :: Value Shannon
-
             szabo = mkValue one :: Value Szabo
+
+            shannon = mkValue $ embed 10 `pow` 3 :: Value Shannon
           convert shannon `shouldEqual` szabo
     it "can perform arithmetic" do
       let

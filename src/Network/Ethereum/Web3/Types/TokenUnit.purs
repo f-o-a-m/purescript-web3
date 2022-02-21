@@ -31,9 +31,9 @@ import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, pars
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
-data TokenK
+data TokenK -- token kind, e.g. ETHER
 
-data TokenUnitK
+data TokenUnitK -- token unit kind
 
 -- | A value of some token in specific denomination
 newtype Value (a :: TokenUnitK)
@@ -58,7 +58,7 @@ instance semigroupTokenUnitSpec :: TokenUnitSpec a => Semigroup (Value a) where
 instance monoidTokenUnitSpec :: TokenUnitSpec a => Monoid (Value a) where
   mempty = mkValue zero
 
-instance modukeTokenUnitSpec :: TokenUnitSpec a => LeftModule (Value a) Int where
+instance moduleTokenUnitSpec :: TokenUnitSpec a => LeftModule (Value a) Int where
   mzeroL = mkValue zero
   maddL (Value a) (Value b) = Value $ a + b
   msubL (Value a) (Value b) = Value $ a - b
@@ -135,7 +135,7 @@ foreign import data MinorUnitE21 :: TokenK -> TokenUnitK
 instance unitSpecMinorUnitE21 :: TokenUnitSpec (MinorUnitE21 t) where
   divider = createDivider 21
 
-createDivider :: forall a. Int -> a -> BigNumber
+createDivider :: forall proxya. Int -> proxya -> BigNumber
 createDivider denomination _ = unsafeConvert $ "1" <> joinWith "" (replicate denomination "0")
   where
   unsafeConvert :: String -> BigNumber

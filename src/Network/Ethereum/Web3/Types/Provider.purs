@@ -1,3 +1,4 @@
+-- TODO(srghma): This should not be in Types, since Network.Ethereum.Web3.Types module doesnt export it
 module Network.Ethereum.Web3.Types.Provider where
 
 import Effect (Effect)
