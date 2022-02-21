@@ -12,7 +12,7 @@ import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
 import Data.Unfoldable (replicateA)
-import Network.Ethereum.Core.BigNumber (negativeBigNumberToTwosComplement, unsafeToInt)
+import Network.Ethereum.Core.BigNumber (bigNumberToTwosComplementInt256, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, hexLength, toHexString)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
@@ -165,19 +165,11 @@ bytesDecode s = unsafePartial $ fromJust $ flip BS.fromString BS.Hex s
 -- int256HexBuilder -1 == ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- int256HexBuilder -2 == fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
 int256HexBuilder :: BigNumber -> HexString
-int256HexBuilder x =
-  if x < zero then
-    toHexString <<< negativeBigNumberToTwosComplement $ x -- not using `int256HexBuild` instead of `toHexString`, b.c. `toTwosComplement` doesn't return BigNumber with `-` prepended
-  else
-    padLeftSigned <<< toSignedHexString $ x
+int256HexBuilder = padLeft <<< toHexString <<< bigNumberToTwosComplementInt256 -- NOTE: `bigNumberToTwosComplementInt256` always returns BigNumber without minus (`-`) prepended
 
 -- | Encode something that is essentially an unsigned integer.
 uInt256HexBuilder :: BigNumber -> HexString
-uInt256HexBuilder x =
-  let
-    Signed _ x' = toSignedHexString x
-  in
-    padLeft x'
+uInt256HexBuilder = padLeft <<< toHexString
 
 -- | Parse as a signed `BigNumber`
 int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber

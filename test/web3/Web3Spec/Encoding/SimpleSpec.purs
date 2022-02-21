@@ -1,20 +1,22 @@
 module Web3Spec.Encoding.SimpleSpec (spec) where
 
 import Prelude
-import Effect.Aff (Aff, error, throwError)
+
 import Control.Monad.Except (runExcept)
 import Data.Array (replicate)
 import Data.ByteString as BS
 import Data.Either (Either(Right), either)
 import Data.Foldable (intercalate)
-import Foreign (ForeignError)
-import Foreign.Generic (decodeJSON, defaultOptions)
+import Data.Int (decimal) as Int
 import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Traversable (sequence)
-import Network.Ethereum.Core.BigNumber (pow)
+import Effect.Aff (Aff, error, throwError)
+import Foreign (ForeignError)
+import Foreign.Generic (decodeJSON)
+import Network.Ethereum.Core.BigNumber (parseBigNumber, pow)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes (fromByteString)
 import Network.Ethereum.Web3.Solidity.Int (intNFromBigNumber)
@@ -24,6 +26,7 @@ import Network.Ethereum.Web3.Types (Block, FalseOrObject(..), HexString, BigNumb
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
+import Web3Spec.Live.Utils (mkHexString')
 
 spec :: Spec Unit
 spec =
@@ -232,9 +235,31 @@ intNTests =
 
         expected = unsafePartial fromJust <<< mkHexString $ "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       roundTrip given expected
-    it "can encode larger uint256" do
+    it "can encode int256" do
+      let
+        bigNumberRoundTripToHex bigNumber hexString =
+          let
+            mgiven = intNFromBigNumber s256 bigNumber
+            given = unsafePartial $ fromJust mgiven
+            expected = mkHexString' hexString
+          in roundTrip given expected
+      bigNumberRoundTripToHex (embed 1) "0000000000000000000000000000000000000000000000000000000000000001"
+      bigNumberRoundTripToHex (embed 2) "0000000000000000000000000000000000000000000000000000000000000002"
+      bigNumberRoundTripToHex (embed $ negate 1) "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      bigNumberRoundTripToHex (embed $ negate 2) "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"
+      bigNumberRoundTripToHex (unsafePartial $ fromJust $ parseBigNumber Int.decimal "57896044618658097711785492504343953926634992332820282019728792003956564819967") "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      bigNumberRoundTripToHex (unsafePartial $ fromJust $ parseBigNumber Int.decimal "-57896044618658097711785492504343953926634992332820282019728792003956564819968") "8000000000000000000000000000000000000000000000000000000000000000"
+    it "can encode larger int256" do
       let
         mgiven = intNFromBigNumber s256 $ ((embed $ 2) `pow` 255) - one
+
+        given = unsafePartial $ fromJust mgiven
+
+        expected = unsafePartial fromJust <<< mkHexString $ "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      roundTrip given expected
+    it "can encode larger uint256" do
+      let
+        mgiven = uIntNFromBigNumber s256 $ ((embed $ 2) `pow` 255) - one
 
         given = unsafePartial $ fromJust mgiven
 

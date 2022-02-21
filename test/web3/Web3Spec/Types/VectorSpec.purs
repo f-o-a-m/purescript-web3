@@ -1,4 +1,4 @@
-module Web3Spec.Types.VectorSpec (spec) where
+module Web3Spec.Types.VectorSpec where
 
 import Prelude
 import Data.Array (uncons)
