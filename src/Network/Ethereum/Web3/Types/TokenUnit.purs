@@ -135,7 +135,7 @@ foreign import data MinorUnitE21 :: TokenK -> TokenUnitK
 instance unitSpecMinorUnitE21 :: TokenUnitSpec (MinorUnitE21 t) where
   divider = createDivider 21
 
-createDivider :: forall proxya. Int -> proxya -> BigNumber
+createDivider :: forall proxyTokenUnitK. Int -> proxyTokenUnitK -> BigNumber
 createDivider denomination _ = unsafeConvert $ "1" <> joinWith "" (replicate denomination "0")
   where
   unsafeConvert :: String -> BigNumber

@@ -151,7 +151,7 @@ deployContract txOptions deployByteCode args =
     txdata =
       txOptions # _data ?~ deployByteCode <> genericABIEncode (untagged args)
         # _value
-        %~ map convert
+        %~ map convert -- convert `NoPay ETHER` to `MinorUnit ETHER` (BigNumber "0" * BigNumber "1" = BigNumber "0")
   in
     eth_sendTransaction txdata
 

@@ -39,7 +39,10 @@ spec provider =
           setCountTx = SimpleStorage.setCount txOpts { _count: newCount }
         Tuple _ (SimpleStorage.CountSet { _count }) <-
           assertWeb3 provider
-            $ takeEvent (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress setCountTx
+            $ takeEvent
+            (Proxy :: Proxy SimpleStorage.CountSet)
+            simpleStorageAddress
+            setCountTx
         _count `shouldEqual` newCount
         eRes' <- runWeb3 provider $ Api.eth_getStorageAt simpleStorageAddress zero Latest
         eRes' `shouldSatisfy` isRight

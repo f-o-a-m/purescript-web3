@@ -145,7 +145,7 @@ deployContract ::
   (TransactionOptions NoPay -> Web3 HexString) ->
   m ContractConfig
 deployContract p logger contractName deploymentTx = do
-  userAddress <-
+  userAddress <- -- contractCreatorAddress ?
     assertWeb3 p
       $ do
           accounts <- Api.eth_getAccounts
@@ -154,7 +154,7 @@ deployContract p logger contractName deploymentTx = do
     assertWeb3 p do
       let
         txOpts = defaultTestTxOptions # _from ?~ userAddress
-      txHash <- deploymentTx txOpts
+      txHash <- deploymentTx txOpts -- should call eth_sendTransaction
       pure txHash
   logger $ "Submitted " <> contractName <> " deployment : " <> show { txHash, userAddress }
   (TransactionReceipt rec) <- pollTransactionReceipt p txHash
@@ -162,7 +162,7 @@ deployContract p logger contractName deploymentTx = do
     Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
     Just contractAddress -> pure contractAddress
   logger $ contractName <> " successfully deployed to " <> show contractAddress
-  pure $ { contractAddress, userAddress }
+  pure { contractAddress, userAddress }
 
 joinWeb3Fork ::
   forall a m.

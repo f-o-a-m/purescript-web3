@@ -87,9 +87,9 @@ combineChange ::
   c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
-class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
-class IndexedEvent a b c | c -> a b where
-  isAnonymous :: Proxy c -> Boolean
+class IndexedEvent :: forall indexedTypesTaggedK nonIndexedTypesTaggedK constructorK. indexedTypesTaggedK -> nonIndexedTypesTaggedK -> constructorK -> Constraint
+class IndexedEvent indexedTypesTagged nonIndexedTypesTagged constructor | constructor -> indexedTypesTagged nonIndexedTypesTagged where
+  isAnonymous :: Proxy constructor -> Boolean
 
 decodeEventDef ::
   forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes.
