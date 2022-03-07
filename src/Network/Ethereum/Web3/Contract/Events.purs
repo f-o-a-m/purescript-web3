@@ -97,15 +97,15 @@ type ChangeReceipt
 -- | terminates, it will return either the state at the time of termination, or a
 -- | `ChangeReceipt` for the event that caused the termination.
 event' ::
-  forall fs handlers fsList handlersList r1 r.
+  forall fs handlers fsList handlersList variantRowHandled variantRowInput.
   FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor =>
   FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor =>
   RowList.RowToList handlers handlersList =>
   MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs =>
   RowList.RowToList fs fsList =>
-  VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction) =>
-  Row.Union r1 () r =>
-  FoldlRecord QueryAllLogs (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant r)))) =>
+  VariantMatchCases handlersList variantRowHandled (ReaderT Change Web3 EventAction) =>
+  Row.Union variantRowHandled () variantRowInput =>
+  FoldlRecord QueryAllLogs (Web3 (Array (FilterChange (Variant ())))) fsList fs (Web3 (Array (FilterChange (Variant variantRowInput)))) =>
   Record fs ->
   Record handlers ->
   { windowSize :: Int, trailBy :: Int } ->
@@ -128,18 +128,18 @@ event' filters handlerR { windowSize, trailBy } = do
 -- | Establishes filters for polling on the server a la the filterIds.
 -- | Automatically handles cleaning up resources on the server.
 pollEvent' ::
-  forall fs fsList handlers handlersList fsIds fsIdsList r r1.
+  forall fs fsList handlers handlersList fsIds fsIdsList variantRowHandled variantRowInput.
   RowList.RowToList handlers handlersList =>
   RowList.RowToList fs fsList =>
   RowList.RowToList fsIds fsIdsList =>
   MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs =>
   FoldlRecord MultiFilterMinFromBlock ChainCursor fsList fs ChainCursor =>
   FoldlRecord MultiFilterMinToBlock ChainCursor fsList fs ChainCursor =>
-  VariantMatchCases handlersList r1 (ReaderT Change Web3 EventAction) =>
+  VariantMatchCases handlersList variantRowHandled (ReaderT Change Web3 EventAction) =>
   FoldlRecord OpenMultiFilter (Web3 (Record ())) fsList fs (Web3 (Record fsIds)) =>
   FoldlRecord CloseMultiFilter (Web3 Unit) fsIdsList fsIds (Web3 Unit) =>
-  FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant r)))) =>
-  Row.Union r1 () r =>
+  FoldlRecord CheckMultiFilter (Web3 (Array (FilterChange (Variant ())))) fsIdsList fsIds (Web3 (Array (FilterChange (Variant variantRowInput)))) =>
+  Row.Union variantRowHandled () variantRowInput =>
   Record fs ->
   Record handlers ->
   Web3 (Either BlockNumber ChangeReceipt)
@@ -155,13 +155,13 @@ pollEvent' filters handlers =
 -- * Event Coroutines
 --------------------------------------------------------------------------------
 eventRunner ::
-  forall handlers handlersList r r1 f.
+  forall handlers handlersList variantRowHandled variantRowInput f.
   RowList.RowToList handlers handlersList =>
   Monad f =>
-  VariantMatchCases handlersList r1 (ReaderT Change f EventAction) =>
-  Row.Union r1 () r => -- TODO: why we need `r1` and `r`? why not just `r`?
+  VariantMatchCases handlersList variantRowHandled (ReaderT Change f EventAction) =>
+  Row.Union variantRowHandled () variantRowInput =>
   Record handlers ->
-  Consumer (FilterChange (Variant r)) f ChangeReceipt
+  Consumer (FilterChange (Variant variantRowInput)) f ChangeReceipt
 eventRunner handlersR =
   consumer \change -> do
     receipt <- processChange handlersR change
@@ -309,26 +309,26 @@ pollFilter fids stop = do
 -- | the change receipt that caused the termination. Otherwise if the producer
 -- | terminates and yields an `a`, we return that.
 reduceEventStream ::
-  forall f par r handlers handlersList r1 a.
+  forall f par handlers handlersList variantRowInput variantRowHandled a.
   Monad f =>
   MonadRec f =>
   Parallel par f =>
   RowList.RowToList handlers handlersList =>
-  VariantMatchCases handlersList r1 (ReaderT Change f EventAction) =>
-  Row.Union r1 () r =>
-  Transducer Void (FilterChange (Variant r)) f a ->
+  VariantMatchCases handlersList variantRowHandled (ReaderT Change f EventAction) =>
+  Row.Union variantRowHandled () variantRowInput =>
+  Transducer Void (FilterChange (Variant variantRowInput)) f a ->
   Record handlers ->
   Process f (Either a ChangeReceipt)
 reduceEventStream producerTransducer handlersRecord = (Right <$> eventRunner handlersRecord) `pullFrom` (Left <$> toProducer producerTransducer)
 
 processChange ::
-  forall f r rl r1 r2.
+  forall f r rl variantRowHandled variantRowInput.
   Monad f =>
   RowList.RowToList r rl =>
-  VariantMatchCases rl r1 (ReaderT Change f EventAction) =>
-  Row.Union r1 () r2 =>
+  VariantMatchCases rl variantRowHandled (ReaderT Change f EventAction) =>
+  Row.Union variantRowHandled () variantRowInput =>
   Record r ->
-  FilterChange (Variant r2) ->
+  FilterChange (Variant variantRowInput) ->
   f ChangeReceipt
 processChange handlerRec (FilterChange { rawChange: rawChange@(Change change), event }) = do
   action <- runReaderT (match handlerRec event) rawChange
