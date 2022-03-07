@@ -111,7 +111,7 @@ event' ::
   { windowSize :: Int, trailBy :: Int } ->
   Web3 (Either (MultiFilterStreamState fs) ChangeReceipt)
 event' filters handlerR { windowSize, trailBy } = do
-  currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of
+  currentBlock <- case hfoldlWithIndex MultiFilterMinFromBlock Latest filters of -- minimum block to start filtering from
     BN bn -> pure bn
     Latest -> eth_blockNumber
   let
@@ -159,7 +159,7 @@ eventRunner ::
   RowList.RowToList handlers handlersList =>
   Monad f =>
   VariantMatchCases handlersList r1 (ReaderT Change f EventAction) =>
-  Row.Union r1 () r =>
+  Row.Union r1 () r => -- TODO: why we need `r1` and `r`? why not just `r`?
   Record handlers ->
   Consumer (FilterChange (Variant r)) f ChangeReceipt
 eventRunner handlersR =
@@ -319,7 +319,7 @@ reduceEventStream ::
   Transducer Void (FilterChange (Variant r)) f a ->
   Record handlers ->
   Process f (Either a ChangeReceipt)
-reduceEventStream prod handlersR = (Right <$> eventRunner handlersR) `pullFrom` (Left <$> toProducer prod)
+reduceEventStream producerTransducer handlersRecord = (Right <$> eventRunner handlersRecord) `pullFrom` (Left <$> toProducer producerTransducer)
 
 processChange ::
   forall f r rl r1 r2.
@@ -344,14 +344,14 @@ data MultiFilterMinToBlock
   = MultiFilterMinToBlock
 
 instance foldMinToBlock :: FoldingWithIndex MultiFilterMinToBlock (Proxy sym) ChainCursor (Filter e) ChainCursor where
-  foldingWithIndex MultiFilterMinToBlock _ acc f = min acc (f ^. _toBlock)
+  foldingWithIndex MultiFilterMinToBlock _ acc filter = min acc (filter ^. _toBlock)
 
 -- | Used to find the minimum `fromBlock` among a record of filters.
 data MultiFilterMinFromBlock
   = MultiFilterMinFromBlock
 
 instance foldMinFromBlock :: FoldingWithIndex MultiFilterMinFromBlock (Proxy sym) ChainCursor (Filter e) ChainCursor where
-  foldingWithIndex MultiFilterMinFromBlock _ acc f = min acc (f ^. _fromBlock)
+  foldingWithIndex MultiFilterMinFromBlock _ acc filter = min acc (filter ^. _fromBlock)
 
 -- data ModifyFilter :: Type
 data ModifyFilter
@@ -396,7 +396,7 @@ instance queryAllLogs ::
     changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
     (<>) changes <$> (map (map expand) <$> acc)
 
-data MultiFilterStreamState fs
+newtype MultiFilterStreamState fs
   = MultiFilterStreamState
     { currentBlock :: BlockNumber
     , filters :: Record fs
@@ -452,6 +452,7 @@ instance closeMultiFilterFold ::
     acc
 
 -- Should belong to coroutines lib.
+-- Instead of yielding `Array o` (in bulk), yields them one by one
 stagger ::
   forall i o m a par.
   Monad m =>
@@ -459,8 +460,8 @@ stagger ::
   Parallel par m =>
   Transducer i (Array o) m a ->
   Transducer i o m a
-stagger osT =
+stagger transducerThatOutputsOs =
   let
-    trickle = awaitForever \os -> for_ os yieldT
+    (trickle :: Transducer (Array o) o m Unit) = awaitForever \(os :: Array o) -> for_ os yieldT
   in
-    fst <$> (osT =>= trickle)
+    fst <$> (transducerThatOutputsOs =>= trickle)

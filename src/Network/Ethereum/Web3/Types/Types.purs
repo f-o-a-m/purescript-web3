@@ -114,6 +114,10 @@ instance writeFHexString :: WriteForeign BlockNumber where
 data ChainCursor
   = Latest
   | BN BlockNumber
+  -- TODO(srghma): add Pending and Earliest
+  -- https://www.quicknode.com/docs/ethereum/eth_newFilter
+  -- | Pending
+  -- | Earliest
 
 derive instance genericChainCursor :: Generic ChainCursor _
 
@@ -461,7 +465,12 @@ forkWeb3' web3Action = do
 newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
+  -- TODO: actually should be `Maybe (NonEmptyArray Address)`
+  -- https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
+
   { address :: Maybe Address
+  -- TODO: actually should be `Maybe (Array (Maybe (Array HexString)))`
+  -- https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
   , topics :: Maybe (Array (Maybe HexString))
   , fromBlock :: ChainCursor
   , toBlock :: ChainCursor

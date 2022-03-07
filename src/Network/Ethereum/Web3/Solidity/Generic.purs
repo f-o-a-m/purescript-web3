@@ -47,7 +47,7 @@ class GenericABIDecode a where
   genericFromDataParser :: Parser HexString a
 
 -- | An internally used type for encoding
-data EncodedValue
+newtype EncodedValue
   = EncodedValue
     { order :: Int
     , offset :: Maybe Int
@@ -106,8 +106,8 @@ combineEncodedValues encodings =
   headsOffset =
     foldl
       ( \acc (EncodedValue e) -> case e.offset of
-          Nothing -> acc + (hexLength e.encoding `div` 2)
-          Just _ -> acc + 32
+          Nothing -> acc + (hexLength e.encoding `div` 2) -- acc + number of bytes in HexString
+          Just _ -> acc + 32 -- acc + max number of bytes
       )
       0
       encodings
@@ -122,18 +122,18 @@ instance abiDataBaseNull :: ABIData NoArguments where
 instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
   _serialize encoded (Argument b) =
     if isDynamic (Proxy :: Proxy b) then
-      dynEncoding : encoded
+      dynEncoding unit : encoded
     else
-      staticEncoding : encoded
+      staticEncoding unit : encoded
     where
-    staticEncoding =
+    staticEncoding = \_ ->
       EncodedValue
         { encoding: toDataBuilder b
         , offset: Nothing
         , order: 1 + length encoded
         }
 
-    dynEncoding =
+    dynEncoding = \_ ->
       EncodedValue
         { encoding: toDataBuilder b
         , offset: Just 0
@@ -143,18 +143,18 @@ instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) wh
 instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData (Product (Argument b) a) where
   _serialize encoded (Product (Argument b) a) =
     if isDynamic (Proxy :: Proxy b) then
-      _serialize (dynEncoding : encoded) a
+      _serialize (dynEncoding unit : encoded) a
     else
-      _serialize (staticEncoding : encoded) a
+      _serialize (staticEncoding unit : encoded) a
     where
-    staticEncoding =
+    staticEncoding = \_ ->
       EncodedValue
         { encoding: toDataBuilder b
         , offset: Nothing
         , order: 1 + length encoded
         }
 
-    dynEncoding =
+    dynEncoding = \_ ->
       EncodedValue
         { encoding: toDataBuilder b
         , offset: Just 0

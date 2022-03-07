@@ -160,7 +160,7 @@ infixr 6 type DTwo as :%
 
 infixr 6 type DCons as :&
 
-class DigitCount (d :: DigitList) where
+class DigitCount (d :: DigitList) where -- TODO(srghma): rename to DigitListLength?
   -- | Given proxy of a DigitList returns number of digits in the list.
   digitCount :: Proxy d -> Int
 
@@ -170,7 +170,7 @@ instance countBase :: DigitCount (DOne a) where
 instance countLoop :: DigitCount rest => DigitCount (a :& rest) where
   digitCount _ = digitCount (Proxy :: Proxy rest) + 1
 
-class KnownDigit (d :: Digit) where
+class KnownDigit (d :: Digit) where -- TODO(srghma): rename to DigitToInt?
   -- | Given proxy of a Digit returns a digit it represents
   digitVal :: Proxy d -> Int
 
@@ -204,7 +204,7 @@ instance sizeN8 :: KnownDigit D8 where
 instance sizeN9 :: KnownDigit D9 where
   digitVal _ = 9
 
-class KnownSize (d :: DigitList) where
+class KnownSize (d :: DigitList) where -- TODO(srghma): rename to DigitListToInt?
   -- | Given proxy of a Digit returns a number it represents
   -- |
   -- | ``` purescript
@@ -283,10 +283,10 @@ instance incPLoop1 ::
   IncP (a :& rest) out carryOut
 
 -- | `IntSize` is empty class, if there is instance of `IntSize` for some number it means there
--- | is solidity type `int` of that size specific number in like `int16`, `int24` ... `int256`
+-- | is solidity type `int` (or `uint`) of that size specific number in like `int16`, `int24` ... `int256`
 class KnownSize n <= IntSize n
 
-instance intSize8 :: IntSize (DOne D8)
+instance intSize8 :: IntSize (DOne D8) -- 8 bits, 1 byte
 
 instance intSize16 :: IntSize (D1 :& DOne D6)
 
