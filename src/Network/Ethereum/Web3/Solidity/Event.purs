@@ -69,7 +69,10 @@ parseChange ::
   Boolean ->
   Maybe (Event a b)
 parseChange (Change change) anonymous = do
-  topics <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
+  -- from https://docs.soliditylang.org/en/latest/abi-spec.html#events
+  -- if event is `anonymous` (i.e. has `anonymous` keyword in `event MyEvent(uint256 indexed foo, uint256 bar) anonymous`)
+  -- then `topics[0]` is `keccak(EVENT_NAME+"("+EVENT_ARGS.map(canonical_type_of).join(",")+")")`
+  (topics :: Array HexString) <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
   a <- genericArrayParser topics
   b <- hush <<< genericFromData $ change.data
   pure $ Event a b
@@ -92,7 +95,9 @@ class IndexedEvent indexedTypesTagged nonIndexedTypesTagged constructor | constr
   isAnonymous :: Proxy constructor -> Boolean
 
 decodeEventDef ::
-  forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes.
+  forall aargs afields al a aname
+  bargs bfields bl b bname
+  c cfields cfieldsRes.
   ArrayParser aargs =>
   RecordFieldsIso aargs afields al =>
   Generic a (Constructor aname aargs) =>

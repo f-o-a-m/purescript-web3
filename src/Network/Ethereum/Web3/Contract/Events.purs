@@ -196,7 +196,7 @@ filterProducer multiFilterStreamState@(MultiFilterStreamState currentState) = do
             # _toBlock
             .~ BN endBlock
 
-        fs' = hmap (ModifyFilter modify) currentState.filters
+        (fs' :: Record filtersRow) = hmap (ModifyFilter modify) currentState.filters
       yieldT fs'
       filterProducer $ MultiFilterStreamState currentState { currentBlock = succ endBlock }
   chainHead <- lift eth_blockNumber
@@ -252,7 +252,9 @@ logsStream ::
     (Web3 (Array (FilterChange (Variant r)))) =>
   MultiFilterStreamState filtersRow ->
   Transducer Void (FilterChange (Variant r)) Web3 (MultiFilterStreamState filtersRow)
-logsStream initialState = fst <$> (filterProducer initialState =>= stagger makeFilterChanges)
+logsStream initialState = fst <$>
+  ((filterProducer initialState :: Transducer Void (Record filtersRow) Web3 (MultiFilterStreamState filtersRow))
+  =>= (stagger makeFilterChanges :: Transducer (Record filtersRow) (FilterChange (Variant r)) Web3 Unit))
 
 -- | Aquire a record of server-side filters using the bracket operator to release the
 -- | filters on the node when done.
@@ -393,10 +395,16 @@ data QueryAllLogs
 instance queryAllLogs ::
   ( DecodeEvent i ni e
   , IsSymbol sym
-  , Row.Union r' b r
+  , Row.Union r' trash r
   , Row.Cons sym e r' r
   ) =>
-  FoldingWithIndex QueryAllLogs (Proxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
+  FoldingWithIndex
+    QueryAllLogs
+    (Proxy sym)
+    (Web3 (Array (FilterChange (Variant r'))))
+    (Filter e)
+    (Web3 (Array (FilterChange (Variant r))))
+    where
   foldingWithIndex QueryAllLogs (prop :: Proxy sym) acc filter = do
     changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
     (<>) changes <$> (map (map expand) <$> acc)
@@ -458,6 +466,8 @@ instance closeMultiFilterFold ::
 
 -- Should belong to coroutines lib.
 -- Instead of yielding `Array o` (in bulk), yields them one by one
+-- TODO(srghma): rename to asParts
+-- https://github.com/airalab/hs-web3/blob/a63bb5f23185aa605a200cc46266d418903593b9/packages/ethereum/src/Network/Ethereum/Contract/Event/SingleFilter.hs#L100
 stagger ::
   forall i o m a par.
   Monad m =>
