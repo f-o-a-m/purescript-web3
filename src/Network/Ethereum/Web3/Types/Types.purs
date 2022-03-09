@@ -111,13 +111,16 @@ instance writeFHexString :: WriteForeign BlockNumber where
   writeImpl (BlockNumber bn) = encode bn
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
+
+-- | TODO(srghma): add Pending and Earliest
+-- | https://www.quicknode.com/docs/ethereum/eth_newFilter
+-- |
+-- | "earliest" - String: The genesis block
+-- | "latest" - String: The latest block (current head of the blockchain)
+-- | "pending" - String: The currently mined block (including pending transactions)
 data ChainCursor
   = Latest
   | BN BlockNumber
-  -- TODO(srghma): add Pending and Earliest
-  -- https://www.quicknode.com/docs/ethereum/eth_newFilter
-  -- | Pending
-  -- | Earliest
 
 derive instance genericChainCursor :: Generic ChainCursor _
 
@@ -465,12 +468,25 @@ forkWeb3' web3Action = do
 newtype Filter :: forall k. k -> Type
 newtype Filter a
   = Filter
-  -- TODO: actually should be `Maybe (NonEmptyArray Address)`
-  -- https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
-
+  -- TODO:
+  -- | actually should be `Maybe (NonEmptyArray Address)`
+  -- | https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
   { address :: Maybe Address
-  -- TODO: actually should be `Maybe (Array (Maybe (Array HexString)))`
-  -- https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
+  -- | TODO:
+  -- | since
+  -- | https://eth.wiki/json-rpc/API#a-note-on-specifying-topic-filters
+  -- | https://github.com/ethereum/execution-apis/blob/596ad145d728f2db900e5d730c55f4b3c9df4dc2/src/schemas/filter.json#L59-L85
+  -- |
+  -- | ```
+  -- | []                   - “anything”
+  -- | [A]                  - “A in first position (and anything after)”
+  -- | [null, B] OR [[], B] - “anything in first position AND B in second position (and anything after)”
+  -- | [A, B]               - “A in first position AND B in second position (and anything after)”
+  -- | [[A, B], [A, B]]     - “(A OR B) in first position AND (A OR B) in second position (and anything after)”
+  -- | ```
+  -- |
+  -- | actually should be `Maybe (Array (Maybe (Array HexString))))`
+  -- | OR it can actually be `Maybe (Array (Array HexString)))` since `[null, B]` and `[[], B]` is the same thing
   , topics :: Maybe (Array (Maybe HexString))
   , fromBlock :: ChainCursor
   , toBlock :: ChainCursor

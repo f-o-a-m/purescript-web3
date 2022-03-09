@@ -466,8 +466,9 @@ instance closeMultiFilterFold ::
 
 -- Should belong to coroutines lib.
 -- Instead of yielding `Array o` (in bulk), yields them one by one
--- TODO(srghma): rename to asParts
+-- TODO(srghma): rename to `asPartsOutput`
 -- https://github.com/airalab/hs-web3/blob/a63bb5f23185aa605a200cc46266d418903593b9/packages/ethereum/src/Network/Ethereum/Contract/Event/SingleFilter.hs#L100
+-- https://hackage.haskell.org/package/machines-0.7.2/docs/src/Data.Machine.Process.html#asParts
 stagger ::
   forall i o m a par.
   Monad m =>
