@@ -10,6 +10,7 @@ module Network.Ethereum.Web3.Solidity.Event
   ) where
 
 import Prelude
+
 import Control.Error.Util (hush)
 import Data.Array (uncons)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
@@ -56,8 +57,8 @@ genericArrayParser = map to <<< arrayParser
 --------------------------------------------------------------------------------
 -- | Event Parsers
 --------------------------------------------------------------------------------
-data Event i ni
-  = Event i ni
+data Event indexedData nonIndexedData
+  = Event indexedData nonIndexedData
 
 parseChange ::
   forall a b arep brep.
@@ -72,10 +73,11 @@ parseChange (Change change) anonymous = do
   -- from https://docs.soliditylang.org/en/latest/abi-spec.html#events
   -- if event is `anonymous` (i.e. has `anonymous` keyword in `event MyEvent(uint256 indexed foo, uint256 bar) anonymous`)
   -- then `topics[0]` is `keccak(EVENT_NAME+"("+EVENT_ARGS.map(canonical_type_of).join(",")+")")`
+  -- example - https://gist.github.com/srghma/c8e92bf400d65939f2c7e035199500c8
   (topics :: Array HexString) <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
-  a <- genericArrayParser topics
-  b <- hush <<< genericFromData $ change.data
-  pure $ Event a b
+  indexedData <- genericArrayParser topics
+  nonIndexedData <- hush <<< genericFromData $ change.data
+  pure $ Event indexedData nonIndexedData
 
 combineChange ::
   forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes.

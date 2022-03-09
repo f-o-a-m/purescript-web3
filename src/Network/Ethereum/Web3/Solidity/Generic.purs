@@ -36,7 +36,7 @@ import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
 import Prim.Row as Row
-import Type.RowList (class ListToRow, Cons, Nil, RLProxy(..), RowList)
+import Type.RowList as RowList
 
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
@@ -218,53 +218,54 @@ dParser = do
         _ <- takeBytes (dataOffset - (p.column - 1))
         fromDataParser
 
-class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
+class ArgsToRowListProxy :: forall k. k -> RowList.RowList Type -> Constraint
 class ArgsToRowListProxy args l | args -> l, l -> args where
-  argsToRowListProxy :: Proxy args -> RLProxy l
+  argsToRowListProxy :: Proxy args -> Proxy l
 
-instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where
-  argsToRowListProxy _ = RLProxy
+instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments RowList.Nil where
+  argsToRowListProxy _ = Proxy
 
-instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (Proxy s) a)) (Cons s a Nil) where
-  argsToRowListProxy _ = RLProxy
-else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (Proxy s) a)) as) (Cons s a l) where
-  argsToRowListProxy _ = RLProxy
+instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (Proxy s) a)) (RowList.Cons s a RowList.Nil) where
+  argsToRowListProxy _ = Proxy
+else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (Proxy s) a)) as) (RowList.Cons s a l) where
+  argsToRowListProxy _ = Proxy
 
+class RecordFieldsIso :: forall k. Type -> Row Type -> k -> Constraint
 class RecordFieldsIso args fields rowList | args -> rowList, rowList -> args fields where
-  toRecordFields :: RLProxy rowList -> args -> Record fields
-  fromRecordFields :: RLProxy rowList -> Record fields -> args
+  toRecordFields :: Proxy rowList -> args -> Record fields
+  fromRecordFields :: Proxy rowList -> Record fields -> args
 
 instance isoRecordBase ::
   ( IsSymbol s
   , Row.Cons s a () r
   , Row.Lacks s ()
   ) =>
-  RecordFieldsIso (Argument (Tagged (Proxy s) a)) r (Cons s a Nil) where
+  RecordFieldsIso (Argument (Tagged (Proxy s) a)) r (RowList.Cons s a RowList.Nil) where
   toRecordFields _ (Argument a) = Record.insert (Proxy :: Proxy s) (untagged a) {}
   fromRecordFields _ r = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
 
-instance isoRecordBaseNull :: RecordFieldsIso NoArguments () Nil where
+instance isoRecordBaseNull :: RecordFieldsIso NoArguments () RowList.Nil where
   toRecordFields _ _ = {}
   fromRecordFields _ _ = NoArguments
 
 instance isoRecordInductive ::
-  ( RecordFieldsIso as r1 (Cons ls la ll)
+  ( RecordFieldsIso as r1 (RowList.Cons ls la ll)
   , Row.Cons s a r1 r2
   , Row.Lacks s r1
   , IsSymbol s
-  , ListToRow (Cons ls la ll) r1
+  , RowList.ListToRow (RowList.Cons ls la ll) r1
   ) =>
-  RecordFieldsIso (Product (Argument (Tagged (Proxy s) a)) as) r2 (Cons s a (Cons ls la ll)) where
+  RecordFieldsIso (Product (Argument (Tagged (Proxy s) a)) as) r2 (RowList.Cons s a (RowList.Cons ls la ll)) where
   toRecordFields _ (Product (Argument a) as) = Record.insert (Proxy :: Proxy s) (untagged a) rest
     where
-    rest = (toRecordFields (RLProxy :: RLProxy (Cons ls la ll)) as :: Record r1)
+    rest = (toRecordFields (Proxy :: Proxy (RowList.Cons ls la ll)) as :: Record r1)
   fromRecordFields _ r =
     let
       a = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
 
       before = Record.delete (Proxy :: Proxy s) r :: Record r1
 
-      rest = fromRecordFields (RLProxy :: RLProxy (Cons ls la ll)) before
+      rest = fromRecordFields (Proxy :: Proxy (RowList.Cons ls la ll)) before
     in
       Product a rest
 
@@ -278,7 +279,7 @@ genericToRecordFields a =
   let
     Constructor row = from a
   in
-    toRecordFields (RLProxy :: RLProxy l) row
+    toRecordFields (Proxy :: Proxy l) row
 
 genericFromRecordFields ::
   forall args fields l a name.
@@ -286,4 +287,4 @@ genericFromRecordFields ::
   Generic a (Constructor name args) =>
   Record fields ->
   a
-genericFromRecordFields r = to $ Constructor $ fromRecordFields (RLProxy :: RLProxy l) r
+genericFromRecordFields r = to $ Constructor $ fromRecordFields (Proxy :: Proxy l) r
