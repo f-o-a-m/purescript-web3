@@ -27,7 +27,10 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- Array Parsers
 --------------------------------------------------------------------------------
+
+-- TODO: rename to `ToGenericArrayABIDecode`
 class ArrayParser a where
+-- TODO: rename to `runArrayFromDataParserToGeneric`
   arrayParser :: Array HexString -> Maybe a
 
 instance arrayParserNoArgs :: ArrayParser NoArguments where
@@ -46,6 +49,10 @@ instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (P
 instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
   arrayParser = map Constructor <<< arrayParser
 
+-- e.g. parses
+-- ["0x0000....", "0xfffff..."]
+-- to `Maybe (Tuple2 (Tagged (Proxy "xxx") Address) (Tagged (Proxy "yyy") Address))`
+-- TODO: rename runArrayFromDataParser
 genericArrayParser ::
   forall a rep.
   Generic a rep =>
@@ -74,20 +81,23 @@ parseChange (Change change) anonymous = do
   -- if event is `anonymous` (i.e. has `anonymous` keyword in `event MyEvent(uint256 indexed foo, uint256 bar) anonymous`)
   -- then `topics[0]` is `keccak(EVENT_NAME+"("+EVENT_ARGS.map(canonical_type_of).join(",")+")")`
   -- example - https://gist.github.com/srghma/c8e92bf400d65939f2c7e035199500c8
-  (topics :: Array HexString) <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
-  indexedData <- genericArrayParser topics
-  nonIndexedData <- hush <<< genericFromData $ change.data
+  (topics :: Array HexString) <- if anonymous then pure change.topics else _.tail <$> uncons change.topics -- e.g. ['0000...', 'ffff...']
+  indexedData <- genericArrayParser topics -- e.g. `Tuple2 (Tagged (Proxy "foo") BigNumber) (Tagged (Proxy "bar") Address)`
+  nonIndexedData <- hush <<< genericFromData $ change.data -- e.g. `Tuple2 (Tagged (Proxy "foo") BigNumber) (Tagged (Proxy "bar") Address)`
   pure $ Event indexedData nonIndexedData
 
 combineChange ::
-  forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes.
-  RecordFieldsIso aargs afields al =>
-  Generic a (Constructor aname aargs) =>
-  RecordFieldsIso bargs bfields bl =>
-  Generic b (Constructor bname bargs) =>
-  Row.Union afields bfields cfields =>
-  Row.Nub cfields cfieldsRes =>
-  Newtype c (Record cfieldsRes) =>
+  forall
+  a_genericTaggedRepresentation a_recordRow a_recordRowList (a :: Type) a_tupleNName
+  b_genericTaggedRepresentation b_recordRow b_recordRowList (b :: Type) b_tupleNName
+  c c_recordRow c_recordRowNubbed.
+  RecordFieldsIso a_genericTaggedRepresentation a_recordRow a_recordRowList =>
+  Generic a (Constructor a_tupleNName a_genericTaggedRepresentation) =>
+  RecordFieldsIso b_genericTaggedRepresentation b_recordRow b_recordRowList =>
+  Generic b (Constructor b_tupleNName b_genericTaggedRepresentation) =>
+  Row.Union a_recordRow b_recordRow c_recordRow =>
+  Row.Nub c_recordRow c_recordRowNubbed =>
+  Newtype c (Record c_recordRowNubbed) =>
   Event a b ->
   c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
@@ -97,18 +107,19 @@ class IndexedEvent indexedTypesTagged nonIndexedTypesTagged constructor | constr
   isAnonymous :: Proxy constructor -> Boolean
 
 decodeEventDef ::
-  forall aargs afields al a aname
-  bargs bfields bl b bname
-  c cfields cfieldsRes.
-  ArrayParser aargs =>
-  RecordFieldsIso aargs afields al =>
-  Generic a (Constructor aname aargs) =>
-  RecordFieldsIso bargs bfields bl =>
-  Generic b (Constructor bname bargs) =>
-  GenericABIDecode bargs =>
-  Row.Union afields bfields cfields =>
-  Row.Nub cfields cfieldsRes =>
-  Newtype c (Record cfieldsRes) =>
+  forall
+  a_genericTaggedRepresentation a_recordRow a_recordRowList a a_tupleNName
+  b_genericTaggedRepresentation b_recordRow b_recordRowList b b_tupleNName
+  c c_recordRow c_recordRowNubbed.
+  ArrayParser a_genericTaggedRepresentation =>
+  RecordFieldsIso a_genericTaggedRepresentation a_recordRow a_recordRowList =>
+  Generic a (Constructor a_tupleNName a_genericTaggedRepresentation) =>
+  RecordFieldsIso b_genericTaggedRepresentation b_recordRow b_recordRowList =>
+  Generic b (Constructor b_tupleNName b_genericTaggedRepresentation) =>
+  GenericABIDecode b_genericTaggedRepresentation =>
+  Row.Union a_recordRow b_recordRow c_recordRow =>
+  Row.Nub c_recordRow c_recordRowNubbed =>
+  Newtype c (Record c_recordRowNubbed) =>
   IndexedEvent a b c =>
   Change ->
   Maybe c
@@ -124,15 +135,15 @@ class
   decodeEvent :: Change -> Maybe c
 
 instance defaultInstance ::
-  ( ArrayParser aargs
-  , RecordFieldsIso aargs afields al
-  , Generic a (Constructor aname aargs)
-  , RecordFieldsIso bargs bfields bl
-  , Generic b (Constructor bname bargs)
-  , GenericABIDecode bargs
-  , Row.Union afields bfields cfields
-  , Row.Nub cfields cfieldsRes
-  , Newtype c (Record cfieldsRes)
+  ( ArrayParser a_genericTaggedRepresentation
+  , RecordFieldsIso a_genericTaggedRepresentation a_recordRow a_recordRowList
+  , Generic a (Constructor a_tupleNName a_genericTaggedRepresentation)
+  , RecordFieldsIso b_genericTaggedRepresentation b_recordRow b_recordRowList
+  , Generic b (Constructor b_tupleNName b_genericTaggedRepresentation)
+  , GenericABIDecode b_genericTaggedRepresentation
+  , Row.Union a_recordRow b_recordRow c_recordRow
+  , Row.Nub c_recordRow c_recordRowNubbed
+  , Newtype c (Record c_recordRowNubbed)
   , IndexedEvent a b c
   ) =>
   DecodeEvent a b c where

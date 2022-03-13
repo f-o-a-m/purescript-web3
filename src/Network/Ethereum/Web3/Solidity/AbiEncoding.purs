@@ -13,7 +13,7 @@ import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Core.BigNumber (bigNumberToTwosComplementInt256, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, hexLength, toHexString)
+import Network.Ethereum.Core.HexString (HexString, hexLength, mkHexString, padLeft, padRight, toBigNumber, toBigNumberFromSignedHexString, toHexString, unHex)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
@@ -21,29 +21,30 @@ import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser (ParseError, ParseState(..), Parser, ParserT, fail, position, runParser)
+import Text.Parsing.Parser (ParseError, ParseState(..), Parser, ParserT, fail, runParser)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
-import Text.Parsing.Parser.Token (hexDigit)
-import Data.String.NonEmpty (NonEmptyString)
 
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
+-- TODO: rename to abiEncode
   toDataBuilder :: a -> HexString
 
 class ABIDecode a where
+-- TODO: rename to abiDecodeParser
   fromDataParser :: Parser HexString a
+
+-- | Parse encoded value, droping the leading `0x`
+-- TODO: rename to `runAbiDecodeParser`
+fromData :: forall a. ABIDecode a => HexString -> Either ParseError a
+fromData = flip runParser fromDataParser
 
 instance abiEncodeAlgebra :: ABIEncode BigNumber where
   toDataBuilder = int256HexBuilder
 
 instance abiDecodeAlgebra :: ABIDecode BigNumber where
   fromDataParser = int256HexParser
-
--- | Parse encoded value, droping the leading `0x`
-fromData :: forall a. ABIDecode a => HexString -> Either ParseError a
-fromData = flip runParser fromDataParser
 
 instance abiEncodeBool :: ABIEncode Boolean where
   toDataBuilder = uInt256HexBuilder <<< fromBool

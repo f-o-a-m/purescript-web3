@@ -156,13 +156,13 @@ deployContract txOptions deployByteCode args =
     eth_sendTransaction txdata
 
 mkDataField ::
-  forall selector a name args fields l.
+  forall selector a tupleNName genericTaggedRepresentation recordRow recordRowList.
   IsSymbol selector =>
-  Generic a (Constructor name args) =>
-  RecordFieldsIso args fields l =>
-  GenericABIEncode (Constructor name args) =>
+  Generic a (Constructor tupleNName genericTaggedRepresentation) =>
+  GenericABIEncode (Constructor tupleNName genericTaggedRepresentation) =>
+  RecordFieldsIso genericTaggedRepresentation recordRow recordRowList =>
   Proxy (Tagged (Proxy selector) a) ->
-  Record fields ->
+  Record recordRow ->
   HexString
 mkDataField _ r =
   let

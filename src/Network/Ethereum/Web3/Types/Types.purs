@@ -487,6 +487,7 @@ newtype Filter a
   -- |
   -- | actually should be `Maybe (Array (Maybe (Array HexString))))`
   -- | OR it can actually be `Maybe (Array (Array HexString)))` since `[null, B]` and `[[], B]` is the same thing
+  -- | OR `Maybe (NonEmptyArray (Maybe (NonEmptyArray HexString))))`
   , topics :: Maybe (Array (Maybe HexString))
   , fromBlock :: ChainCursor
   , toBlock :: ChainCursor

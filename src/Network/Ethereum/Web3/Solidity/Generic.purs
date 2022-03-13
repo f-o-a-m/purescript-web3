@@ -113,6 +113,7 @@ combineEncodedValues encodings =
       encodings
 
 -- | An internally used class for encoding
+-- TODO: rename to FromGenericABIDataSerialize
 class ABIData a where
   _serialize :: Array EncodedValue -> a -> Array EncodedValue
 
@@ -230,10 +231,16 @@ instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (Proxy s
 else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (Proxy s) a)) as) (RowList.Cons s a l) where
   argsToRowListProxy _ = Proxy
 
+-- Example:
+-- Tagged (Proxy "foo") a => { foo :: a }
+-- to
+-- Data.Generic.Rep.Product (Tagged (Proxy "foo") a) (Tagged (Proxy "bar") b)) => { foo :: a, bar :: b }
+
+-- TODO(srghma): rename to GenericProductToRecordFieldsIso
 class RecordFieldsIso :: forall k. Type -> Row Type -> k -> Constraint
-class RecordFieldsIso args fields rowList | args -> rowList, rowList -> args fields where
-  toRecordFields :: Proxy rowList -> args -> Record fields
-  fromRecordFields :: Proxy rowList -> Record fields -> args
+class RecordFieldsIso genericTaggedRepresentation recordRow rowList | genericTaggedRepresentation -> rowList, rowList -> genericTaggedRepresentation recordRow where
+  toRecordFields :: Proxy rowList -> genericTaggedRepresentation -> Record recordRow
+  fromRecordFields :: Proxy rowList -> Record recordRow -> genericTaggedRepresentation
 
 instance isoRecordBase ::
   ( IsSymbol s
@@ -270,21 +277,29 @@ instance isoRecordInductive ::
       Product a rest
 
 genericToRecordFields ::
-  forall args fields l a name.
-  RecordFieldsIso args fields l =>
-  Generic a (Constructor name args) =>
+  forall genericTaggedRepresentation recordRow recordRowList a tupleNName.
+  RecordFieldsIso genericTaggedRepresentation recordRow recordRowList =>
+  Generic a (Constructor tupleNName genericTaggedRepresentation) =>
   a ->
-  Record fields
+  Record recordRow
 genericToRecordFields a =
   let
     Constructor row = from a
   in
-    toRecordFields (Proxy :: Proxy l) row
+    toRecordFields (Proxy :: Proxy recordRowList) row
 
+-- Example:
+-- genericFromRecordFields { foo :: foo, bar :: bar, baz :: baz }
+-- =>
+--    (Tuple3
+--      (Tagged (Proxy "foo") foo)
+--      (Tagged (Proxy "bar") bar)
+--      (Tagged (Proxy "baz") baz)
+--    )
 genericFromRecordFields ::
-  forall args fields l a name.
-  RecordFieldsIso args fields l =>
-  Generic a (Constructor name args) =>
-  Record fields ->
+  forall genericTaggedRepresentation recordRow recordRowList a tupleNName.
+  RecordFieldsIso genericTaggedRepresentation recordRow recordRowList =>
+  Generic a (Constructor tupleNName genericTaggedRepresentation) =>
+  Record recordRow ->
   a
-genericFromRecordFields r = to $ Constructor $ fromRecordFields (Proxy :: Proxy l) r
+genericFromRecordFields r = to $ Constructor $ fromRecordFields (Proxy :: Proxy recordRowList) r
