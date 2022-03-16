@@ -19,149 +19,128 @@ module Network.Ethereum.Web3.Solidity.Generic
   ) where
 
 import Prelude
+
 import Control.Monad.State.Class (get)
-import Data.Array (foldl, length, reverse, sortBy, uncons, (:))
+import Data.Array (foldMap, foldl, length, sortBy, (:))
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
-import Data.Maybe (Maybe(..))
-import Record as Record
 import Data.Symbol (class IsSymbol)
+import Network.Ethereum.Core.BigNumber as BigNumber
+import Network.Ethereum.Core.HexString (HexString, hexLength)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, takeBytes, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Core.HexString (HexString, hexLength)
-import Network.Ethereum.Core.BigNumber (unsafeToInt)
+import Prim.Row as Row
+import Record as Record
 import Text.Parsing.Parser (ParseError, ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
-import Prim.Row as Row
 import Type.RowList as RowList
 
--- TODO: rename to FromGenericABIEncode
 -- | A class for encoding generically composed datatypes to their abi encoding
 class GenericABIEncode a where
--- TODO: rename to fromGenericABIEncode
+-- TODO: rename to genericABIEncodeImplementation
   genericToDataBuilder :: a -> HexString
 
--- TODO: rename to ToGenericABIDecode
 -- | A class for decoding generically composed datatypes from their abi encoding
 class GenericABIDecode a where
--- TODO: rename to ToGenericABIDecodeParser
+-- TODO: rename to genericABIDecodeParserImplementation
   genericFromDataParser :: Parser HexString a
 
 -- | An internally used type for encoding
-type EncodedValueSimple
+type EncodedValue
   = { order :: Int
     , isDynamic :: Boolean
     , encoding :: HexString
+    , encodingLengthInBytes :: Int -- cache
     }
 
-type EncodedValue
-  = { order :: Int
-    , offset :: Maybe Int
-    , encoding :: HexString
-    }
-
-combineEncodedValues :: Array EncodedValueSimple -> HexString
-combineEncodedValues = \encodings ->
+-- from https://docs.soliditylang.org/en/v0.8.12/abi-spec.html#examples
+--
+-- if Ti is static:
+--   head(X(i)) = enc(X(i)) and tail(X(i)) = "" (the empty string)
+-- otherwise, i.e. if Ti is dynamic:
+--   head(X(i)) = enc(len( head(X(1)) ... head(X(k)) tail(X(1)) ... tail(X(i-1)) )) tail(X(i)) = enc(X(i))
+combineEncodedValues :: Array EncodedValue -> HexString
+combineEncodedValues = sortBy (\a b -> a.order `compare` b.order) >>> \encodings ->
   let
-    headsOffset :: Int
-    headsOffset =
+    wordLengthInBytes = 32
+
+    headsOffsetInBytes :: Int
+    headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
+
+    (heads :: HexString) =
       foldl
-        ( \acc encodedValueSimple -> if encodedValueSimple.isDynamic
-            then acc + 32 -- acc + max number of bytes
-            else acc + (hexLength encodedValueSimple.encoding `div` 2) -- acc + number of bytes in HexString
+        ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue -> if encodedValue.isDynamic
+            then
+            { accumulator: accumulator <> (toDataBuilder :: Int -> HexString) (headsOffsetInBytes + lengthOfPreviousDynamicValues)
+            , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
+            }
+            else
+            { accumulator: accumulator <> encodedValue.encoding
+            , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
+            }
         )
-        0
+        { accumulator: mempty
+        , lengthOfPreviousDynamicValues: 0
+        }
         encodings
+      # _.accumulator
 
-    sortedEs = map (encodedValueStipleToEncodedValue headsOffset) $ sortBy (\a b -> a.order `compare` b.order) encodings
-
-    encodings' = addTailOffsets headsOffset [] sortedEs
-
-    heads =
-      foldl
-        ( \acc encodedValue -> case encodedValue.offset of
-            Nothing -> acc <> encodedValue.encoding
-            Just o -> acc <> toDataBuilder o
+    (tails :: HexString) =
+      foldMap
+        (\encodedValue -> if encodedValue.isDynamic
+            then encodedValue.encoding
+            else mempty
         )
-        mempty
-        encodings'
-
-    tails =
-      foldl
-        ( \acc encodedValue -> case encodedValue.offset of
-            Nothing -> acc
-            Just _ -> acc <> encodedValue.encoding
-        )
-        mempty
-        encodings'
+        encodings
     in
       heads <> tails
-  where
-  encodedValueStipleToEncodedValue headsOffset encodedValueSimple =
-    { order: encodedValueSimple.order
-    , offset: if encodedValueSimple.isDynamic
-        then Just headsOffset
-        else Nothing
-    , encoding: encodedValueSimple.encoding
-    }
-
-  adjust :: Int -> Array EncodedValue -> Array EncodedValue
-  adjust n = map (\encodedValue -> encodedValue { offset = add n <$> encodedValue.offset })
-
-  addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
-  addTailOffsets init acc es = case uncons es of
-    Nothing -> reverse acc
-    Just { head, tail } ->
-      case head.offset of
-        Nothing -> addTailOffsets init (head : acc) tail
-        Just _ -> addTailOffsets init (head : acc) (adjust (hexLength head.encoding `div` 2) tail)
 
 -- | An internally used class for encoding
--- TODO: rename to FromGenericABIDataSerialize
+-- TODO: rename to GenericABIDataSerialize or GenericABIEncodeWithOffset
 class ABIData a where
 -- TODO: rename to _fromGenericABIDataSerialize
-  _serialize :: Array EncodedValueSimple -> a -> Array EncodedValueSimple
+  _serialize :: Array EncodedValue -> a -> Array EncodedValue
 
 instance abiDataBaseNull :: ABIData NoArguments where
-  _serialize encoded _ = encoded
+  _serialize otherEncodedArray _ = otherEncodedArray
 
-instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
-  _serialize encoded (Argument b) =
-    let
-      (encoding :: EncodedValueSimple) =
-          { encoding: toDataBuilder b
-          , isDynamic: isDynamic (Proxy :: Proxy b)
-          , order: 1 + length encoded
-          }
-    in encoding : encoded
+mkEncodedValueSimple :: forall a . EncodingType a => ABIEncode a => Array EncodedValue -> a -> EncodedValue
+mkEncodedValueSimple otherEncodedArray a =
+  let encoding = toDataBuilder a
+  in
+  { encoding
+  , order: 1 + length otherEncodedArray
+  , isDynamic: isDynamic (Proxy :: Proxy a)
+  , encodingLengthInBytes: lengthOfHexStringInBytes encoding
+  }
+  where
+  lengthOfHexStringInBytes hexString = hexLength hexString `div` 2
+
+instance abiDataBase :: (EncodingType a, ABIEncode a) => ABIData (Argument a) where
+  _serialize otherEncodedArray (Argument a) = mkEncodedValueSimple otherEncodedArray a : otherEncodedArray
 
 instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData (Product (Argument b) a) where
-  _serialize encoded (Product (Argument b) a) =
-    let
-      (encoding :: EncodedValueSimple) =
-          { encoding: toDataBuilder b
-          , isDynamic: isDynamic (Proxy :: Proxy b)
-          , order: 1 + length encoded
-          }
-    in _serialize (encoding : encoded) a
+  _serialize otherEncodedArray (Product (Argument b) a) = _serialize (mkEncodedValueSimple otherEncodedArray b : otherEncodedArray) a
 
-instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name a) where
+instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor tupleNName a) where
+-- TODO: rename to genericABIEncodeImplementation
   genericToDataBuilder (Constructor a) = combineEncodedValues $ _serialize [] a
 
 -- | Encode a generic type into its abi encoding, works only for types of the form
--- | `Constructor name (Product (Argument a1) (Product ... (Argument an)))`
+-- | `Constructor tupleNName (Product (Argument a1) (Product ... (Argument an)))`
 genericABIEncode ::
-  forall a rep.
-  Generic a rep =>
-  GenericABIEncode rep =>
-  a ->
+  forall tupleN tupleNRep.
+  Generic tupleN tupleNRep =>
+  GenericABIEncode tupleNRep =>
+  tupleN ->
   HexString
 genericABIEncode = genericToDataBuilder <<< from
 
 instance baseAbiDecode :: (EncodingType a, ABIDecode a) => GenericABIDecode (Argument a) where
+  -- TODO: rename to genericABIDecodeParserImplementation
   genericFromDataParser = Argument <$> factorParser
 
 instance baseNullAbiDecode :: GenericABIDecode NoArguments where
@@ -170,9 +149,10 @@ instance baseNullAbiDecode :: GenericABIDecode NoArguments where
 instance inductiveAbiDecode :: (EncodingType b, ABIDecode b, GenericABIDecode a) => GenericABIDecode (Product (Argument b) a) where
   genericFromDataParser = Product <$> (Argument <$> factorParser) <*> genericFromDataParser
 
-instance abiDecodeConstructor :: GenericABIDecode a => GenericABIDecode (Constructor name a) where
+instance abiDecodeConstructor :: GenericABIDecode a => GenericABIDecode (Constructor tupleNName a) where
   genericFromDataParser = Constructor <$> genericFromDataParser
 
+-- TODO: rename to genericABIDecodeParser
 -- | Encode a generic type into its abi encoding, works only for types of the form
 -- | `Constructor name (Product (Argument a1) (Product ... (Argument an)))`
 genericABIDecode ::
@@ -182,6 +162,7 @@ genericABIDecode ::
   Parser HexString a
 genericABIDecode = to <$> genericFromDataParser
 
+-- TODO: rename to genericABIDecode
 genericFromData ::
   forall a rep.
   Generic a rep =>
@@ -194,11 +175,11 @@ genericFromData = flip runParser genericABIDecode
 factorParser :: forall a. ABIDecode a => EncodingType a => Parser HexString a
 factorParser
   | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
-  | otherwise = dParser
+  | otherwise = dynamicFactorParser
 
-dParser :: forall a. ABIDecode a => Parser HexString a
-dParser = do
-  dataOffset <- unsafeToInt <$> fromDataParser
+dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
+dynamicFactorParser = do
+  dataOffset <- BigNumber.unsafeToInt <$> fromDataParser
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
@@ -223,9 +204,10 @@ else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRo
 -- to
 -- Data.Generic.Rep.Product (Tagged (Proxy "foo") a) (Tagged (Proxy "bar") b)) => { foo :: a, bar :: b }
 
--- TODO(srghma): rename to GenericProductToRecordFieldsIso
+-- TODO(srghma): rename to GenericToRecordFieldsIso
 class RecordFieldsIso :: forall k. Type -> Row Type -> k -> Constraint
 class RecordFieldsIso genericTaggedRepresentation recordRow rowList | genericTaggedRepresentation -> rowList, rowList -> genericTaggedRepresentation recordRow where
+  -- TODO: rename to genericToRecordFieldsImplementation, genericFromRecordFieldsImplementation
   toRecordFields :: Proxy rowList -> genericTaggedRepresentation -> Record recordRow
   fromRecordFields :: Proxy rowList -> Record recordRow -> genericTaggedRepresentation
 

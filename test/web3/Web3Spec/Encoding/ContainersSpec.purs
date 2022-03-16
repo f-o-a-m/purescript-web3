@@ -1,12 +1,14 @@
 module Web3Spec.Encoding.ContainersSpec (spec) where
 
 import Prelude
-import Effect.Aff (Aff)
+
+import Data.Array (fold)
 import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (fromJust)
-import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
+import Effect.Aff (Aff)
+import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple3(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
 import Network.Ethereum.Web3.Solidity.Sizes (S16, S2, S224, S256, S4, S1, s1, s16, s2, s224, s256, s4)
@@ -45,13 +47,29 @@ roundTripGeneric decoded encoded = do
 staticArraysTests :: Spec Unit
 staticArraysTests =
   describe "statically sized array tests" do
+    it "can encode strings" do
+      let
+        (given :: String) = "dave"
+
+        expected =
+          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000004"
+            <> "6461766500000000000000000000000000000000000000000000000000000000"
+      roundTrip given expected
+    it "can encode arrays" do
+      let
+        (given :: Array Int) = [ 1, 2, 3 ]
+
+        expected =
+          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000003"
+            <> "0000000000000000000000000000000000000000000000000000000000000001"
+            <> "0000000000000000000000000000000000000000000000000000000000000002"
+            <> "0000000000000000000000000000000000000000000000000000000000000003"
+      roundTrip given expected
     it "can encode statically sized vectors of addresses" do
       let
-        mgivenElement = toVector s1 $ [ false ]
+        (givenElement :: Vector S1 Boolean) = unsafePartial fromJust $ toVector s1 $ [ false ]
 
-        givenElement = (unsafePartial fromJust $ mgivenElement)
-
-        given = (unsafePartial fromJust $ toVector s2 [ givenElement, givenElement ])
+        (given :: Vector S2 (Vector S1 Boolean)) = (unsafePartial fromJust $ toVector s2 [ givenElement, givenElement ])
 
         expected =
           unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000000"
@@ -59,14 +77,12 @@ staticArraysTests =
       roundTrip given expected
     it "can encode statically sized vectors of statically sized vectors of type bool" do
       let
-        mgiven =
-          toVector s2
+        (given :: Vector S2 Address) =
+          unsafePartial $ fromJust $ toVector s2
             $ map (\a -> unsafePartial fromJust $ mkAddress =<< mkHexString a)
                 [ "407d73d8a49eeb85d32cf465507dd71d507100c1"
                 , "407d73d8a49eeb85d32cf465507dd71d507100c3"
                 ]
-
-        given = (unsafePartial $ fromJust $ mgiven) :: Vector S2 Address
 
         expected =
           unsafePartial (fromJust <<< mkHexString) $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
@@ -109,6 +125,32 @@ dynamicArraysTests =
 tuplesTest :: Spec Unit
 tuplesTest =
   describe "tuples test" do
+    it "https://docs.soliditylang.org/en/v0.8.12/abi-spec.html#examples -> the sam(bytes,bool,uint256[]) method" do
+      let
+        given = Tuple3 "dave" true [1,2,3]
+
+        expected =
+          unsafePartial fromJust <<< mkHexString $ fold
+            -- the location of the data part of the first parameter (dynamic type), measured in bytes from the start of the arguments block. In this case, 0x60.
+            -- (96 bytes = each line is 32 bytes * 3 times)
+            [ "0000000000000000000000000000000000000000000000000000000000000060"
+
+            , "0000000000000000000000000000000000000000000000000000000000000001" -- the second parameter: boolean true.
+
+            -- the location of the data part of the third parameter (dynamic type), measured in bytes. In this case, 0xa0.
+            -- (160 bytes = each line is 32 bytes * 5 times)
+            , "00000000000000000000000000000000000000000000000000000000000000a0"
+
+            , "0000000000000000000000000000000000000000000000000000000000000004" -- the data part of the first argument, it starts with the length of the byte array in elements, in this case, 4.
+            , "6461766500000000000000000000000000000000000000000000000000000000" -- the contents of the first argument: the UTF-8 (equal to ASCII in this case) encoding of "dave", padded on the right to 32 bytes.
+
+            , "0000000000000000000000000000000000000000000000000000000000000003" -- the data part of the third argument, it starts with the length of the array in elements, in this case, 3.
+            , "0000000000000000000000000000000000000000000000000000000000000001" -- the first entry of the third parameter.
+            , "0000000000000000000000000000000000000000000000000000000000000002" -- the second entry of the third parameter.
+            , "0000000000000000000000000000000000000000000000000000000000000003" -- the third entry of the third parameter.
+            ]
+      roundTripGeneric given expected
+
     it "can encode 2-tuples with both static args" do
       let
         given = Tuple2 true false
@@ -122,27 +164,30 @@ tuplesTest =
         given = Tuple1 [ true, false ]
 
         expected =
-          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000020"
+          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000020" -- encoded int number 32
             <> "0000000000000000000000000000000000000000000000000000000000000002"
             <> "0000000000000000000000000000000000000000000000000000000000000001"
             <> "0000000000000000000000000000000000000000000000000000000000000000"
       roundTripGeneric given expected
     it "can encode 4-tuples with a mix of args -- (UInt, String, Boolean, Array Int)" do
       let
-        given = Tuple4 1 "dave" true [ 1, 2, 3 ]
+        given = Tuple4 9 "dave" true [ 1, 2, 3 ]
 
         expected =
-          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000001"
-            <> "0000000000000000000000000000000000000000000000000000000000000080"
+          unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000009"
+            <> "0000000000000000000000000000000000000000000000000000000000000080" -- encoded int number 128 (= 32 * 4)
             <> "0000000000000000000000000000000000000000000000000000000000000001"
-            <> "00000000000000000000000000000000000000000000000000000000000000c0"
-            <> "0000000000000000000000000000000000000000000000000000000000000004"
-            <> "6461766500000000000000000000000000000000000000000000000000000000"
-            <> "0000000000000000000000000000000000000000000000000000000000000003"
+            <> "00000000000000000000000000000000000000000000000000000000000000c0" -- encoded int number 192 (= 32 * 6)
+            -- string (dynamic)
+            <> "0000000000000000000000000000000000000000000000000000000000000004" -- dave size
+            <> "6461766500000000000000000000000000000000000000000000000000000000" -- dave
+            -- array (dynamic)
+            <> "0000000000000000000000000000000000000000000000000000000000000003" -- array length
             <> "0000000000000000000000000000000000000000000000000000000000000001"
             <> "0000000000000000000000000000000000000000000000000000000000000002"
             <> "0000000000000000000000000000000000000000000000000000000000000003"
       roundTripGeneric given expected
+
     it "can do something really complicated" do
       let
         uint = unsafePartial $ fromJust $ uIntNFromBigNumber s256 $ embed 1
