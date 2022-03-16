@@ -103,7 +103,7 @@ mkHandler ::
   (Int -> Boolean) ->
   Boolean ->
   EventHandler Web3 e
-mkHandler _ provider indexV countV p shouldDelay = \e -> do
+mkHandler _ provider indexV countV p shouldDelay = \_e -> do
   Change c <- ask
   iAcc <- liftAff $ AVar.take indexV
   let

@@ -28,15 +28,15 @@ import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
--- TODO: rename to abiEncode
+-- TODO: rename to abiEncodeImplementation
   toDataBuilder :: a -> HexString
 
 class ABIDecode a where
--- TODO: rename to abiDecodeParser
+-- TODO: rename to abiDecodeParserImplementation
   fromDataParser :: Parser HexString a
 
 -- | Parse encoded value, droping the leading `0x`
--- TODO: rename to `runAbiDecodeParser`
+-- TODO: rename to `abiDecodeUsingParser`
 fromData :: forall a. ABIDecode a => HexString -> Either ParseError a
 fromData = flip runParser fromDataParser
 

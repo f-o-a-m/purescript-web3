@@ -28,9 +28,9 @@ import Type.Proxy (Proxy(..))
 -- Array Parsers
 --------------------------------------------------------------------------------
 
--- TODO: rename to `ToGenericArrayABIDecode`
+-- TODO: rename to `GenericArrayABIDecode`
 class ArrayParser a where
--- TODO: rename to `runArrayFromDataParserToGeneric`
+-- TODO: rename to `genericArrayABIDecodeImplementation`
   arrayParser :: Array HexString -> Maybe a
 
 instance arrayParserNoArgs :: ArrayParser NoArguments where
@@ -52,7 +52,7 @@ instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor na
 -- e.g. parses
 -- ["0x0000....", "0xfffff..."]
 -- to `Maybe (Tuple2 (Tagged (Proxy "xxx") Address) (Tagged (Proxy "yyy") Address))`
--- TODO: rename runArrayFromDataParser
+-- TODO: rename to `genericArrayABIDecode`
 genericArrayParser ::
   forall a rep.
   Generic a rep =>
