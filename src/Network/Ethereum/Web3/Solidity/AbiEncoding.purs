@@ -11,7 +11,7 @@ import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, Signed(..), getPadLength, mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, hexLength)
+import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, numberOfBytes)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
@@ -57,8 +57,8 @@ instance abiEncodeAddress :: ABIEncode Address where
 
 instance abiDecodeAddress :: ABIDecode Address where
   fromDataParser = do
-    _ <- takeBytes 12
-    maddr <- mkAddress <$> takeBytes 20
+    _ <- parseBytes 12
+    maddr <- mkAddress <$> parseBytes 20
     maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
 instance abiEncodeBytesD :: ABIEncode ByteString where
@@ -67,7 +67,7 @@ instance abiEncodeBytesD :: ABIEncode ByteString where
 instance abiDecodeBytesD :: ABIDecode ByteString where
   fromDataParser = do
     len <- unsafeToInt <$> fromDataParser
-    bytesDecode <<< unHex <$> takeBytes len
+    bytesDecode <<< unHex <$> parseBytes len
 
 instance abiEncodeString :: ABIEncode String where
   toDataBuilder = toDataBuilder <<< BS.toUTF8
@@ -84,8 +84,8 @@ instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
       len = sizeVal (DLProxy :: DLProxy n)
 
       zeroBytes = 32 - len
-    raw <- takeBytes len
-    _ <- takeBytes zeroBytes
+    raw <- parseBytes len
+    _ <- parseBytes zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
 instance abiEncodeVector :: (ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
@@ -169,11 +169,11 @@ uInt256HexBuilder x =
 
 -- | Parse as a signed `BigNumber`
 int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
-int256HexParser = toBigNumberFromSignedHexString <$> takeBytes 32
+int256HexParser = toBigNumberFromSignedHexString <$> parseBytes 32
 
 -- | Parse an unsigned `BigNumber`
 uInt256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
-uInt256HexParser = toBigNumber <$> takeBytes 32
+uInt256HexParser = toBigNumber <$> parseBytes 32
 
 -- | Decode a `Boolean` as a BigNumber
 fromBool :: Boolean -> BigNumber
@@ -184,13 +184,13 @@ toBool :: BigNumber -> Boolean
 toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
-takeBytes :: forall m. Monad m => Int -> ParserT HexString m HexString
-takeBytes n = A.fold <$> replicateA n takeByte
+parseBytes :: forall m. Monad m => Int -> ParserT HexString m HexString
+parseBytes n = A.fold <$> replicateA n parseByte
 
-takeByte :: forall m. Monad m => ParserT HexString m HexString
-takeByte = do
+parseByte :: forall m. Monad m => ParserT HexString m HexString
+parseByte = do
   ParseState input (Position position) _ <- get
-  if hexLength input < 2 then
+  if numberOfBytes input < 1 then
     fail "Unexpected EOF"
   else do
     let

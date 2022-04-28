@@ -165,6 +165,6 @@ makeRidiculousEthereumMessage s =
         $ BS.toUTF8
         $ "\x19" -- NOTE: 19 in hexadecimal is 25
         <> "Ethereum Signed Message:\n" -- NOTE: length of this string is 25
-        <> show (Hex.hexLength s `div` 2)
+        <> show (Hex.numberOfBytes s)
   in
     prefix <> s
