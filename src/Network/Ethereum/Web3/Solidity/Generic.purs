@@ -27,9 +27,9 @@ import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArgumen
 import Data.Maybe (Maybe(..))
 import Record as Record
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, take, toDataBuilder)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, parseBytes, toDataBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
-import Network.Ethereum.Core.HexString (HexString, hexLength)
+import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
 import Network.Ethereum.Core.BigNumber (unsafeToInt)
 import Text.Parsing.Parser (ParseError, ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
@@ -100,13 +100,13 @@ combineEncodedValues encodings =
       in
         case e.offset of
           Nothing -> addTailOffsets init (head : acc) tail
-          Just _ -> addTailOffsets init (head : acc) (adjust (hexLength e.encoding `div` 2) tail)
+          Just _ -> addTailOffsets init (head : acc) (adjust (numberOfBytes e.encoding) tail)
 
   headsOffset :: Int
   headsOffset =
     foldl
       ( \acc (EncodedValue e) -> case e.offset of
-          Nothing -> acc + (hexLength e.encoding `div` 2)
+          Nothing -> acc + numberOfBytes e.encoding
           Just _ -> acc + 32
       )
       0
@@ -215,12 +215,9 @@ dParser = do
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
-        _ <- take (dataOffset * 2 - (p.column - 1))
+        _ <- parseBytes (dataOffset - (p.column - 1))
         fromDataParser
 
---------------------------------------------------------------------------------
-  -- * Generator Helpers
-  --------------------------------------------------------------------------------
 class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
 class ArgsToRowListProxy args l | args -> l, l -> args where
   argsToRowListProxy :: Proxy args -> RLProxy l

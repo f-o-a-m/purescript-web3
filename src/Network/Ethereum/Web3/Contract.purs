@@ -27,10 +27,6 @@ import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event'
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
 
-
---------------------------------------------------------------------------------
-  -- * Events
-  --------------------------------------------------------------------------------
 class EventFilter :: forall k. k -> Constraint
 class EventFilter e where
   -- | Event filter structure used by low-level subscription methods
