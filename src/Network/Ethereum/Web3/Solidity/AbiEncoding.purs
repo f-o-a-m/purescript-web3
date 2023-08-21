@@ -4,7 +4,6 @@ import Prelude
 
 import Control.Monad.State (get, put)
 import Data.Array (cons, fold, foldMap, length)
-import Data.Array (length, fold) as A
 import Data.Array.Partial (init)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
@@ -14,18 +13,15 @@ import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
 import Data.Traversable (for, scanl)
 import Data.Unfoldable (replicateA)
-import Debug (traceM)
 import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, numberOfBytes, padLeft, padLeftSigned, padRight, toBigNumber, toBigNumberFromSignedHexString, toSignedHexString, unHex)
-import Network.Ethereum.Core.HexString (numberOfBytes)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
-import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic, typeName)
+import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, DLProxy(..), sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
-import Node.Encoding (byteLength)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (ParseError, Parser, ParseState(..), ParserT, fail, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
@@ -227,16 +223,11 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 parseBytes :: forall m. Monad m => Int -> ParserT HexString m HexString
-parseBytes n = do
-  traceM ("parseBytes " <> show n)
-  A.fold <$> replicateA n parseByte
+parseBytes n = fold <$> replicateA n parseByte
 
 parseByte :: forall m. Monad m => ParserT HexString m HexString
 parseByte = do
   ParseState input (Position position) _ <- get
-  traceM "input"
-  traceM input
-  traceM "\n"
   if numberOfBytes input < 1 then
     fail "Unexpected EOF"
   else do

@@ -8,7 +8,6 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Symbol (class IsSymbol)
-import Debug (traceM)
 import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Core.BigNumber as BigNumber
 import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
@@ -209,7 +208,6 @@ factorParser
 dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
 dynamicFactorParser = do
   dataOffset <- BigNumber.unsafeToInt <$> fromDataParser
-  traceM $ "DataOffset " <> show dataOffset
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
