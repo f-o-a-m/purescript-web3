@@ -1,27 +1,36 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
+
+import Control.Monad.State (get, put)
+import Data.Array (cons, fold, foldMap, length)
 import Data.Array (length, fold) as A
+import Data.Array.Partial (init)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, toString, fromString, length, Encoding(Hex)) as BS
 import Data.Either (Either)
-import Data.Foldable (foldMap)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
+import Data.Traversable (for, scanl)
 import Data.Unfoldable (replicateA)
+import Debug (traceM)
 import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, padLeft, padLeftSigned, padRight, toBigNumberFromSignedHexString, toBigNumber, toSignedHexString, unHex, numberOfBytes)
+import Network.Ethereum.Core.HexString (HexString, Signed(..), mkHexString, numberOfBytes, padLeft, padLeftSigned, padRight, toBigNumber, toBigNumberFromSignedHexString, toSignedHexString, unHex)
+import Network.Ethereum.Core.HexString (numberOfBytes)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
+import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic, typeName)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, DLProxy(..), sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Vector (Vector)
+import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
+import Node.Encoding (byteLength)
 import Partial.Unsafe (unsafePartial)
 import Text.Parsing.Parser (ParseError, Parser, ParseState(..), ParserT, fail, runParser)
-import Control.Monad.State (get, put)
+import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
+import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
 class ABIEncode a where
@@ -88,23 +97,56 @@ instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
     _ <- parseBytes zeroBytes
     pure <<< update proxyBytesN <<< bytesDecode <<< unHex $ raw
 
-instance abiEncodeVector :: (ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
-  toDataBuilder as = foldMap toDataBuilder as
+instance (EncodingType a, ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
+    toDataBuilder l = 
+      if isDynamic (Proxy :: Proxy a) then do
+         let encs = map toDataBuilder (unVector l)
+             lengths = map numberOfBytes encs
+             len = sizeVal (DLProxy :: DLProxy n)
+             offsets = 
+               let seed = 32 * len
+               in seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
+         foldMap toDataBuilder offsets <> fold encs
+      else
+        foldMap toDataBuilder $ (unVector l :: Array a)
 
-instance abiDecodeVector :: (ABIDecode a, KnownSize n) => ABIDecode (Vector n a) where
-  fromDataParser =
-    let
-      len = sizeVal (DLProxy :: DLProxy n)
-    in
-      replicateA len fromDataParser
 
-instance abiEncodeArray :: ABIEncode a => ABIEncode (Array a) where
-  toDataBuilder as = uInt256HexBuilder (embed $ A.length as) <> foldMap toDataBuilder as
+instance (EncodingType a, KnownSize n, ABIDecode a) => ABIDecode (Vector n a) where
+    fromDataParser = do 
+      let len = sizeVal (DLProxy :: DLProxy n)
+      if isDynamic (Proxy :: Proxy a) then do
+          offsets <- replicateA len uInt256HexParser
+          let currentOffset = 32 * len
+          for offsets $ \dataOffset -> lookAhead $ do
+              _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
+              fromDataParser
+        else replicateA len fromDataParser
+          
 
-instance abiDecodeArray :: ABIDecode a => ABIDecode (Array a) where
-  fromDataParser = do
-    len <- unsafeToInt <$> uInt256HexParser
-    replicateA len fromDataParser
+instance (EncodingType a, ABIEncode a) => ABIEncode (Array a) where
+    toDataBuilder l = do 
+      uInt256HexBuilder (embed $ length l) <> 
+        if isDynamic (Proxy :: Proxy a) then do
+            let encs = map toDataBuilder l
+                lengths = map numberOfBytes encs
+                offsets = 
+                  let seed = 32 * length l
+                  in seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
+            foldMap (uInt256HexBuilder <<< embed) offsets <> fold encs
+          else
+            foldMap toDataBuilder l
+
+instance (EncodingType a, ABIDecode a) => ABIDecode (Array a) where
+    fromDataParser = do 
+      len <- unsafeToInt <$> uInt256HexParser
+      if isDynamic (Proxy :: Proxy a) 
+        then do
+          offsets <- replicateA len uInt256HexParser
+          let currentOffset = 32 * len
+          for offsets $ \dataOffset -> lookAhead $ do
+            _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
+            fromDataParser
+        else replicateA len fromDataParser
 
 instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
   toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
@@ -185,11 +227,16 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 parseBytes :: forall m. Monad m => Int -> ParserT HexString m HexString
-parseBytes n = A.fold <$> replicateA n parseByte
+parseBytes n = do
+  traceM ("parseBytes " <> show n)
+  A.fold <$> replicateA n parseByte
 
 parseByte :: forall m. Monad m => ParserT HexString m HexString
 parseByte = do
   ParseState input (Position position) _ <- get
+  traceM "input"
+  traceM input
+  traceM "\n"
   if numberOfBytes input < 1 then
     fail "Unexpected EOF"
   else do

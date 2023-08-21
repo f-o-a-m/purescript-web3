@@ -20,6 +20,7 @@ module Network.Ethereum.Web3.Contract.Events
   ) where
 
 import Prelude
+
 import Control.Coroutine (Process, Consumer, producer, consumer, pullFrom, runProcess)
 import Control.Coroutine.Transducer (Transducer, awaitForever, fromProducer, toProducer, yieldT, (=>=))
 import Control.Monad.Fork.Class (bracket)
@@ -29,11 +30,11 @@ import Control.Monad.Trans.Class (lift)
 import Control.Parallel (class Parallel)
 import Data.Array (catMaybes, sort)
 import Data.Either (Either(..))
+import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
 import Data.Symbol (class IsSymbol)
-import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Traversable (for_)
 import Data.Tuple (Tuple(..), fst)
 import Data.Variant (Variant, class VariantMatchCases, expand, inj, match)
@@ -44,12 +45,12 @@ import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapp
 import Network.Ethereum.Core.BigNumber (BigNumber, embed)
 import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, decodeEvent)
+import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent)
 import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Prim.RowList as RowList
 import Record as Record
 import Type.Proxy (Proxy(..))
 import Type.Row as Row
-import Prim.RowList as RowList
 
 --------------------------------------------------------------------------------
 -- * Types

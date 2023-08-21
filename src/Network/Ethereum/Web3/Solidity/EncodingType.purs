@@ -66,7 +66,7 @@ instance encodingTypeVector :: (KnownSize n, EncodingType a) => EncodingType (Ve
       baseTypeName = typeName (Proxy :: Proxy a)
     in
       const $ baseTypeName <> "[" <> n <> "]"
-  isDynamic = const $ isDynamic (Proxy :: Proxy a)
+  isDynamic _ = isDynamic (Proxy :: Proxy a)
 
 instance encodingTypeBytesD :: EncodingType ByteString where
   typeName = const "bytes[]"
