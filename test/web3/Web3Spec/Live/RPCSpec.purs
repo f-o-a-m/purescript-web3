@@ -17,7 +17,7 @@ import Node.Buffer.Class (slice)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
-import Type.Quotient (mkQuotient, runQuotient)
+import Type.Quotient (runQuotient)
 import Web3Spec.Live.Utils (assertWeb3, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
@@ -140,9 +140,6 @@ spec provider =
           tx' <- Api.eth_getTransactionByBlockNumberAndIndex (BN txReceipt.blockNumber) zero
           pure $ Tuple tx tx'
       tx `shouldEqual` tx'
-
-signatureToByteString :: Sig.Signature -> BS.ByteString
-signatureToByteString (Sig.Signature sig) = Hex.toByteString sig.r <> Hex.toByteString sig.s <> BS.singleton (mkQuotient sig.v)
 
 signatureFromByteString :: BS.ByteString -> Sig.Signature
 signatureFromByteString bs =

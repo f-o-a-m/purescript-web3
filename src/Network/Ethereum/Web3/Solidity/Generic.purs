@@ -1,7 +1,6 @@
 module Network.Ethereum.Web3.Solidity.Generic where
 
 import Prelude
-
 import Control.Monad.State.Class (get)
 import Data.Array (foldMap, foldl, length, sortBy, (:))
 import Data.Either (Either)

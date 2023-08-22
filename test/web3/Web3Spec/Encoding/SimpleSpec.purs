@@ -8,7 +8,7 @@ import Data.ByteString as BS
 import Data.Either (Either(Right), either)
 import Data.Foldable (intercalate)
 import Foreign (ForeignError)
-import Foreign.Generic (decodeJSON, defaultOptions)
+import Foreign.Generic (decodeJSON)
 import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (unwrap)
