@@ -20,7 +20,6 @@ module Network.Ethereum.Web3.Contract.Events
   ) where
 
 import Prelude
-
 import Control.Coroutine (Process, Consumer, producer, consumer, pullFrom, runProcess)
 import Control.Coroutine.Transducer (Transducer, awaitForever, fromProducer, toProducer, yieldT, (=>=))
 import Control.Monad.Fork.Class (bracket)

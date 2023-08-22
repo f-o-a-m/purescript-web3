@@ -1,7 +1,6 @@
 module Network.Ethereum.Web3.Solidity.Generic where
 
 import Prelude
-
 import Control.Monad.State.Class (get)
 import Data.Array (foldMap, foldl, length, sortBy, (:))
 import Data.Either (Either)
@@ -38,50 +37,55 @@ type EncodedValue
     }
 
 combineEncodedValues :: Array EncodedValue -> HexString
-combineEncodedValues = sortBy (\a b -> a.order `compare` b.order) >>> \encodings ->
-  let
-    wordLengthInBytes = 32
+combineEncodedValues =
+  sortBy (\a b -> a.order `compare` b.order)
+    >>> \encodings ->
+        let
+          wordLengthInBytes = 32
 
-    headsOffsetInBytes :: Int
-    headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
+          headsOffsetInBytes :: Int
+          headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
 
-    (heads :: HexString) =
-      foldl
-        ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue -> if encodedValue.isDynamic
-            then
-            { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
-            , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
-            }
-            else
-            { accumulator: accumulator <> encodedValue.encoding
-            , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
-            }
-        )
-        { accumulator: mempty
-        , lengthOfPreviousDynamicValues: 0
-        }
-        encodings
-      # _.accumulator
+          (heads :: HexString) =
+            foldl
+              ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
+                  if encodedValue.isDynamic then
+                    { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
+                    }
+                  else
+                    { accumulator: accumulator <> encodedValue.encoding
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
+                    }
+              )
+              { accumulator: mempty
+              , lengthOfPreviousDynamicValues: 0
+              }
+              encodings
+              # _.accumulator
 
-    (tails :: HexString) =
-      foldMap
-        (\encodedValue -> if encodedValue.isDynamic
-            then encodedValue.encoding
-            else mempty
-        )
-        encodings
-    in
-      heads <> tails
+          (tails :: HexString) =
+            foldMap
+              ( \encodedValue ->
+                  if encodedValue.isDynamic then
+                    encodedValue.encoding
+                  else
+                    mempty
+              )
+              encodings
+        in
+          heads <> tails
 
-mkEncodedValue :: forall a . EncodingType a => ABIEncode a => Array EncodedValue -> a -> EncodedValue
+mkEncodedValue :: forall a. EncodingType a => ABIEncode a => Array EncodedValue -> a -> EncodedValue
 mkEncodedValue otherEncodedArray a =
-  let encoding = toDataBuilder a
+  let
+    encoding = toDataBuilder a
   in
-  { encoding
-  , order: 1 + length otherEncodedArray
-  , isDynamic: isDynamic (Proxy :: Proxy a)
-  , encodingLengthInBytes: lengthOfHexStringInBytes encoding
-  }
+    { encoding
+    , order: 1 + length otherEncodedArray
+    , isDynamic: isDynamic (Proxy :: Proxy a)
+    , encodingLengthInBytes: lengthOfHexStringInBytes encoding
+    }
   where
   lengthOfHexStringInBytes hexString = numberOfBytes hexString
 
@@ -136,7 +140,6 @@ mkEncodedValue otherEncodedArray a =
 --      )
 --      0
 --      encodings
-
 -- | An internally used class for encoding
 class ABIData a where
   _serialize :: Array EncodedValue -> a -> Array EncodedValue
@@ -145,13 +148,10 @@ instance abiDataBaseNull :: ABIData NoArguments where
   _serialize encoded _ = encoded
 
 instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
-  _serialize encoded (Argument b) = 
-    mkEncodedValue encoded b : encoded
-
+  _serialize encoded (Argument b) = mkEncodedValue encoded b : encoded
 
 instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData (Product (Argument b) a) where
-  _serialize encoded (Product (Argument b) a) =
-    _serialize (mkEncodedValue encoded b : encoded) a
+  _serialize encoded (Product (Argument b) a) = _serialize (mkEncodedValue encoded b : encoded) a
 
 instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name a) where
   genericToDataBuilder (Constructor a) = combineEncodedValues $ _serialize [] a
@@ -196,22 +196,22 @@ genericFromData ::
 genericFromData = flip runParser genericABIDecode
 
 -- helpers
-factorParser 
-  :: forall a. 
-     ABIDecode a 
-  => EncodingType a 
-  => Parser HexString a
+factorParser ::
+  forall a.
+  ABIDecode a =>
+  EncodingType a =>
+  Parser HexString a
 factorParser
   | isDynamic (Proxy :: Proxy a) = dynamicFactorParser
   | otherwise = fromDataParser
 
 dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
 dynamicFactorParser = do
-  dataOffset <-  BigNumber.unsafeToInt <$> fromDataParser
+  dataOffset <- BigNumber.unsafeToInt <$> fromDataParser
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
-        _ <- parseBytes (dataOffset - (p.column- 1))
+        _ <- parseBytes (dataOffset - (p.column - 1))
         fromDataParser
 
 class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
