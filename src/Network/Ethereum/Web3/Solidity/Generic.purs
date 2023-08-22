@@ -1,14 +1,14 @@
 module Network.Ethereum.Web3.Solidity.Generic where
 
 import Prelude
+
 import Control.Monad.State.Class (get)
 import Data.Array (foldMap, foldl, length, sortBy, (:))
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Core.BigNumber (embed)
-import Network.Ethereum.Core.BigNumber as BigNumber
+import Network.Ethereum.Core.BigNumber (embed, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, parseBytes, toDataBuilder, uInt256HexBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
@@ -84,62 +84,9 @@ mkEncodedValue otherEncodedArray a =
     { encoding
     , order: 1 + length otherEncodedArray
     , isDynamic: isDynamic (Proxy :: Proxy a)
-    , encodingLengthInBytes: lengthOfHexStringInBytes encoding
+    , encodingLengthInBytes: numberOfBytes encoding
     }
-  where
-  lengthOfHexStringInBytes hexString = numberOfBytes hexString
 
---combineEncodedValues :: Array EncodedValue -> HexString
---combineEncodedValues encodings =
---  let
---    sortedEs = adjust headsOffset $ sort encodings
---
---    encodings' = addTailOffsets headsOffset [] sortedEs
---  in
---    let
---      heads =
---        foldl
---          ( \acc (EncodedValue e) -> case e.offset of
---              Nothing -> acc <> e.encoding
---              Just o -> acc <> toDataBuilder o
---          )
---          mempty
---          encodings'
---
---      tails =
---        foldl
---          ( \acc (EncodedValue e) -> case e.offset of
---              Nothing -> acc
---              Just _ -> acc <> e.encoding
---          )
---          mempty
---          encodings'
---    in
---      heads <> tails
---  where
---  adjust :: Int -> Array EncodedValue -> Array EncodedValue
---  adjust n = map (\(EncodedValue e) -> EncodedValue e { offset = add n <$> e.offset })
---
---  addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
---  addTailOffsets init acc es = case uncons es of
---    Nothing -> reverse acc
---    Just { head, tail } ->
---      let
---        EncodedValue e = head
---      in
---        case e.offset of
---          Nothing -> addTailOffsets init (head : acc) tail
---          Just _ -> addTailOffsets init (head : acc) (adjust (numberOfBytes e.encoding) tail)
---
---  headsOffset :: Int
---  headsOffset =
---    foldl
---      ( \acc (EncodedValue e) -> case e.offset of
---          Nothing -> acc + numberOfBytes e.encoding
---          Just _ -> acc + 32
---      )
---      0
---      encodings
 -- | An internally used class for encoding
 class ABIData a where
   _serialize :: Array EncodedValue -> a -> Array EncodedValue
@@ -207,7 +154,7 @@ factorParser
 
 dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
 dynamicFactorParser = do
-  dataOffset <- BigNumber.unsafeToInt <$> fromDataParser
+  dataOffset <- unsafeToInt <$> fromDataParser
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
