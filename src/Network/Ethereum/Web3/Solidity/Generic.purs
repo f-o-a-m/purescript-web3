@@ -8,10 +8,9 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Symbol (class IsSymbol)
-import Debug (traceM)
 import Network.Ethereum.Core.BigNumber (embed)
 import Network.Ethereum.Core.BigNumber as BigNumber
-import Network.Ethereum.Core.HexString (HexString, numberOfBytes, unHex)
+import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, parseBytes, toDataBuilder, uInt256HexBuilder)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Prim.Row as Row
@@ -207,16 +206,12 @@ factorParser
   | otherwise = fromDataParser
 
 dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
-dynamicFactorParser = traceM "dynamicFactorParser" *> do
-  _dataOffset <- fromDataParser
-  traceM $ "_dataOffset " <> show _dataOffset 
-  let dataOffset  = BigNumber.unsafeToInt _dataOffset
+dynamicFactorParser = do
+  dataOffset <-  BigNumber.unsafeToInt <$> fromDataParser
   lookAhead
     $ do
         (ParseState _ (Position p) _) <- get
-        traceM $ "position: " <> show p
-        bs <- parseBytes (dataOffset - (p.column- 1))
-        traceM $ "Throw away " <> unHex bs 
+        _ <- parseBytes (dataOffset - (p.column- 1))
         fromDataParser
 
 class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
