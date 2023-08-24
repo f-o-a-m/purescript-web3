@@ -10,7 +10,7 @@ import Prelude
 import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, kind DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, DigitList)
 import Network.Ethereum.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
 

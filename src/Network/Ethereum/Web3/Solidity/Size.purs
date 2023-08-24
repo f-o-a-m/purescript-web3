@@ -20,9 +20,9 @@ module Network.Ethereum.Web3.Solidity.Size
   , class ByteSize
   , class Inc
   -- more low level staff
-  , kind Digit
+  , Digit
   , DProxy(..)
-  , kind DigitList
+  , DigitList
   , DTwo
   , class IncP
   , class IncD

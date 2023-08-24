@@ -11,7 +11,6 @@ You can edit this file as you like.
   , "errors"
   , "eth-core"
   , "foreign"
-  , "foreign-generic"
   , "fork"
   , "heterogeneous"
   , "parsing"

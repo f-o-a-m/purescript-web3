@@ -7,7 +7,7 @@ module Network.Ethereum.Web3.Solidity.UInt
 import Prelude
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, kind DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, DigitList)
 
 --------------------------------------------------------------------------------
 -- * Statically sized unsigned integers
