@@ -8,7 +8,6 @@ import Data.ByteString as BS
 import Data.Either (Either(Right), either)
 import Data.Foldable (intercalate)
 import Foreign (ForeignError)
-import Foreign.Generic (decodeJSON, defaultOptions)
 import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (unwrap)
@@ -22,6 +21,7 @@ import Network.Ethereum.Web3.Solidity.Sizes (s1, s12, s16, s248, s256, s3, s8)
 import Network.Ethereum.Web3.Solidity.UInt (uIntNFromBigNumber)
 import Network.Ethereum.Web3.Types (Block, FalseOrObject(..), HexString, BigNumber, SyncStatus(..), embed, mkAddress, mkHexString, unHex)
 import Partial.Unsafe (unsafePartial)
+import Simple.JSON (readJSON')
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 
@@ -254,11 +254,11 @@ falseOrObjectTests =
   describe "FalseOrObject tests" do
     it "can decode FalseOrObject instances that are false" do
       let
-        decodedFalse = (runExcept $ decodeJSON "false") :: (Either (NonEmptyList ForeignError) (FalseOrObject SyncStatus))
+        decodedFalse = (runExcept $ readJSON' "false") :: (Either (NonEmptyList ForeignError) (FalseOrObject SyncStatus))
       decodedFalse `shouldEqual` (Right $ FalseOrObject Nothing)
     it "can decode FalseOrObject instances that are objects" do
       let
-        decodedObj = runExcept $ decodeJSON "{ \"startingBlock\": \"0x0\", \"currentBlock\": \"0x1\", \"highestBlock\": \"0x2\" }"
+        decodedObj = runExcept $ readJSON' "{ \"startingBlock\": \"0x0\", \"currentBlock\": \"0x1\", \"highestBlock\": \"0x2\" }"
       decodedObj `shouldEqual` (Right $ FalseOrObject $ Just $ SyncStatus { startingBlock: embed 0, currentBlock: embed 1, highestBlock: embed 2 })
 
 blockTests :: Spec Unit
@@ -266,7 +266,7 @@ blockTests =
   describe "Block decoding tests" do
     it "can decode normal blocks" do
       let
-        (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ decodeJSON blockPlaintext
+        (decodedBlockE :: Either (NonEmptyList ForeignError) Block) = runExcept $ readJSON' blockPlaintext
       dBlock <- unwrap <$> either (throwError <<< error <<< show) pure decodedBlockE
       dBlock.nonce `shouldEqual` (Just $ upToHex "0x0000000000000000")
       dBlock.hash `shouldEqual` (Just $ upToHex "0x093ff26b85b5e3ac3e331f3d766a81990be76ec8ac79f62a81e30faa642dc26f")

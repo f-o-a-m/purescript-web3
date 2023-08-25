@@ -18,7 +18,7 @@ import Effect.Class.Console as C
 import Test.Spec (ComputationType(..), SpecT, hoistSpec)
 import Network.Ethereum.Core.BigNumber (decimal, parseBigNumber)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, Proxy, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
