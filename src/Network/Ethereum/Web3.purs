@@ -25,7 +25,6 @@ import Network.Ethereum.Web3.Solidity
   , DCons
   , class KnownSize
   , sizeVal
-  , Proxy(..)
   , class IntSize
   , class ByteSize
   , class Inc

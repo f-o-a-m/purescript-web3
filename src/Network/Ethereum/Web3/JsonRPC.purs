@@ -38,10 +38,10 @@ instance remoteBase :: (ReadForeign a) => Remote (Web3 a) where
     -- NOTE: this is a bit hacky
     -- see Network.Ethereum.Web3.Types.Types#parseMsg
     asError :: Web3Error -> Error
-    asError e = error $ genericEncodeJSON defaultOptions e
+    asError _ = error $ "web3"
 
-instance remoteInductive :: (WriteForeign a, ReadForeign b) => Remote (a -> b) where
-  remote_ f x = remote_ $ \p args -> f p (encode x : args)
+instance remoteInductive :: (WriteForeign a, Remote b) => Remote (a -> b) where
+  remote_ f x = remote_ $ \p args -> f p (writeImpl x : args)
 
 foreign import _sendAsync :: Provider -> Request -> EffectFnAff Foreign
 
