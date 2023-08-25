@@ -47,7 +47,7 @@ import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Error.Util (hush)
 import Control.Lazy (class Lazy)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
-import Control.Monad.Except (runExcept)
+import Control.Monad.Except (except, runExcept)
 import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
@@ -78,25 +78,8 @@ import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, readJSON', undefined)
-
---------------------------------------------------------------------------------
--- * Generic encode/decode helper
---------------------------------------------------------------------------------
-automagicReadImpl
-  :: forall a rep
-   . Generic a rep
-  => Foreign
-  -> F a
-automagicReadImpl _ = fail (ForeignError "todo")
--- automagicReadImpl = genericDecode (AG.defaultEncoding { unwrapSingleConstructors = true })
-
-automagicWriteImpl
-  :: forall a rep
-   . Generic a rep
-  => a
-  -> Foreign
-automagicWriteImpl _ = undefined
--- automagicWriteImpl = genericEncode (AG.defaultEncoding { unwrapSingleConstructors = true })
+import Simple.JSON as SJ
+import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -137,6 +120,17 @@ instance ordChainCursor :: Ord ChainCursor where
   compare _ Latest = LT
   compare a b = invert $ compare b a
 
+instance readFChainCursor :: ReadForeign ChainCursor where
+  readImpl f = readLatest <|> readBN
+    where
+      readLatest = do
+        s <- readString f
+        if s == "latest" then
+          pure Latest
+        else
+          fail (TypeMismatch "Latest" s)
+      readBN = BN <$> readImpl f
+
 instance writeFChainCursor :: WriteForeign ChainCursor where
   writeImpl cm = case cm of
     Latest -> writeImpl "latest"
@@ -166,16 +160,14 @@ newtype Block
   }
 
 derive instance genericBlock :: Generic Block _
-
 derive instance newtypeBlock :: Newtype Block _
-
 derive instance eqBlock :: Eq Block
+derive newtype instance readFBlock :: ReadForeign Block
+derive newtype instance writeFBlock :: WriteForeign Block
 
 instance showBlock :: Show Block where
   show = genericShow
 
-instance readFBlock :: ReadForeign Block where
-  readImpl = automagicReadImpl
 
 --------------------------------------------------------------------------------
 -- * Transaction
@@ -196,16 +188,13 @@ newtype Transaction
   }
 
 derive instance genericTransaction :: Generic Transaction _
-
 derive instance newtypeTransaction :: Newtype Transaction _
-
+derive newtype instance readFTransaction :: ReadForeign Transaction
+derive newtype instance writeFTransaction :: WriteForeign Transaction
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow
-
-instance readFTransaction :: ReadForeign Transaction where
-  readImpl = automagicReadImpl
 
 --------------------------------------------------------------------------------
 -- * TransactionReceipt
@@ -229,6 +218,11 @@ instance readFTransactionStatus :: ReadForeign TransactionStatus where
       "0x0" -> pure Failed
       _ -> fail $ TypeMismatch "TransactionStatus" str
 
+instance writeFTransactionStatus :: WriteForeign TransactionStatus where
+  writeImpl = case _ of
+    Succeeded -> writeImpl "0x1"
+    Failed -> writeImpl "0x0"
+
 newtype TransactionReceipt
   = TransactionReceipt
   { transactionHash :: HexString
@@ -243,16 +237,14 @@ newtype TransactionReceipt
   }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
-
 derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
-
 derive instance eqTxReceipt :: Eq TransactionReceipt
+derive newtype instance readFTxReceipt :: ReadForeign TransactionReceipt
+derive newtype instance writeFTxReceipt :: WriteForeign TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
   show = genericShow
 
-instance readFTxReceipt :: ReadForeign TransactionReceipt where
-  readImpl = automagicReadImpl
 
 --------------------------------------------------------------------------------
 -- * TransactionOptions
@@ -358,8 +350,8 @@ derive instance newtypeSyncStatus :: Newtype SyncStatus _
 
 derive instance eqSyncStatus :: Eq SyncStatus
 
-instance reaDFSyncStatus :: ReadForeign SyncStatus where
-  readImpl = automagicReadImpl
+derive newtype instance readFSyncStatus :: ReadForeign SyncStatus
+derive newtype instance writeFSyncStatus :: WriteForeign SyncStatus
 
 instance showSyncStatus :: Show SyncStatus where
   show = genericShow
@@ -486,8 +478,8 @@ instance showFilter :: Show (Filter a) where
 instance eqFilter :: Eq (Filter a) where
   eq = genericEq
 
-instance writeFFilter :: WriteForeign (Filter a) where
-  writeImpl = automagicWriteImpl
+derive newtype instance readFFilter :: ReadForeign (Filter a)
+derive newtype instance writeFFilter :: WriteForeign (Filter a)
 
 defaultFilter :: forall a. Filter a
 defaultFilter =
@@ -523,6 +515,8 @@ newtype FilterId
   = FilterId BigNumber
 
 derive instance genericFilterId :: Generic FilterId _
+derive newtype instance readFFilterId :: ReadForeign FilterId
+derive newtype instance writeFFilterId :: WriteForeign FilterId
 
 instance showFilterId :: Show FilterId where
   show = genericShow
@@ -530,11 +524,6 @@ instance showFilterId :: Show FilterId where
 instance eqFilterId :: Eq FilterId where
   eq = genericEq
 
-instance readFFilterId :: ReadForeign FilterId where
-  readImpl = automagicReadImpl
-
-instance writeFFilterId :: WriteForeign FilterId where
-  writeImpl = automagicWriteImpl
 
 --------------------------------------------------------------------------------
 -- | EventAction
@@ -573,17 +562,15 @@ newtype Change
   }
 
 derive instance genericChange :: Generic Change _
-
 derive instance newtypeChange :: Newtype Change _
+derive newtype instance readFChange :: ReadForeign Change
+derive newtype instance writeFChange :: WriteForeign Change
 
 instance showChange :: Show Change where
   show = genericShow
 
 instance eqChange :: Eq Change where
   eq = genericEq
-
-instance readFChange :: ReadForeign Change where
-  readImpl = automagicReadImpl
 
 --------------------------------------------------------------------------------
 -- * Json Decode Types
@@ -633,9 +620,8 @@ newtype Request
   }
 
 derive instance genericRequest :: Generic Request _
-
-instance writeFRequest :: WriteForeign Request where
-  writeImpl = automagicWriteImpl
+derive newtype instance readFRequest :: ReadForeign Request
+derive newtype instance writeFRequest :: WriteForeign Request
 
 mkRequest :: MethodName -> Int -> Array Foreign -> Request
 mkRequest name reqId ps =
@@ -676,20 +662,15 @@ newtype RpcError
   }
 
 derive instance newtypeRPCError :: Newtype RpcError _
-
 derive instance genericRpcError :: Generic RpcError _
+derive newtype instance readFRpcError :: ReadForeign RpcError
+derive newtype instance writeFRpcError :: WriteForeign RpcError
 
 instance showRpcError :: Show RpcError where
   show = genericShow
 
 instance eqRpcError :: Eq RpcError where
   eq = genericEq
-
-instance readFRpcError :: ReadForeign RpcError where
-  readImpl = automagicReadImpl
-
-instance writeFRpcError :: WriteForeign RpcError where
-  writeImpl = automagicWriteImpl
 
 data Web3Error
   = Rpc RpcError
@@ -706,11 +687,24 @@ instance eqWeb3Error :: Eq Web3Error where
   eq = genericEq
 
 instance readFWeb3Error :: ReadForeign Web3Error where
-  readImpl x = (map Rpc $ readProp "error" x >>= readImpl) <|> nullParser
+  readImpl x = remoteParser <|> parserErrorParser <|> rpcParser <|> nullParser
     where
+    remoteParser = (map RemoteError $ readProp "_remoteError" x >>= readImpl)
+    parserErrorParser = (map ParserError $ readProp "_parserError" x >>= readImpl)
+    rpcParser = (map Rpc $ readProp "error" x >>= readImpl)
     nullParser = do
       res <- readProp "result" x
       if isNull res then
         pure NullError
       else
         readString res >>= \r -> fail (TypeMismatch "NullError" r)
+
+
+foreign import _null :: Foreign
+
+instance writeFWeb3Error :: WriteForeign Web3Error where
+  writeImpl x = case x of
+    Rpc rpcErr -> writeImpl { error: rpcErr }
+    NullError -> writeImpl { result: _null }
+    RemoteError _remoteError -> writeImpl { _remoteError }
+    ParserError _parserError -> writeImpl { _parserError }

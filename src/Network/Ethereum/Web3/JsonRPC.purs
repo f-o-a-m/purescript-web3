@@ -13,7 +13,7 @@ import Foreign (Foreign)
 -- import Foreign.Generic (defaultOptions, genericEncodeJSON)
 import Network.Ethereum.Web3.Types (MethodName, Request, Response(..), Web3, Web3Error(..), mkRequest)
 import Network.Ethereum.Web3.Types.Provider (Provider)
-import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, writeJSON)
 
 --------------------------------------------------------------------------------
 -- * Asynchronous RPC Calls
@@ -38,7 +38,7 @@ instance remoteBase :: (ReadForeign a) => Remote (Web3 a) where
     -- NOTE: this is a bit hacky
     -- see Network.Ethereum.Web3.Types.Types#parseMsg
     asError :: Web3Error -> Error
-    asError _ = error $ "web3"
+    asError e = error $ writeJSON e
 
 instance remoteInductive :: (WriteForeign a, Remote b) => Remote (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (writeImpl x : args)
