@@ -7,7 +7,8 @@ module Network.Ethereum.Web3.Solidity.UInt
 import Prelude
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, DLProxy(..), sizeVal, DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, DigitList)
+import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
 -- * Statically sized unsigned integers
@@ -29,11 +30,11 @@ unUIntN (UIntN a) = a
 
 -- | Attempt to coerce an unsigned integer into a statically sized one.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-uIntNFromBigNumber :: forall n. KnownSize n => DLProxy n -> BigNumber -> Maybe (UIntN n)
+uIntNFromBigNumber :: forall n. KnownSize n => Proxy n -> BigNumber -> Maybe (UIntN n)
 uIntNFromBigNumber _ a
   | a < zero = Nothing
   | otherwise =
     let
-      maxVal = (embed 2) `pow` (sizeVal (DLProxy :: DLProxy n)) - one
+      maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n)) - one
     in
       if a > maxVal then Nothing else Just <<< UIntN $ a

@@ -1,7 +1,6 @@
 "use strict";
 
-
-exports._sendAsync = function (provider) {
+export const sendAsync = function (provider) {
     return function (request) {
         return function(onError, onSuccess) {
             provider.sendAsync(request, function(err, succ) {

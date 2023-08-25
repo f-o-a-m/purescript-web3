@@ -53,19 +53,26 @@ let additions =
       , eth-core =
         { dependencies =
           [ "argonaut"
+          , "arrays"
           , "bytestrings"
-          , "console"
-          , "debug"
           , "effect"
+          , "either"
+          , "foreign"
+          , "functions"
+          , "integers"
+          , "maybe"
+          , "node-buffer"
           , "ordered-collections"
-          , "parsing"
+          , "partial"
           , "prelude"
-          , "psci-support"
+          , "quotient"
           , "ring-modules"
           , "simple-json"
+          , "strings"
+          , "unsafe-coerce"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core.git"
-        , version = "v8.0.0"
+        , version = "b35eec551db445cb6a3577eaea3fe7a3bc052472"
         }
       , quotient =
         { dependencies = [ "prelude", "quickcheck" ]

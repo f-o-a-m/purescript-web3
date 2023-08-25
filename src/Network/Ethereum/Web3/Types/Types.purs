@@ -53,6 +53,8 @@ import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, li
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
+import Data.Argonaut.Decode.Generic as AG
+import Data.Argonaut.Encode.Generic as AG
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Eq.Generic (genericEq)
@@ -67,16 +69,14 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error, throwException)
 import Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
-import Foreign.NullOrUndefined (undefined)
 import Foreign.Object as FO
-import Foreign.Class (class Decode, class Encode, decode, encode)
-import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
+-- import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
 import Foreign.Index (readProp)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
-import Simple.JSON (class ReadForeign, class WriteForeign)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, undefined)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -85,17 +85,11 @@ newtype BlockNumber
   = BlockNumber BigNumber
 
 derive instance genericBlockNumber :: Generic BlockNumber _
-
 derive newtype instance showBlockNumber :: Show BlockNumber
-
 derive newtype instance eqBlockNumber :: Eq BlockNumber
-
 derive newtype instance ordBlockNumber :: Ord BlockNumber
-
-derive newtype instance decodeBlockNumber :: Decode BlockNumber
-
-derive newtype instance encodeBlockNumber :: Encode BlockNumber
-
+derive newtype instance readFBlockNumber :: ReadForeign BlockNumber
+derive newtype instance writeFBlockNumber :: WriteForeign BlockNumber
 derive instance newtypeBlockNumber :: Newtype BlockNumber _
 
 instance encodeJsonBlockNumber :: A.EncodeJson BlockNumber where
@@ -105,10 +99,10 @@ instance decodeJsonBlockNumber :: A.DecodeJson BlockNumber where
   decodeJson = map BlockNumber <<< A.decodeJson
 
 instance readFHexString :: ReadForeign BlockNumber where
-  readImpl = map BlockNumber <<< decode
+  readImpl = map BlockNumber <<< readImpl
 
 instance writeFHexString :: WriteForeign BlockNumber where
-  writeImpl (BlockNumber bn) = encode bn
+  writeImpl (BlockNumber bn) = writeImpl bn
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data ChainCursor
