@@ -47,15 +47,12 @@ import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Error.Util (hush)
 import Control.Lazy (class Lazy)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
-import Control.Monad.Except (except, runExcept)
+import Control.Monad.Except (runExcept)
 import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
-import Data.Argonaut.Decode.Generic as AG
-import Data.Argonaut.Encode.Generic as AG
-import Data.Argonaut.Types.Generic as AG
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Eq.Generic (genericEq)
@@ -78,8 +75,6 @@ import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
 import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, readJSON', undefined)
-import Simple.JSON as SJ
-import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- * Block

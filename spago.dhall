@@ -21,7 +21,6 @@ You can edit this file as you like.
   , "typelevel-prelude"
   , "variant"
   , "argonaut"
-  , "argonaut-generic"
   , "arrays"
   , "bifunctors"
   , "bytestrings"
