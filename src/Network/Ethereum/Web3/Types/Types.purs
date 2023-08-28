@@ -20,13 +20,13 @@ module Network.Ethereum.Web3.Types.Types
   , Web3(..)
   , Web3Par
   , throwWeb3
-  , Filter
+  , Filter(..)
   , defaultFilter
   , _address
   , _topics
   , _fromBlock
   , _toBlock
-  , FilterId
+  , FilterId(..)
   , EventAction(..)
   , Change(..)
   , FalseOrObject(..)
@@ -464,7 +464,6 @@ newtype Filter a
   }
 
 derive instance genericFilter :: Generic (Filter a) _
-
 derive instance newtypeFilter :: Newtype (Filter a) _
 
 instance showFilter :: Show (Filter a) where
@@ -614,7 +613,6 @@ newtype Request
   , params :: Array Foreign
   }
 
-derive instance genericRequest :: Generic Request _
 derive newtype instance readFRequest :: ReadForeign Request
 derive newtype instance writeFRequest :: WriteForeign Request
 
