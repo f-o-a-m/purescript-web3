@@ -1,41 +1,22 @@
-module Network.Ethereum.Web3.Solidity.Generic
-  ( class GenericABIEncode
-  , class GenericABIDecode
-  , class ABIData
-  , EncodedValue
-  , _serialize
-  , genericFromDataParser
-  , genericToDataBuilder
-  , genericABIEncode
-  , genericABIDecode
-  , genericFromData
-  , class RecordFieldsIso
-  , toRecordFields
-  , fromRecordFields
-  , genericToRecordFields
-  , genericFromRecordFields
-  , class ArgsToRowListProxy
-  , argsToRowListProxy
-  ) where
+module Network.Ethereum.Web3.Solidity.Generic where
 
 import Prelude
 import Control.Monad.State.Class (get)
-import Data.Array (foldl, length, reverse, sort, uncons, (:))
+import Data.Array (foldMap, foldl, length, sortBy, (:))
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
-import Data.Maybe (Maybe(..))
-import Record as Record
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, parseBytes, toDataBuilder)
-import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
+import Network.Ethereum.Core.BigNumber (embed, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
-import Network.Ethereum.Core.BigNumber (unsafeToInt)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, fromDataParser, parseBytes, toDataBuilder, uInt256HexBuilder)
+import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
+import Prim.Row as Row
+import Record as Record
 import Text.Parsing.Parser (ParseError, ParseState(..), Parser, runParser)
 import Text.Parsing.Parser.Combinators (lookAhead)
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
-import Prim.Row as Row
 import Type.RowList (class ListToRow, Cons, Nil, RLProxy(..), RowList)
 
 -- | A class for encoding generically composed datatypes to their abi encoding
@@ -47,70 +28,63 @@ class GenericABIDecode a where
   genericFromDataParser :: Parser HexString a
 
 -- | An internally used type for encoding
-data EncodedValue
-  = EncodedValue
-    { order :: Int
-    , offset :: Maybe Int
+type EncodedValue
+  = { order :: Int
+    , isDynamic :: Boolean
     , encoding :: HexString
+    , encodingLengthInBytes :: Int -- cache
     }
 
-instance eqEncodedValue :: Eq EncodedValue where
-  eq (EncodedValue a) (EncodedValue b) = a.order == b.order
-
-instance ordEncodedValue :: Ord EncodedValue where
-  compare (EncodedValue a) (EncodedValue b) = a.order `compare` b.order
-
 combineEncodedValues :: Array EncodedValue -> HexString
-combineEncodedValues encodings =
+combineEncodedValues =
+  sortBy (\a b -> a.order `compare` b.order)
+    >>> \encodings ->
+        let
+          wordLengthInBytes = 32
+
+          headsOffsetInBytes :: Int
+          headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
+
+          (heads :: HexString) =
+            foldl
+              ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
+                  if encodedValue.isDynamic then
+                    { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
+                    }
+                  else
+                    { accumulator: accumulator <> encodedValue.encoding
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
+                    }
+              )
+              { accumulator: mempty
+              , lengthOfPreviousDynamicValues: 0
+              }
+              encodings
+              # _.accumulator
+
+          (tails :: HexString) =
+            foldMap
+              ( \encodedValue ->
+                  if encodedValue.isDynamic then
+                    encodedValue.encoding
+                  else
+                    mempty
+              )
+              encodings
+        in
+          heads <> tails
+
+mkEncodedValue :: forall a. EncodingType a => ABIEncode a => Array EncodedValue -> a -> EncodedValue
+mkEncodedValue otherEncodedArray a =
   let
-    sortedEs = adjust headsOffset $ sort encodings
-
-    encodings' = addTailOffsets headsOffset [] sortedEs
+    encoding = toDataBuilder a
   in
-    let
-      heads =
-        foldl
-          ( \acc (EncodedValue e) -> case e.offset of
-              Nothing -> acc <> e.encoding
-              Just o -> acc <> toDataBuilder o
-          )
-          mempty
-          encodings'
-
-      tails =
-        foldl
-          ( \acc (EncodedValue e) -> case e.offset of
-              Nothing -> acc
-              Just _ -> acc <> e.encoding
-          )
-          mempty
-          encodings'
-    in
-      heads <> tails
-  where
-  adjust :: Int -> Array EncodedValue -> Array EncodedValue
-  adjust n = map (\(EncodedValue e) -> EncodedValue e { offset = add n <$> e.offset })
-
-  addTailOffsets :: Int -> Array EncodedValue -> Array EncodedValue -> Array EncodedValue
-  addTailOffsets init acc es = case uncons es of
-    Nothing -> reverse acc
-    Just { head, tail } ->
-      let
-        EncodedValue e = head
-      in
-        case e.offset of
-          Nothing -> addTailOffsets init (head : acc) tail
-          Just _ -> addTailOffsets init (head : acc) (adjust (numberOfBytes e.encoding) tail)
-
-  headsOffset :: Int
-  headsOffset =
-    foldl
-      ( \acc (EncodedValue e) -> case e.offset of
-          Nothing -> acc + numberOfBytes e.encoding
-          Just _ -> acc + 32
-      )
-      0
-      encodings
+    { encoding
+    , order: 1 + length otherEncodedArray
+    , isDynamic: isDynamic (Proxy :: Proxy a)
+    , encodingLengthInBytes: numberOfBytes encoding
+    }
 
 -- | An internally used class for encoding
 class ABIData a where
@@ -120,46 +94,10 @@ instance abiDataBaseNull :: ABIData NoArguments where
   _serialize encoded _ = encoded
 
 instance abiDataBase :: (EncodingType b, ABIEncode b) => ABIData (Argument b) where
-  _serialize encoded (Argument b) =
-    if isDynamic (Proxy :: Proxy b) then
-      dynEncoding : encoded
-    else
-      staticEncoding : encoded
-    where
-    staticEncoding =
-      EncodedValue
-        { encoding: toDataBuilder b
-        , offset: Nothing
-        , order: 1 + length encoded
-        }
-
-    dynEncoding =
-      EncodedValue
-        { encoding: toDataBuilder b
-        , offset: Just 0
-        , order: 1 + length encoded
-        }
+  _serialize encoded (Argument b) = mkEncodedValue encoded b : encoded
 
 instance abiDataInductive :: (EncodingType b, ABIEncode b, ABIData a) => ABIData (Product (Argument b) a) where
-  _serialize encoded (Product (Argument b) a) =
-    if isDynamic (Proxy :: Proxy b) then
-      _serialize (dynEncoding : encoded) a
-    else
-      _serialize (staticEncoding : encoded) a
-    where
-    staticEncoding =
-      EncodedValue
-        { encoding: toDataBuilder b
-        , offset: Nothing
-        , order: 1 + length encoded
-        }
-
-    dynEncoding =
-      EncodedValue
-        { encoding: toDataBuilder b
-        , offset: Just 0
-        , order: 1 + length encoded
-        }
+  _serialize encoded (Product (Argument b) a) = _serialize (mkEncodedValue encoded b : encoded) a
 
 instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name a) where
   genericToDataBuilder (Constructor a) = combineEncodedValues $ _serialize [] a
@@ -204,13 +142,17 @@ genericFromData ::
 genericFromData = flip runParser genericABIDecode
 
 -- helpers
-factorParser :: forall a. ABIDecode a => EncodingType a => Parser HexString a
+factorParser ::
+  forall a.
+  ABIDecode a =>
+  EncodingType a =>
+  Parser HexString a
 factorParser
-  | not $ isDynamic (Proxy :: Proxy a) = fromDataParser
-  | otherwise = dParser
+  | isDynamic (Proxy :: Proxy a) = dynamicFactorParser
+  | otherwise = fromDataParser
 
-dParser :: forall a. ABIDecode a => Parser HexString a
-dParser = do
+dynamicFactorParser :: forall a. ABIDecode a => Parser HexString a
+dynamicFactorParser = do
   dataOffset <- unsafeToInt <$> fromDataParser
   lookAhead
     $ do
