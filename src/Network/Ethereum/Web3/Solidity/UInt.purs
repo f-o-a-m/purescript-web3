@@ -7,7 +7,7 @@ module Network.Ethereum.Web3.Solidity.UInt
 import Prelude
 import Data.Maybe (Maybe(..))
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, pow)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -15,13 +15,11 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- | Represents a statically sized unsigned integer of size `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype UIntN (n :: DigitList)
+newtype UIntN (n :: Int)
   = UIntN BigNumber
 
 derive newtype instance showUIntN :: Show (UIntN n)
-
 derive newtype instance eqUIntN :: Eq (UIntN n)
-
 derive newtype instance ordUIntN :: Ord (UIntN n)
 
 -- | Access the raw underlying unsigned integer

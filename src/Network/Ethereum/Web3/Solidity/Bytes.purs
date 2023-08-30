@@ -10,7 +10,7 @@ import Prelude
 import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal, DigitList)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Network.Ethereum.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
@@ -20,11 +20,10 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- Represents a statically sized bytestring of size `n` bytes.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype BytesN (n :: DigitList)
+newtype BytesN (n :: Int)
   = BytesN ByteString
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
-
 instance showBytesN :: KnownSize n => Show (BytesN n) where
   show (BytesN bs) = show <<< unsafePartial fromJust <<< mkHexString $ BS.toString bs Hex
 
