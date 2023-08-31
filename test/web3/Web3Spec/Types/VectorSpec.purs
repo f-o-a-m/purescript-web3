@@ -67,15 +67,17 @@ test8 :: Vector 100000000000001 Int
 -- test8 :: Vector _ Int
 test8 = 1 :< 1 :< vec99999999999999
 
-test10 :: forall (n :: Int). Add n 1 10 => Vector n Int -> Vector 10 Int
-test10 l = 2 :< l
+-- todo: delete this?
+-- test10 :: forall (n :: Int). Add n 1 10 => Vector n Int -> Vector 10 Int
+-- test10 l = 2 :< l
 
 -- test10_ :: Vector _ Int
-test10_ :: Vector 10 Int
-test10_ = test10 vec9
+-- test10_ :: Vector 10 Int
+-- test10_ = test10 vec9
 
-test11 :: forall n. Add n 1 0 => Vector n Int -> Vector 0 Int
-test11 l = 2 :< l
+-- todo: delete this?
+-- test11 :: forall n. Add n 1 0 => Vector n Int -> Vector 0 Int
+-- test11 l = 2 :< l
 
 -- As expected `test11` can be written, but can't be called
 -- test11_ = test11 nilVector

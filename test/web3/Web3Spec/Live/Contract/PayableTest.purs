@@ -12,8 +12,7 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
 import Data.Show.Generic (genericShow)
 import Network.Ethereum.Web3 (_address, _topics, class EventFilter, sendTx)
-import Network.Ethereum.Web3.Solidity (D2, D5, D6, DOne, Tuple0(..), Tuple1, UIntN, class IndexedEvent)
-import Network.Ethereum.Web3.Solidity.Size (type (:&))
+import Network.Ethereum.Web3.Solidity (Tuple0(..), Tuple1, UIntN, class IndexedEvent)
 import Network.Ethereum.Web3.Types (HexString, TransactionOptions, Web3, defaultFilter, mkHexString)
 import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit)
 import Partial.Unsafe (unsafePartial)
@@ -23,7 +22,7 @@ import Type.Proxy (Proxy)
 -- | Content
 --------------------------------------------------------------------------------
 newtype Content
-  = Content { _paidContent :: (UIntN (D2 :& D5 :& DOne D6)) }
+  = Content { _paidContent :: (UIntN 256) }
 
 derive instance newtypeContent :: Newtype Content _
 
@@ -35,7 +34,7 @@ instance eventFilterContent :: EventFilter Content where
       # _topics
       .~ Just [ Just (unsafePartial $ fromJust $ mkHexString "78692973dbc680e9276487808ebf9b485db7b4fbb74c05799e397695b5c7686b") ]
 
-instance indexedEventContent :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_paidContent") (UIntN (D2 :& D5 :& DOne D6)))) Content where
+instance indexedEventContent :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_paidContent") (UIntN 256))) Content where
   isAnonymous _ = false
 
 derive instance genericContent :: Generic Content _

@@ -11,14 +11,13 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Record.Builder (build, merge)
 import Type.Proxy (Proxy)
-import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
+import Network.Ethereum.Web3.Solidity (Address, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Network.Ethereum.Web3.Solidity.Sizes (S256)
 
 spec :: Spec Unit
 spec =
@@ -91,13 +90,13 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 newtype Transfer
-  = Transfer { to :: Address, from :: Address, amount :: UIntN S256 }
+  = Transfer { to :: Address, from :: Address, amount :: UIntN 256 }
 
 derive instance newtypeTransfer :: Newtype Transfer _
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN 256))) Transfer where
   isAnonymous _ = false
 
 instance showTransfer :: Show Transfer where

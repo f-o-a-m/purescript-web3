@@ -8,8 +8,7 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged)
 import Network.Ethereum.Web3 (call)
 import Network.Ethereum.Web3.Contract.Internal (uncurryFields)
-import Network.Ethereum.Web3.Solidity (D2, D5, D6, DOne, Tuple1(..), UIntN, unTuple1)
-import Network.Ethereum.Web3.Solidity.Size (type (:&))
+import Network.Ethereum.Web3.Solidity (Tuple1(..), UIntN, unTuple1)
 import Network.Ethereum.Web3.Types (CallError, ChainCursor, NoPay, TransactionOptions, Web3)
 import Type.Proxy (Proxy)
 
@@ -17,18 +16,18 @@ import Type.Proxy (Proxy)
 -- | NamesFn
 --------------------------------------------------------------------------------
 type NamesFn
-  = Tagged (Proxy "names(uint256)") (Tuple1 (UIntN (D2 :& D5 :& DOne D6)))
+  = Tagged (Proxy "names(uint256)") (Tuple1 (UIntN 256))
 
-names :: TransactionOptions NoPay -> ChainCursor -> (UIntN (D2 :& D5 :& DOne D6)) -> Web3 (Either CallError String)
+names :: TransactionOptions NoPay -> ChainCursor -> (UIntN 256) -> Web3 (Either CallError String)
 names x0 cm x2 = map unTuple1 <$> call x0 cm ((tagged $ Tuple1 x2) :: NamesFn)
 
 --------------------------------------------------------------------------------
 -- | TableFn
 --------------------------------------------------------------------------------
 type TableFn
-  = Tagged (Proxy "table(uint256)") (Tuple1 (UIntN (D2 :& D5 :& DOne D6)))
+  = Tagged (Proxy "table(uint256)") (Tuple1 (UIntN 256))
 
-table :: TransactionOptions NoPay -> ChainCursor -> (UIntN (D2 :& D5 :& DOne D6)) -> Web3 (Either CallError String)
+table :: TransactionOptions NoPay -> ChainCursor -> (UIntN 256) -> Web3 (Either CallError String)
 table x0 cm x2 = map unTuple1 <$> call x0 cm ((tagged $ Tuple1 x2) :: TableFn)
 
 --------------------------------------------------------------------------------

@@ -14,8 +14,7 @@ import Data.Newtype (class Newtype)
 import Data.Show.Generic (genericShow)
 import Network.Ethereum.Web3 (_address, _topics, call, class EventFilter, deployContract, sendTx)
 import Network.Ethereum.Web3.Contract.Internal (uncurryFields)
-import Network.Ethereum.Web3.Solidity (D2, D5, D6, DOne, Tuple0(..), Tuple1(..), UIntN, class IndexedEvent, unTuple1)
-import Network.Ethereum.Web3.Solidity.Size (type (:&))
+import Network.Ethereum.Web3.Solidity (Tuple0(..), Tuple1(..), UIntN, class IndexedEvent, unTuple1)
 import Network.Ethereum.Web3.Types (CallError, ChainCursor, HexString, NoPay, TransactionOptions, Web3, defaultFilter, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy)
@@ -33,7 +32,7 @@ constructor x0 bc = deployContract x0 bc ((tagged $ Tuple0) :: ConstructorFn)
 -- | CountSet
 --------------------------------------------------------------------------------
 newtype CountSet
-  = CountSet { _count :: (UIntN (D2 :& D5 :& DOne D6)) }
+  = CountSet { _count :: (UIntN 256) }
 
 derive instance newtypeCountSet :: Newtype CountSet _
 
@@ -45,7 +44,7 @@ instance eventFilterCountSet :: EventFilter CountSet where
       # _topics
       .~ Just [ Just (unsafePartial $ fromJust $ mkHexString "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435") ]
 
-instance indexedEventCountSet :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_count") (UIntN (D2 :& D5 :& DOne D6)))) CountSet where
+instance indexedEventCountSet :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_count") (UIntN 256))) CountSet where
   isAnonymous _ = false
 
 derive instance genericCountSet :: Generic CountSet _
@@ -60,7 +59,7 @@ instance eventGenericCountSeteq :: Eq CountSet where
 -- | Deployed
 --------------------------------------------------------------------------------
 newtype Deployed
-  = Deployed { _blockNumber :: (UIntN (D2 :& D5 :& DOne D6)) }
+  = Deployed { _blockNumber :: (UIntN 256) }
 
 derive instance newtypeDeployed :: Newtype Deployed _
 
@@ -72,7 +71,7 @@ instance eventFilterDeployed :: EventFilter Deployed where
       # _topics
       .~ Just [ Just (unsafePartial $ fromJust $ mkHexString "b94ae47ec9f4248692e2ecf9740b67ab493f3dcc8452bedc7d9cd911c28d1ca5") ]
 
-instance indexedEventDeployed :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_blockNumber") (UIntN (D2 :& D5 :& DOne D6)))) Deployed where
+instance indexedEventDeployed :: IndexedEvent (Tuple0) (Tuple1 (Tagged (Proxy "_blockNumber") (UIntN 256))) Deployed where
   isAnonymous _ = false
 
 derive instance genericDeployed :: Generic Deployed _
@@ -89,17 +88,17 @@ instance eventGenericDeployedeq :: Eq Deployed where
 type CountFn
   = Tagged (Proxy "count()") (Tuple0)
 
-count :: TransactionOptions NoPay -> ChainCursor -> Web3 (Either CallError (UIntN (D2 :& D5 :& DOne D6)))
+count :: TransactionOptions NoPay -> ChainCursor -> Web3 (Either CallError (UIntN 256))
 count x0 cm = map unTuple1 <$> call x0 cm ((tagged $ Tuple0) :: CountFn)
 
 --------------------------------------------------------------------------------
 -- | SetCountFn
 --------------------------------------------------------------------------------
 type SetCountFn
-  = Tagged (Proxy "setCount(uint256)") (Tuple1 (Tagged (Proxy "_count") (UIntN (D2 :& D5 :& DOne D6))))
+  = Tagged (Proxy "setCount(uint256)") (Tuple1 (Tagged (Proxy "_count") (UIntN 256)))
 
-setCount :: TransactionOptions NoPay -> { _count :: (UIntN (D2 :& D5 :& DOne D6)) } -> Web3 HexString
+setCount :: TransactionOptions NoPay -> { _count :: (UIntN 256) } -> Web3 HexString
 setCount x0 r = uncurryFields r $ setCount' x0
   where
-  setCount' :: TransactionOptions NoPay -> (Tagged (Proxy "_count") (UIntN (D2 :& D5 :& DOne D6))) -> Web3 HexString
+  setCount' :: TransactionOptions NoPay -> (Tagged (Proxy "_count") (UIntN 256)) -> Web3 HexString
   setCount' y0 y1 = sendTx y0 ((tagged $ Tuple1 y1) :: SetCountFn)
