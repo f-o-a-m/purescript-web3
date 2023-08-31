@@ -21,13 +21,13 @@ class UncurryFields fields curried result | curried -> result fields where
 instance uncurryFieldsEmpty :: UncurryFields () (Web3 b) (Web3 b) where
   uncurryFields _ = identity
 
-instance uncurryFieldsInductive :: (IsSymbol s, Row.Cons s a before after, Row.Lacks s before, UncurryFields before f b) => UncurryFields after (Tagged (Proxy s) a -> f) b where
+instance uncurryFieldsInductive :: (IsSymbol s, Row.Cons s a before after, Row.Lacks s before, UncurryFields before f b) => UncurryFields after (Tagged s a -> f) b where
   uncurryFields r f =
     let
       arg = (Record.get (Proxy :: Proxy s) r)
 
       before = Record.delete (Proxy :: Proxy s) r :: Record before
 
-      partiallyApplied = f (tagged arg :: Tagged (Proxy s) a)
+      partiallyApplied = f (tagged arg :: Tagged s a)
     in
       uncurryFields before partiallyApplied

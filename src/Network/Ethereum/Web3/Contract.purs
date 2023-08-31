@@ -66,7 +66,7 @@ class TxMethod (selector :: Symbol) a where
     TokenUnit (Value (u ETHER)) =>
     IsSymbol selector =>
     TransactionOptions u ->
-    Tagged (Proxy selector) a ->
+    Tagged selector a ->
     Web3 HexString
 
 -- ^ `Web3` wrapped tx hash
@@ -76,7 +76,7 @@ class CallMethod (selector :: Symbol) a b where
     IsSymbol selector =>
     TransactionOptions NoPay ->
     ChainCursor ->
-    Tagged (Proxy selector) a ->
+    Tagged selector a ->
     Web3 (Either CallError b)
 
 -- ^ `Web3` wrapped result
@@ -93,7 +93,7 @@ _sendTransaction ::
   GenericABIEncode rep =>
   TokenUnit (Value (u ETHER)) =>
   TransactionOptions u ->
-  Tagged (Proxy selector) a ->
+  Tagged selector a ->
   Web3 HexString
 _sendTransaction txOptions dat = do
   let
@@ -114,7 +114,7 @@ _call ::
   GenericABIDecode brep =>
   TransactionOptions NoPay ->
   ChainCursor ->
-  Tagged (Proxy selector) a ->
+  Tagged selector a ->
   Web3 (Either CallError b)
 _call txOptions cursor dat = do
   let
