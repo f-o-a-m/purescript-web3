@@ -72,7 +72,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core.git"
-        , version = "b35eec551db445cb6a3577eaea3fe7a3bc052472"
+        , version = "master"
         }
       , quotient =
         { dependencies = [ "prelude", "quickcheck" ]
