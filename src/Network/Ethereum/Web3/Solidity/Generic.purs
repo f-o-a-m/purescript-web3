@@ -179,7 +179,7 @@ instance isoRecordBase ::
   , Row.Cons s a () r
   , Row.Lacks s ()
   ) =>
-  RecordFieldsIso (Argument (Tagged (Proxy s) a)) r (Cons s a Nil) where
+  RecordFieldsIso (Argument (Tagged s a)) r (Cons s a Nil) where
   toRecordFields _ (Argument a) = Record.insert (Proxy :: Proxy s) (untagged a) {}
   fromRecordFields _ r = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
 
@@ -194,7 +194,7 @@ instance isoRecordInductive ::
   , IsSymbol s
   , ListToRow (Cons ls la ll) r1
   ) =>
-  RecordFieldsIso (Product (Argument (Tagged (Proxy s) a)) as) r2 (Cons s a (Cons ls la ll)) where
+  RecordFieldsIso (Product (Argument (Tagged s a)) as) r2 (Cons s a (Cons ls la ll)) where
   toRecordFields _ (Product (Argument a) as) = Record.insert (Proxy :: Proxy s) (untagged a) rest
     where
     rest = (toRecordFields (Proxy :: Proxy (Cons ls la ll)) as :: Record r1)

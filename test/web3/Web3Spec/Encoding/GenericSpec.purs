@@ -29,7 +29,7 @@ toRecordFieldsSpec =
   describe "test ToRecordFields class" do
     it "pass toRecordFields basic test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
       WeirdTuple (genericToRecordFields as)
         `shouldEqual`
           WeirdTuple
@@ -39,9 +39,9 @@ toRecordFieldsSpec =
             }
     it "passes the merging test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
 
-        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (Proxy "b") Int) (Tagged (Proxy "c") String)
+        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged "b" Int) (Tagged "c" String)
 
         c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
       c `shouldEqual` CombinedTuple { a: 1, b: 2, c: "bye", d: "hello", e: 'c' }
@@ -49,7 +49,7 @@ toRecordFieldsSpec =
       let
         (Transfer t) = transfer
 
-        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)
+        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged "to" Address) (Tagged "from" Address)
       hush (fromData (unsafePartial $ unsafeIndex addressArray 1)) `shouldEqual` Just t.to
       genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
     it "can combine events" do
@@ -96,7 +96,7 @@ derive instance newtypeTransfer :: Newtype Transfer _
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN 256))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged "to" Address) (Tagged "from" Address)) (Tuple1 (Tagged "amount" (UIntN 256))) Transfer where
   isAnonymous _ = false
 
 instance showTransfer :: Show Transfer where

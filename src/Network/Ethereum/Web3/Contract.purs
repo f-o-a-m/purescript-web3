@@ -161,7 +161,7 @@ mkDataField ::
   Generic a (Constructor name args) =>
   RecordFieldsIso args fields l =>
   GenericABIEncode (Constructor name args) =>
-  Proxy (Tagged (Proxy selector) a) ->
+  Proxy (Tagged selector a) ->
   Record fields ->
   HexString
 mkDataField _ r =
