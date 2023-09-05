@@ -1,24 +1,14 @@
 {
   "private": true,
   "scripts": {
+    "postinstall": "spago build",
     "build": "chanterelle build"
   },
   "devDependencies": {
-    "purescript-psa": "^0.7.3",
-    "purescript": "^0.13.0",
-    "pulp": "^13.0.0",
-    "spago": "^0.16.0"
-  },
-  "dependencies": {
-    "purescript": "^0.14.2",
+    "chanterelle": "github:f-o-a-m/chanterelle#v6.0.0",
     "purescript-psa": "^0.8.2",
-    "bn.js": "^4.11.0",
-    "ethjs-provider-http": "^0.1.6",
-    "mkdirp": "^0.5.1",
-    "keccak": "^1.0.2",
-    "secp256k1": "^3.0.1",
-    "rlp": "^2.0.0",
-    "solc": "^0.5",
+    "purescript": "^0.14.2",
+    "solc": "^0.6",
     "spago": "^0.20.3"
   }
 }
