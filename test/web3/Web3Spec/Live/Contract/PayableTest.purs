@@ -30,8 +30,6 @@ instance EventFilter Content where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "78692973dbc680e9276487808ebf9b485db7b4fbb74c05799e397695b5c7686b"
-        , Nothing
-        , Nothing
         ]
     )
 

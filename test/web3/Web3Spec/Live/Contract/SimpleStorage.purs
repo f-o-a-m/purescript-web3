@@ -36,8 +36,6 @@ instance EventFilter CountSet where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "a32bc18230dd172221ac5c4821a5f1f1a831f27b1396d244cdd891c58f132435"
-        , Nothing
-        , Nothing
         ]
     )
 
@@ -59,8 +57,6 @@ instance EventFilter Deployed where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "b94ae47ec9f4248692e2ecf9740b67ab493f3dcc8452bedc7d9cd911c28d1ca5"
-        , Nothing
-        , Nothing
         ]
     )
 

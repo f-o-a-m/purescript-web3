@@ -41,8 +41,6 @@ instance EventFilter ValsSet where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "88d23351ad32a937b11ca10530404f8297d29803e94709336b48c1f82c15b3cc"
-        , Nothing
-        , Nothing
         ]
     )
 

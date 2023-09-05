@@ -30,8 +30,6 @@ instance EventFilter E1 where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "47e2689743f14e97f7dcfa5eec10ba1dff02f83b3d1d4b9c07b206cbbda66450"
-        , Nothing
-        , Nothing
         ]
     )
 
@@ -53,8 +51,6 @@ instance EventFilter E2 where
     ( Just
         [ Just $ unsafePartial $ fromJust $ mkHexString
             "a48a6b249a5084126c3da369fbc9b16827ead8cb5cdc094b717d3f1dcd995e29"
-        , Nothing
-        , Nothing
         ]
     )
 
