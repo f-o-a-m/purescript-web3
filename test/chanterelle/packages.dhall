@@ -7,8 +7,6 @@ let upstream =
       with web3-generator.repo = "https://github.com/f-o-a-m/purescript-web3-generator"
       with web3-generator.version = "a7f81d900b7fc8f029b0474c5cb0affbae82e0c7"
 
-let generator = "https://github.com/f-o-a-m/purescript-web3-generator"
-
 let additions =
       { chanterelle =
         { dependencies =
