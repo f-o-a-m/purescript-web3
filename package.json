@@ -10,14 +10,13 @@
     "bn.js": "^4.11.0",
     "ethjs-provider-http": "^0.1.6",
     "keccak": "^1.0.2",
-    "pulp": "^15.0.0",
     "rlp": "^2.0.0",
     "secp256k1": "^3.0.1"
   },
   "devDependencies": {
-    "purescript": "^0.14.2",
+    "purescript": "^0.15.8",
     "purescript-psa": "^0.8.2",
-    "purty": "^7.0.0",
-    "spago": "^0.20.3"
+    "purs-tidy": "^0.9.3",
+    "spago": "^0.20.9"
   }
 }

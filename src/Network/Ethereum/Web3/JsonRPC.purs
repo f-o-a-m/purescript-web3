@@ -10,10 +10,10 @@ import Control.Monad.Reader (ask)
 import Data.Array ((:))
 import Data.Either (Either(..))
 import Foreign (Foreign)
-import Foreign.Class (class Decode, class Encode, decode, encode)
-import Foreign.Generic (defaultOptions, genericEncodeJSON)
+-- import Foreign.Generic (defaultOptions, genericEncodeJSON)
 import Network.Ethereum.Web3.Types (MethodName, Request, Response(..), Web3, Web3Error(..), mkRequest)
 import Network.Ethereum.Web3.Types.Provider (Provider)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, writeJSON)
 
 --------------------------------------------------------------------------------
 -- * Asynchronous RPC Calls
@@ -22,13 +22,13 @@ import Network.Ethereum.Web3.Types.Provider (Provider)
 class Remote a where
   remote_ :: (Provider -> Array Foreign -> Aff Foreign) -> a
 
-instance remoteBase :: (Decode a) => Remote (Web3 a) where
+instance remoteBase :: (ReadForeign a) => Remote (Web3 a) where
   remote_ f = do
     p <- ask
     res' <- liftAff $ attempt $ f p mempty
     case res' of
       Left uncheckedErr -> throwError $ asError $ RemoteError $ show uncheckedErr
-      Right res -> case runExcept $ decode res of
+      Right res -> case runExcept $ readImpl res of
         -- case where we get either a known Web3Error or a foreign value
         Left err -> throwError $ asError $ ParserError $ show err
         Right (Response r) -> case r of
@@ -38,10 +38,10 @@ instance remoteBase :: (Decode a) => Remote (Web3 a) where
     -- NOTE: this is a bit hacky
     -- see Network.Ethereum.Web3.Types.Types#parseMsg
     asError :: Web3Error -> Error
-    asError e = error $ genericEncodeJSON defaultOptions e
+    asError e = error $ writeJSON e
 
-instance remoteInductive :: (Encode a, Remote b) => Remote (a -> b) where
-  remote_ f x = remote_ $ \p args -> f p (encode x : args)
+instance remoteInductive :: (WriteForeign a, Remote b) => Remote (a -> b) where
+  remote_ f x = remote_ $ \p args -> f p (writeImpl x : args)
 
 foreign import _sendAsync :: Provider -> Request -> EffectFnAff Foreign
 

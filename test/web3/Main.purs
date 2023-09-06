@@ -32,7 +32,7 @@ main =
     let
       cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
     p <- liftEffect $ httpProvider "http://localhost:8545"
-    join
+    void $ join
       $ runSpecT cfg [ consoleReporter ] do
           hoist do
             EncodingDataSpec.spec

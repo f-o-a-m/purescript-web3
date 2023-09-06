@@ -1,5 +1,5 @@
 language: node_js
-dist: focal
+dist: jammy
 sudo: required
 node_js: stable
 services:

@@ -1,39 +1,9 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.2-20210629/packages.dhall sha256:534c490bb73cae75adb5a39871142fd8db5c2d74c90509797a80b8bb0d5c3f7b
+      https://github.com/f-o-a-m/package-sets/raw/feaf98cc4ca1b39ad9ed04f10a473759cbc2114e/purs-0.15.7-web3.dhall
+        sha256:2d868539460c47c2bf5ecf4c6b68c3ea3162849f2da9cd3f263b740299448d8f
 
 let overrides = {=}
 
-let additions =
-      { coroutine-transducers =
-        { dependencies =
-          [ "aff", "coroutines", "effect", "maybe", "psci-support" ]
-        , repo =
-            "https://github.com/blinky3713/purescript-coroutine-transducers"
-        , version = "v1.0.0"
-        }
-      , eth-core =
-        { dependencies =
-          [ "argonaut"
-          , "bytestrings"
-          , "console"
-          , "debug"
-          , "effect"
-          , "foreign-generic"
-          , "ordered-collections"
-          , "parsing"
-          , "prelude"
-          , "psci-support"
-          , "ring-modules"
-          , "simple-json"
-          ]
-        , repo = "https://github.com/f-o-a-m/purescript-eth-core.git"
-        , version = "v8.0.0"
-        }
-      , tagged =
-        { dependencies = [ "identity", "profunctor" ]
-        , repo = "https://github.com/kejace/purescript-tagged"
-        , version = "v0.14"
-        }
-      }
+let additions = {=}
 
 in  upstream // overrides // additions

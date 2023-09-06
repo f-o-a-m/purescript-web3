@@ -11,6 +11,7 @@
                , "Multifilter"
                ],
     "dependencies": [],
+    "solc-version": "0.15.17",
     "solc-output-selection": [],
     "purescript-generator": {
         "output-path": "../web3",

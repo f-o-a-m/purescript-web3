@@ -15,7 +15,6 @@ in    conf
             , "exceptions"
             , "foldable-traversable"
             , "foreign-object"
-            , "integers"
             , "lists"
             , "maybe"
             , "newtype"

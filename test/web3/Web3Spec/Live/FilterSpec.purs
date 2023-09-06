@@ -17,7 +17,7 @@ import Effect.Aff.AVar as AVar
 import Effect.AVar as EAVar
 import Network.Ethereum.Web3 (BlockNumber(..), throwWeb3, Filter, Web3Error, Change(..), _fromBlock, _toBlock, eventFilter, EventAction(..), forkWeb3, ChainCursor(..), Provider, UIntN, _from, _to, embed, Address, event')
 import Network.Ethereum.Web3.Api as Api
-import Network.Ethereum.Web3.Solidity.Sizes (s256, S256)
+import Network.Ethereum.Web3.Solidity.Sizes (s256)
 import Partial.Unsafe (unsafeCrashWith)
 import Test.Spec (SpecT, before, describe, it, parallel)
 import Test.Spec.Assertions (shouldEqual)
@@ -195,13 +195,13 @@ monitorUntil ::
   Provider ->
   Logger m ->
   Filter SimpleStorage.CountSet ->
-  (UIntN S256 -> Boolean) ->
+  (UIntN 256 -> Boolean) ->
   FilterOpts ->
   m
     ( Fiber
         ( Either Web3Error
             { endingBlockV :: AVar.AVar BlockNumber
-            , foundValuesV :: AVar.AVar (Array (UIntN S256))
+            , foundValuesV :: AVar.AVar (Array (UIntN 256))
             , reachedTargetTrailByV :: AVar.AVar Boolean
             }
         )
@@ -241,8 +241,8 @@ monitorUntil provider logger filter p opts = do
 
 type SimpleStorageCfg m
   = { simpleStorageAddress :: Address
-    , setter :: UIntN S256 -> m Unit
-    , uIntsGen :: Int -> m (Array (UIntN S256))
+    , setter :: UIntN 256 -> m Unit
+    , uIntsGen :: Int -> m (Array (UIntN 256))
     }
 
 deployUniqueSimpleStorage ::
@@ -250,7 +250,7 @@ deployUniqueSimpleStorage ::
   MonadAff m =>
   Provider ->
   Logger m ->
-  (Int -> m (Array (UIntN S256))) ->
+  (Int -> m (Array (UIntN 256))) ->
   m (SimpleStorageCfg m)
 deployUniqueSimpleStorage provider logger uIntsGen = do
   contractConfig <-
@@ -269,7 +269,7 @@ mkSetter ::
   ContractConfig ->
   Provider ->
   Logger m ->
-  UIntN S256 ->
+  UIntN 256 ->
   m Unit
 mkSetter { contractAddress, userAddress } provider logger _count = do
   let
@@ -286,7 +286,7 @@ mkUIntsGen ::
   MonadAff m =>
   AVar.AVar Int ->
   Int ->
-  m (Array (UIntN S256))
+  m (Array (UIntN 256))
 mkUIntsGen uintV n =
   liftAff do
     firstAvailable <- AVar.take uintV

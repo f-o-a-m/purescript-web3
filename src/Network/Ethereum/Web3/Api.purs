@@ -5,6 +5,7 @@ import Network.Ethereum.Types (Address, HexString, BigNumber)
 import Network.Ethereum.Web3.JsonRPC (remote)
 import Network.Ethereum.Web3.Types (Block, BlockNumber, ChainCursor, Change, FalseOrObject, Filter, FilterId, SyncStatus, Transaction, TransactionOptions, TransactionReceipt, Web3)
 import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit)
+import Simple.JSON (class WriteForeign)
 
 -- | Returns current node version string.
 web3_clientVersion :: Partial => Web3 String
@@ -131,7 +132,7 @@ eth_getTransaction :: HexString -> Web3 Transaction
 eth_getTransaction hx = remote "eth_getTransactionByHash" hx
 
 -- | Call a function on a particular block's state root.
-eth_call :: forall a. TransactionOptions a -> ChainCursor -> Web3 HexString
+eth_call :: forall a. WriteForeign (TransactionOptions a) => TransactionOptions a -> ChainCursor -> Web3 HexString
 eth_call opts cm = remote "eth_call" opts cm
 
 -- | Creates new message call transaction or a contract creation, if the data field contains code.

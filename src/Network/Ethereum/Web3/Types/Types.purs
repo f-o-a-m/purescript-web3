@@ -20,13 +20,13 @@ module Network.Ethereum.Web3.Types.Types
   , Web3(..)
   , Web3Par
   , throwWeb3
-  , Filter
+  , Filter(..)
   , defaultFilter
   , _address
   , _topics
   , _fromBlock
   , _toBlock
-  , FilterId
+  , FilterId(..)
   , EventAction(..)
   , Change(..)
   , FalseOrObject(..)
@@ -67,16 +67,14 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error, throwException)
 import Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
-import Foreign.NullOrUndefined (undefined)
 import Foreign.Object as FO
-import Foreign.Class (class Decode, class Encode, decode, encode)
-import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
+-- import Foreign.Generic (defaultOptions, genericDecode, genericDecodeJSON, genericEncode)
 import Foreign.Index (readProp)
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
-import Simple.JSON (class ReadForeign, class WriteForeign)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, readJSON', undefined)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -85,17 +83,11 @@ newtype BlockNumber
   = BlockNumber BigNumber
 
 derive instance genericBlockNumber :: Generic BlockNumber _
-
 derive newtype instance showBlockNumber :: Show BlockNumber
-
 derive newtype instance eqBlockNumber :: Eq BlockNumber
-
 derive newtype instance ordBlockNumber :: Ord BlockNumber
-
-derive newtype instance decodeBlockNumber :: Decode BlockNumber
-
-derive newtype instance encodeBlockNumber :: Encode BlockNumber
-
+derive newtype instance readFBlockNumber :: ReadForeign BlockNumber
+derive newtype instance writeFBlockNumber :: WriteForeign BlockNumber
 derive instance newtypeBlockNumber :: Newtype BlockNumber _
 
 instance encodeJsonBlockNumber :: A.EncodeJson BlockNumber where
@@ -103,12 +95,6 @@ instance encodeJsonBlockNumber :: A.EncodeJson BlockNumber where
 
 instance decodeJsonBlockNumber :: A.DecodeJson BlockNumber where
   decodeJson = map BlockNumber <<< A.decodeJson
-
-instance readFHexString :: ReadForeign BlockNumber where
-  readImpl = map BlockNumber <<< decode
-
-instance writeFHexString :: WriteForeign BlockNumber where
-  writeImpl (BlockNumber bn) = encode bn
 
 -- | Refers to a particular block time, used when making calls, transactions, or watching for events.
 data ChainCursor
@@ -129,10 +115,21 @@ instance ordChainCursor :: Ord ChainCursor where
   compare _ Latest = LT
   compare a b = invert $ compare b a
 
-instance encodeChainCursor :: Encode ChainCursor where
-  encode cm = case cm of
-    Latest -> encode "latest"
-    BN n -> encode n
+instance readFChainCursor :: ReadForeign ChainCursor where
+  readImpl f = readLatest <|> readBN
+    where
+      readLatest = do
+        s <- readString f
+        if s == "latest" then
+          pure Latest
+        else
+          fail (TypeMismatch "Latest" s)
+      readBN = BN <$> readImpl f
+
+instance writeFChainCursor :: WriteForeign ChainCursor where
+  writeImpl cm = case cm of
+    Latest -> writeImpl "latest"
+    BN n -> writeImpl n
 
 newtype Block
   = Block
@@ -158,16 +155,14 @@ newtype Block
   }
 
 derive instance genericBlock :: Generic Block _
-
 derive instance newtypeBlock :: Newtype Block _
-
 derive instance eqBlock :: Eq Block
+derive newtype instance readFBlock :: ReadForeign Block
+derive newtype instance writeFBlock :: WriteForeign Block
 
 instance showBlock :: Show Block where
   show = genericShow
 
-instance decodeBlock :: Decode Block where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
 -- * Transaction
@@ -188,16 +183,13 @@ newtype Transaction
   }
 
 derive instance genericTransaction :: Generic Transaction _
-
 derive instance newtypeTransaction :: Newtype Transaction _
-
+derive newtype instance readFTransaction :: ReadForeign Transaction
+derive newtype instance writeFTransaction :: WriteForeign Transaction
 derive instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow
-
-instance decodeTransaction :: Decode Transaction where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
 -- * TransactionReceipt
@@ -213,13 +205,18 @@ derive instance eqTransactionStatus :: Eq TransactionStatus
 instance showTransactionStatus :: Show TransactionStatus where
   show = genericShow
 
-instance decodeTransactionStatus :: Decode TransactionStatus where
-  decode x = do
+instance readFTransactionStatus :: ReadForeign TransactionStatus where
+  readImpl x = do
     str <- readString x
     case str of
       "0x1" -> pure Succeeded
       "0x0" -> pure Failed
       _ -> fail $ TypeMismatch "TransactionStatus" str
+
+instance writeFTransactionStatus :: WriteForeign TransactionStatus where
+  writeImpl = case _ of
+    Succeeded -> writeImpl "0x1"
+    Failed -> writeImpl "0x0"
 
 newtype TransactionReceipt
   = TransactionReceipt
@@ -235,16 +232,14 @@ newtype TransactionReceipt
   }
 
 derive instance genericTxReceipt :: Generic TransactionReceipt _
-
 derive instance newtypeTxReceipt :: Newtype TransactionReceipt _
-
 derive instance eqTxReceipt :: Eq TransactionReceipt
+derive newtype instance readFTxReceipt :: ReadForeign TransactionReceipt
+derive newtype instance writeFTxReceipt :: WriteForeign TransactionReceipt
 
 instance showTxReceipt :: Show TransactionReceipt where
   show = genericShow
 
-instance decodeTxReceipt :: Decode TransactionReceipt where
-  decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
 
 --------------------------------------------------------------------------------
 -- * TransactionOptions
@@ -269,13 +264,13 @@ derive instance eqTransactionOptions :: Eq (TransactionOptions u)
 instance showTransactionOptions :: Show (TransactionOptions u) where
   show = genericShow
 
-instance encodeTransactionOptions :: Encode (TransactionOptions u) where
-  encode (TransactionOptions txOpts) =
+instance writeFTransactionOptions :: WriteForeign (Value (u ETHER)) => WriteForeign (TransactionOptions u) where
+  writeImpl (TransactionOptions txOpts) =
     let
-      encodeMaybe :: forall a. Encode a => Maybe a -> Foreign
-      encodeMaybe = maybe undefined encode
+      encodeMaybe :: forall a. WriteForeign a => Maybe a -> Foreign
+      encodeMaybe = maybe undefined writeImpl
     in
-      encode
+      writeImpl
         $ FO.fromFoldable
             [ Tuple "from" $ encodeMaybe txOpts.from
             , Tuple "to" $ encodeMaybe txOpts.to
@@ -350,8 +345,8 @@ derive instance newtypeSyncStatus :: Newtype SyncStatus _
 
 derive instance eqSyncStatus :: Eq SyncStatus
 
-instance decodeSyncStatus :: Decode SyncStatus where
-  decode = genericDecode (defaultOptions { unwrapSingleConstructors = true })
+derive newtype instance readFSyncStatus :: ReadForeign SyncStatus
+derive newtype instance writeFSyncStatus :: WriteForeign SyncStatus
 
 instance showSyncStatus :: Show SyncStatus where
   show = genericShow
@@ -442,7 +437,8 @@ runWeb3 p (Web3 action) =
   -- should be created with json string as a message.
   -- see Network.Ethereum.Web3.JsonRPC#asError
   parseMsg :: String -> Maybe Web3Error
-  parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
+  parseMsg = hush <<< runExcept <<< readJSON'
+  -- parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
 
 -- | Fork an asynchronous `ETH` action
 forkWeb3 ::
@@ -468,7 +464,6 @@ newtype Filter a
   }
 
 derive instance genericFilter :: Generic (Filter a) _
-
 derive instance newtypeFilter :: Newtype (Filter a) _
 
 instance showFilter :: Show (Filter a) where
@@ -477,8 +472,8 @@ instance showFilter :: Show (Filter a) where
 instance eqFilter :: Eq (Filter a) where
   eq = genericEq
 
-instance encodeFilter :: Encode (Filter a) where
-  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+derive newtype instance readFFilter :: ReadForeign (Filter a)
+derive newtype instance writeFFilter :: WriteForeign (Filter a)
 
 defaultFilter :: forall a. Filter a
 defaultFilter =
@@ -514,6 +509,8 @@ newtype FilterId
   = FilterId BigNumber
 
 derive instance genericFilterId :: Generic FilterId _
+derive newtype instance readFFilterId :: ReadForeign FilterId
+derive newtype instance writeFFilterId :: WriteForeign FilterId
 
 instance showFilterId :: Show FilterId where
   show = genericShow
@@ -521,11 +518,6 @@ instance showFilterId :: Show FilterId where
 instance eqFilterId :: Eq FilterId where
   eq = genericEq
 
-instance encodeFilterId :: Encode FilterId where
-  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
-
-instance decodeFilterId :: Decode FilterId where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
 -- | EventAction
@@ -564,17 +556,15 @@ newtype Change
   }
 
 derive instance genericChange :: Generic Change _
-
 derive instance newtypeChange :: Newtype Change _
+derive newtype instance readFChange :: ReadForeign Change
+derive newtype instance writeFChange :: WriteForeign Change
 
 instance showChange :: Show Change where
   show = genericShow
 
 instance eqChange :: Eq Change where
   eq = genericEq
-
-instance decodeChange :: Decode Change where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
 
 --------------------------------------------------------------------------------
 -- * Json Decode Types
@@ -606,8 +596,8 @@ readFalseOrObject f value = do
   else
     FalseOrObject <<< Just <$> f value
 
-instance decodeFalseOrObj :: Decode a => Decode (FalseOrObject a) where
-  decode x = readFalseOrObject decode x
+instance readFFalseOrObj :: ReadForeign a => ReadForeign (FalseOrObject a) where
+  readImpl = readFalseOrObject readImpl
 
 --------------------------------------------------------------------------------
 -- | Web3 RPC
@@ -623,10 +613,8 @@ newtype Request
   , params :: Array Foreign
   }
 
-derive instance genericRequest :: Generic Request _
-
-instance encodeRequest :: Encode Request where
-  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
+derive newtype instance readFRequest :: ReadForeign Request
+derive newtype instance writeFRequest :: WriteForeign Request
 
 mkRequest :: MethodName -> Int -> Array Foreign -> Request
 mkRequest name reqId ps =
@@ -640,8 +628,8 @@ mkRequest name reqId ps =
 newtype Response a
   = Response (Either Web3Error a)
 
-instance decodeResponse' :: Decode a => Decode (Response a) where
-  decode a = Response <$> ((Left <$> decode a) <|> (Right <$> (readProp "result" a >>= decode)))
+instance readFResponse' :: ReadForeign a => ReadForeign (Response a) where
+  readImpl a = Response <$> ((Left <$> readImpl a) <|> (Right <$> (readProp "result" a >>= readImpl)))
 
 --------------------------------------------------------------------------------
 -- * Errors
@@ -667,20 +655,15 @@ newtype RpcError
   }
 
 derive instance newtypeRPCError :: Newtype RpcError _
-
 derive instance genericRpcError :: Generic RpcError _
+derive newtype instance readFRpcError :: ReadForeign RpcError
+derive newtype instance writeFRpcError :: WriteForeign RpcError
 
 instance showRpcError :: Show RpcError where
   show = genericShow
 
 instance eqRpcError :: Eq RpcError where
   eq = genericEq
-
-instance decodeRpcError :: Decode RpcError where
-  decode x = genericDecode (defaultOptions { unwrapSingleConstructors = true }) x
-
-instance encodeRpcError :: Encode RpcError where
-  encode x = genericEncode (defaultOptions { unwrapSingleConstructors = true }) x
 
 data Web3Error
   = Rpc RpcError
@@ -696,12 +679,25 @@ instance showWeb3Error :: Show Web3Error where
 instance eqWeb3Error :: Eq Web3Error where
   eq = genericEq
 
-instance decodeWeb3Error :: Decode Web3Error where
-  decode x = (map Rpc $ readProp "error" x >>= decode) <|> nullParser
+instance readFWeb3Error :: ReadForeign Web3Error where
+  readImpl x = remoteParser <|> parserErrorParser <|> rpcParser <|> nullParser
     where
+    remoteParser = (map RemoteError $ readProp "_remoteError" x >>= readImpl)
+    parserErrorParser = (map ParserError $ readProp "_parserError" x >>= readImpl)
+    rpcParser = (map Rpc $ readProp "error" x >>= readImpl)
     nullParser = do
       res <- readProp "result" x
       if isNull res then
         pure NullError
       else
         readString res >>= \r -> fail (TypeMismatch "NullError" r)
+
+
+foreign import _null :: Foreign
+
+instance writeFWeb3Error :: WriteForeign Web3Error where
+  writeImpl x = case x of
+    Rpc rpcErr -> writeImpl { error: rpcErr }
+    NullError -> writeImpl { result: _null }
+    RemoteError _remoteError -> writeImpl { _remoteError }
+    ParserError _parserError -> writeImpl { _parserError }

@@ -11,14 +11,13 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, wrap)
 import Record.Builder (build, merge)
 import Type.Proxy (Proxy)
-import Network.Ethereum.Web3.Solidity (type (:&), Address, D2, D5, D6, DOne, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
+import Network.Ethereum.Web3.Solidity (Address, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
 import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Network.Ethereum.Web3.Solidity.Sizes (S256)
 
 spec :: Spec Unit
 spec =
@@ -30,7 +29,7 @@ toRecordFieldsSpec =
   describe "test ToRecordFields class" do
     it "pass toRecordFields basic test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
       WeirdTuple (genericToRecordFields as)
         `shouldEqual`
           WeirdTuple
@@ -40,9 +39,9 @@ toRecordFieldsSpec =
             }
     it "passes the merging test" do
       let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged (Proxy "a") Int) (Tagged (Proxy "d") String) (Tagged (Proxy "e") Char)
+        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
 
-        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged (Proxy "b") Int) (Tagged (Proxy "c") String)
+        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged "b" Int) (Tagged "c" String)
 
         c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
       c `shouldEqual` CombinedTuple { a: 1, b: 2, c: "bye", d: "hello", e: 'c' }
@@ -50,7 +49,7 @@ toRecordFieldsSpec =
       let
         (Transfer t) = transfer
 
-        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)
+        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged "to" Address) (Tagged "from" Address)
       hush (fromData (unsafePartial $ unsafeIndex addressArray 1)) `shouldEqual` Just t.to
       genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
     it "can combine events" do
@@ -91,13 +90,13 @@ instance eqCombinedTuple :: Eq CombinedTuple where
 
 --------------------------------------------------------------------------------
 newtype Transfer
-  = Transfer { to :: Address, from :: Address, amount :: UIntN S256 }
+  = Transfer { to :: Address, from :: Address, amount :: UIntN 256 }
 
 derive instance newtypeTransfer :: Newtype Transfer _
 
 derive instance genericTransfer :: Generic Transfer _
 
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged (Proxy "to") Address) (Tagged (Proxy "from") Address)) (Tuple1 (Tagged (Proxy "amount") (UIntN (D2 :& D5 :& DOne D6)))) Transfer where
+instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged "to" Address) (Tagged "from" Address)) (Tuple1 (Tagged "amount" (UIntN 256))) Transfer where
   isAnonymous _ = false
 
 instance showTransfer :: Show Transfer where

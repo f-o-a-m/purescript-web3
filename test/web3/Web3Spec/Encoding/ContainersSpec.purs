@@ -9,7 +9,7 @@ import Data.Maybe (fromJust)
 import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
-import Network.Ethereum.Web3.Solidity.Sizes (S16, S2, S224, S256, S4, S1, s1, s16, s2, s224, s256, s4)
+import Network.Ethereum.Web3.Solidity.Sizes (s1, s16, s2, s224, s256, s4)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Partial.Unsafe (unsafePartial)
@@ -66,7 +66,7 @@ staticArraysTests =
                 , "407d73d8a49eeb85d32cf465507dd71d507100c3"
                 ]
 
-        given = (unsafePartial $ fromJust $ mgiven) :: Vector S2 Address
+        given = (unsafePartial $ fromJust $ mgiven) :: Vector 2 Address
 
         expected =
           unsafePartial (fromJust <<< mkHexString) $ "000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
@@ -82,7 +82,7 @@ staticArraysTests =
 
         elem4 = unsafePartial fromJust (fromByteString s1 =<< flip BS.fromString BS.Hex "fb")
 
-        given = unsafePartial fromJust (toVector s4 $ [ elem1, elem2, elem3, elem4 ]) :: Vector S4 (BytesN S1)
+        given = unsafePartial fromJust (toVector s4 $ [ elem1, elem2, elem3, elem4 ]) :: Vector 4 (BytesN 1)
 
         expected =
           unsafePartial (fromJust <<< mkHexString)
@@ -173,15 +173,15 @@ tuplesTest =
 
         given =
           Tuple9 uint int bool int224 bools ints string bytes16 bytes2s ::
-            Tuple9 (UIntN S256)
-              (IntN S256)
+            Tuple9 (UIntN 256)
+              (IntN 256)
               Boolean
-              (IntN S224)
-              (Vector S2 Boolean)
-              (Array (IntN S256))
+              (IntN 224)
+              (Vector 2 Boolean)
+              (Array (IntN 256))
               String
-              (BytesN S16)
-              (Array (Vector S4 (BytesN S2)))
+              (BytesN 16)
+              (Array (Vector 4 (BytesN 2)))
 
         expected =
           unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000001"

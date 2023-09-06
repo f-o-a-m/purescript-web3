@@ -6,7 +6,6 @@ module Network.Ethereum.Web3.Types.TokenUnit
   , divider
   , TokenK
   , TokenUnitK
-  , ProxyTU(..)
   , Value
   , convert
   , formatValue
@@ -23,13 +22,14 @@ module Network.Ethereum.Web3.Types.TokenUnit
   ) where
 
 import Prelude
-import Foreign.Class (class Decode, class Encode, encode)
 import Data.Maybe (fromJust)
 import Data.Ring.Module (class LeftModule, (^*))
 import Data.String (joinWith)
 import Data.Unfoldable (replicate)
 import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
 import Partial.Unsafe (unsafePartial)
+import Simple.JSON (class ReadForeign, class WriteForeign, writeImpl)
+import Type.Proxy (Proxy(..))
 
 data TokenK
 
@@ -39,19 +39,14 @@ data TokenUnitK
 newtype Value (a :: TokenUnitK)
   = Value BigNumber
 
-data ProxyTU (a :: TokenUnitK)
-  = ProxyTU
-
 derive newtype instance eqValue :: Eq (Value a)
-
 derive newtype instance showValue :: Show (Value a)
+derive newtype instance readFValue :: ReadForeign (Value a)
 
-derive newtype instance decodeValue :: Decode (Value a)
-
-instance encodeNoPay :: Encode (Value (NoPay t)) where
-  encode _ = encode (zero :: BigNumber)
-else instance encodeValue :: Encode (Value a) where
-  encode (Value x) = encode x
+instance writeFNoPay :: WriteForeign (Value (NoPay t)) where
+  writeImpl _ = writeImpl (zero :: BigNumber)
+else instance writeFValue :: WriteForeign (Value a) where
+  writeImpl (Value x) = writeImpl x
 
 instance semigroupTokenUnitSpec :: TokenUnitSpec a => Semigroup (Value a) where
   append a b = Value (unValue a `add` unValue b)
@@ -82,14 +77,14 @@ convert :: forall a b. TokenUnit a => TokenUnit b => a -> b
 convert = fromMinorUnit <<< toMinorUnit
 
 class TokenUnitSpec (a :: TokenUnitK) where
-  divider :: ProxyTU a -> BigNumber
+  divider :: forall proxy. proxy a -> BigNumber
 
 formatValue :: forall a. TokenUnitSpec a => Value a -> String
-formatValue v = show $ toMinorUnit v `divide` divider (ProxyTU :: ProxyTU a)
+formatValue v = show $ toMinorUnit v `divide` divider (Proxy :: Proxy a)
 
 -- | Convert a big number into value, first using `floor` function to take the integer part
 mkValue :: forall a. TokenUnitSpec a => BigNumber -> Value a
-mkValue = Value <<< floorBigNumber <<< (mul (divider (ProxyTU :: ProxyTU a)))
+mkValue = Value <<< floorBigNumber <<< (mul (divider (Proxy :: Proxy a)))
 
 foreign import data NoPay :: TokenK -> TokenUnitK
 

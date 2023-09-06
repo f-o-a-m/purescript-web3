@@ -13,26 +13,10 @@ module Network.Ethereum.Web3.Solidity
   ) where
 
 import Network.Ethereum.Web3.Solidity.Size
-  ( D0
-  , D1
-  , D2
-  , D3
-  , D4
-  , D5
-  , D6
-  , D7
-  , D8
-  , D9
-  , type (:&)
-  , type (:%)
-  , DOne
-  , DCons
-  , class KnownSize
+  ( class KnownSize
   , sizeVal
-  , DLProxy(..)
   , class IntSize
   , class ByteSize
-  , class Inc
   )
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector, nilVector, vCons, (:<), vectorLength, toVector)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromByteString)

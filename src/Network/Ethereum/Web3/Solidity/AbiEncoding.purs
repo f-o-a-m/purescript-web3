@@ -1,7 +1,6 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding where
 
 import Prelude
-import Control.Monad.State (get, put)
 import Data.Array (cons, fold, foldMap, length)
 import Data.Array.Partial (init)
 import Data.ByteString (ByteString)
@@ -10,6 +9,7 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (maybe, fromJust)
 import Data.String (splitAt)
+import Data.Tuple (Tuple(..))
 import Data.Traversable (for, scanl)
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Core.BigNumber (toTwosComplement, unsafeToInt)
@@ -18,13 +18,12 @@ import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, DLProxy(..), sizeVal)
+import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
 import Partial.Unsafe (unsafePartial)
-import Text.Parsing.Parser (ParseError, Parser, ParseState(..), ParserT, fail, runParser)
-import Text.Parsing.Parser.Combinators (lookAhead)
-import Text.Parsing.Parser.Pos (Position(..))
+import Parsing (ParseError, Parser, ParseState(..), Position(..), ParserT, fail, getParserT, stateParserT, runParser)
+import Parsing.Combinators (lookAhead)
 import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
@@ -85,7 +84,7 @@ instance abiEncodeBytesN :: ByteSize n => ABIEncode (BytesN n) where
 instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
   fromDataParser = do
     let
-      len = sizeVal (DLProxy :: DLProxy n)
+      len = sizeVal (Proxy :: Proxy n)
 
       zeroBytes = 32 - len
     raw <- parseBytes len
@@ -97,11 +96,8 @@ instance abiEncodeVec :: (EncodingType a, ABIEncode a, KnownSize n) => ABIEncode
     if isDynamic (Proxy :: Proxy a) then do
       let
         encs = map toDataBuilder (unVector l)
-
         lengths = map numberOfBytes encs
-
-        len = sizeVal (DLProxy :: DLProxy n)
-
+        len = sizeVal (Proxy :: Proxy n)
         offsets =
           let
             seed = 32 * len
@@ -114,7 +110,7 @@ instance abiEncodeVec :: (EncodingType a, ABIEncode a, KnownSize n) => ABIEncode
 instance abiDecodeVec :: (EncodingType a, KnownSize n, ABIDecode a) => ABIDecode (Vector n a) where
   fromDataParser = do
     let
-      len = sizeVal (DLProxy :: DLProxy n)
+      len = sizeVal (Proxy :: Proxy n)
     if isDynamic (Proxy :: Proxy a) then do
       offsets <- replicateA len uInt256HexParser
       let
@@ -168,11 +164,11 @@ instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
 instance abiDecodeUint :: IntSize n => ABIDecode (UIntN n) where
   fromDataParser = do
     a <- uInt256HexParser
-    maybe (fail $ msg a) pure <<< uIntNFromBigNumber (DLProxy :: DLProxy n) $ a
+    maybe (fail $ msg a) pure <<< uIntNFromBigNumber (Proxy :: Proxy n) $ a
     where
     msg n =
       let
-        size = sizeVal (DLProxy :: DLProxy n)
+        size = sizeVal (Proxy :: Proxy n)
       in
         "Couldn't parse as uint" <> show size <> " : " <> show n
 
@@ -182,11 +178,11 @@ instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
 instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
   fromDataParser = do
     a <- int256HexParser
-    maybe (fail $ msg a) pure <<< intNFromBigNumber (DLProxy :: DLProxy n) $ a
+    maybe (fail $ msg a) pure <<< intNFromBigNumber (Proxy :: Proxy n) $ a
     where
     msg n =
       let
-        size = sizeVal (DLProxy :: DLProxy n)
+        size = sizeVal (Proxy :: Proxy n)
       in
         "Couldn't parse as int" <> show size <> " : " <> show n
 
@@ -245,7 +241,7 @@ parseBytes n = fold <$> replicateA n parseByte
 
 parseByte :: forall m. Monad m => ParserT HexString m HexString
 parseByte = do
-  ParseState input (Position position) _ <- get
+  ParseState input (Position position) _ <- getParserT
   if numberOfBytes input < 1 then
     fail "Unexpected EOF"
   else do
@@ -255,5 +251,11 @@ parseByte = do
       unsafeMkHex s = unsafePartial $ fromJust $ mkHexString s
 
       position' = Position $ position { column = position.column + 1 }
-    put $ ParseState (unsafeMkHex after) position' true
-    pure $ unsafeMkHex before
+
+    let newState = ParseState (unsafeMkHex after) position' true
+        ret = unsafeMkHex before
+
+    -- equivalent to: do
+    --    put newState -- ParserT is no longer it's own MonadState and theres no putParserT
+    --    pure ret
+    stateParserT $ const (Tuple ret newState)
