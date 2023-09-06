@@ -28,16 +28,16 @@ roundTrip decoded encoded = do
   encoded `shouldEqual` toDataBuilder decoded
   fromData encoded `shouldEqual` Right decoded
 
-roundTripGeneric ::
-  forall a rep.
-  Show a =>
-  Eq a =>
-  Generic a rep =>
-  GenericABIEncode rep =>
-  GenericABIDecode rep =>
-  a ->
-  HexString ->
-  Aff Unit
+roundTripGeneric
+  :: forall a rep
+   . Show a
+  => Eq a
+  => Generic a rep
+  => GenericABIEncode rep
+  => GenericABIDecode rep
+  => a
+  -> HexString
+  -> Aff Unit
 roundTripGeneric decoded encoded = do
   encoded `shouldEqual` genericABIEncode decoded
   genericFromData encoded `shouldEqual` Right decoded
@@ -87,9 +87,9 @@ staticArraysTests =
         expected =
           unsafePartial (fromJust <<< mkHexString)
             $ "cf00000000000000000000000000000000000000000000000000000000000000"
-            <> "6800000000000000000000000000000000000000000000000000000000000000"
-            <> "4d00000000000000000000000000000000000000000000000000000000000000"
-            <> "fb00000000000000000000000000000000000000000000000000000000000000"
+                <> "6800000000000000000000000000000000000000000000000000000000000000"
+                <> "4d00000000000000000000000000000000000000000000000000000000000000"
+                <> "fb00000000000000000000000000000000000000000000000000000000000000"
       roundTrip given expected
 
 dynamicArraysTests :: Spec Unit
@@ -172,16 +172,16 @@ tuplesTest =
         bytes2s = [ vector4, vector4 ]
 
         given =
-          Tuple9 uint int bool int224 bools ints string bytes16 bytes2s ::
-            Tuple9 (UIntN 256)
-              (IntN 256)
-              Boolean
-              (IntN 224)
-              (Vector 2 Boolean)
-              (Array (IntN 256))
-              String
-              (BytesN 16)
-              (Array (Vector 4 (BytesN 2)))
+          Tuple9 uint int bool int224 bools ints string bytes16 bytes2s
+            :: Tuple9 (UIntN 256)
+                 (IntN 256)
+                 Boolean
+                 (IntN 224)
+                 (Vector 2 Boolean)
+                 (Array (IntN 256))
+                 String
+                 (BytesN 16)
+                 (Array (Vector 4 (BytesN 2)))
 
         expected =
           unsafePartial fromJust <<< mkHexString $ "0000000000000000000000000000000000000000000000000000000000000001"

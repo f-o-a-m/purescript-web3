@@ -35,9 +35,9 @@ spec p =
   in
     go $ spec' p env
 
-type FilterEnv m
-  = { logger :: String -> m Unit
-    }
+type FilterEnv m =
+  { logger :: String -> m Unit
+  }
 
 {-
 NOTE: none of the Futures use Pending, the behavior is currently ill defined
@@ -47,12 +47,12 @@ Case [Past, ∞] : The filter starts in the past but continues indefinitely into
 Case [Future, ∞] : The fitler starts in the future and continues indefinitely into the future.
 Case [Future, Future] : The fitler starts in the future and ends at a later time in the future.
 -}
-spec' ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  FilterEnv m ->
-  SpecT m Unit Aff Unit
+spec'
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> FilterEnv m
+  -> SpecT m Unit Aff Unit
 spec' provider { logger } = do
   uIntV <- liftEffect $ EAVar.new 1
   let
@@ -76,9 +76,9 @@ spec' provider { logger } = do
                 pastFilter =
                   eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                     # _fromBlock
-                    .~ BN start
+                        .~ BN start
                     # _toBlock
-                    .~ BN end
+                        .~ BN end
               fiber' <- monitorUntil provider logger pastFilter (const false) defaultFilterOpts
               { foundValuesV } <- joinWeb3Fork fiber'
               foundValues <- liftAff $ AVar.take foundValuesV
@@ -102,9 +102,9 @@ spec' provider { logger } = do
                 filter =
                   eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                     # _fromBlock
-                    .~ BN later
+                        .~ BN later
                     # _toBlock
-                    .~ Latest
+                        .~ Latest
               fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
               hangOutTillBlock provider logger later
               traverse_ setter values
@@ -129,9 +129,9 @@ spec' provider { logger } = do
                 filter =
                   eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
                     # _fromBlock
-                    .~ BN later
+                        .~ BN later
                     # _toBlock
-                    .~ BN latest
+                        .~ BN latest
               fiber <- monitorUntil provider logger filter (_ == aMax values) defaultFilterOpts
               hangOutTillBlock provider logger later
               traverse_ setter values
@@ -142,22 +142,22 @@ spec' provider { logger } = do
 --------------------------------------------------------------------------------
 -- Utils
 --------------------------------------------------------------------------------
-type FilterOpts
-  = { trailBy :: Int
-    , windowSize :: Int
-    }
+type FilterOpts =
+  { trailBy :: Int
+  , windowSize :: Int
+  }
 
 defaultFilterOpts :: FilterOpts
 defaultFilterOpts = { trailBy: 0, windowSize: 0 }
 
-fromPastToFutureTrailingBy ::
-  forall m.
-  MonadAff m =>
-  SimpleStorageCfg m ->
-  Provider ->
-  Logger m ->
-  FilterOpts ->
-  m Unit
+fromPastToFutureTrailingBy
+  :: forall m
+   . MonadAff m
+  => SimpleStorageCfg m
+  -> Provider
+  -> Logger m
+  -> FilterOpts
+  -> m Unit
 fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
   let
     { simpleStorageAddress, setter, uIntsGen } = simpleStorageCfg
@@ -176,9 +176,9 @@ fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
     filter2 =
       eventFilter (Proxy :: Proxy SimpleStorage.CountSet) simpleStorageAddress
         # _fromBlock
-        .~ BN start
+            .~ BN start
         # _toBlock
-        .~ Latest
+            .~ Latest
   fiber2 <- monitorUntil provider logger filter2 (_ == aMax secondValues) opts
   traverse_ setter secondValues
   { foundValuesV, reachedTargetTrailByV } <- joinWeb3Fork fiber2
@@ -189,23 +189,23 @@ fromPastToFutureTrailingBy simpleStorageCfg provider logger opts = do
     logger $ "Reached 'chainHead - trailBy' : " <> show reachedTargetTrailBy
     liftAff $ reachedTargetTrailBy `shouldEqual` true
 
-monitorUntil ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  Logger m ->
-  Filter SimpleStorage.CountSet ->
-  (UIntN 256 -> Boolean) ->
-  FilterOpts ->
-  m
-    ( Fiber
-        ( Either Web3Error
-            { endingBlockV :: AVar.AVar BlockNumber
-            , foundValuesV :: AVar.AVar (Array (UIntN 256))
-            , reachedTargetTrailByV :: AVar.AVar Boolean
-            }
-        )
-    )
+monitorUntil
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> Logger m
+  -> Filter SimpleStorage.CountSet
+  -> (UIntN 256 -> Boolean)
+  -> FilterOpts
+  -> m
+       ( Fiber
+           ( Either Web3Error
+               { endingBlockV :: AVar.AVar BlockNumber
+               , foundValuesV :: AVar.AVar (Array (UIntN 256))
+               , reachedTargetTrailByV :: AVar.AVar Boolean
+               }
+           )
+       )
 monitorUntil provider logger filter p opts = do
   endingBlockV <- liftAff AVar.empty
   foundValuesV <- liftAff $ AVar.new []
@@ -239,19 +239,19 @@ monitorUntil provider logger filter p opts = do
         _ <- event' { ev: filter } { ev: handler } opts
         pure { endingBlockV, foundValuesV, reachedTargetTrailByV }
 
-type SimpleStorageCfg m
-  = { simpleStorageAddress :: Address
-    , setter :: UIntN 256 -> m Unit
-    , uIntsGen :: Int -> m (Array (UIntN 256))
-    }
+type SimpleStorageCfg m =
+  { simpleStorageAddress :: Address
+  , setter :: UIntN 256 -> m Unit
+  , uIntsGen :: Int -> m (Array (UIntN 256))
+  }
 
-deployUniqueSimpleStorage ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  Logger m ->
-  (Int -> m (Array (UIntN 256))) ->
-  m (SimpleStorageCfg m)
+deployUniqueSimpleStorage
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> Logger m
+  -> (Int -> m (Array (UIntN 256)))
+  -> m (SimpleStorageCfg m)
 deployUniqueSimpleStorage provider logger uIntsGen = do
   contractConfig <-
     deployContract provider logger "SimpleStorage"
@@ -263,30 +263,30 @@ deployUniqueSimpleStorage provider logger uIntsGen = do
     , uIntsGen
     }
 
-mkSetter ::
-  forall m.
-  MonadAff m =>
-  ContractConfig ->
-  Provider ->
-  Logger m ->
-  UIntN 256 ->
-  m Unit
+mkSetter
+  :: forall m
+   . MonadAff m
+  => ContractConfig
+  -> Provider
+  -> Logger m
+  -> UIntN 256
+  -> m Unit
 mkSetter { contractAddress, userAddress } provider logger _count = do
   let
     txOptions =
       defaultTestTxOptions # _from ?~ userAddress
         # _to
-        ?~ contractAddress
+            ?~ contractAddress
   logger $ "Setting count to " <> show _count
   txHash <- assertWeb3 provider $ SimpleStorage.setCount txOptions { _count }
   pollTransactionReceipt provider txHash mempty
 
-mkUIntsGen ::
-  forall m.
-  MonadAff m =>
-  AVar.AVar Int ->
-  Int ->
-  m (Array (UIntN 256))
+mkUIntsGen
+  :: forall m
+   . MonadAff m
+  => AVar.AVar Int
+  -> Int
+  -> m (Array (UIntN 256))
 mkUIntsGen uintV n =
   liftAff do
     firstAvailable <- AVar.take uintV

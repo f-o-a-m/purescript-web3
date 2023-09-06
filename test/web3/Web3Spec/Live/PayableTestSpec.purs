@@ -22,7 +22,7 @@ spec provider =
             $ \txOpts ->
                 Api.eth_sendTransaction $ txOpts # _data ?~ PayableTestCode.deployBytecode
                   # _value
-                  ?~ (mkValue zero :: Value Wei)
+                      ?~ (mkValue zero :: Value Wei)
         )
     $ describe "PayableTest" do
         it "can send the right amount of Ether"
@@ -33,9 +33,9 @@ spec provider =
                 txOptions =
                   defaultTestTxOptions # _to ?~ payableTestAddress
                     # _value
-                    ?~ convert (mkValue one :: Value Ether)
+                        ?~ convert (mkValue one :: Value Ether)
                     # _from
-                    ?~ userAddress
+                        ?~ userAddress
 
                 etherAction = PayableTest.seeContent txOptions
               Tuple _ (PayableTest.Content c) <-
@@ -50,9 +50,9 @@ spec provider =
                 txOptions =
                   defaultTestTxOptions # _to ?~ payableTestAddress
                     # _value
-                    ?~ convert (mkValue one :: Value Shannon)
+                        ?~ convert (mkValue one :: Value Shannon)
                     # _from
-                    ?~ userAddress
+                        ?~ userAddress
 
                 etherAction = PayableTest.seeContent txOptions
               Tuple _ (PayableTest.Content c) <-

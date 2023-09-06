@@ -15,8 +15,7 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- | Represents a statically sized unsigned integer of size `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype UIntN (n :: Int)
-  = UIntN BigNumber
+newtype UIntN (n :: Int) = UIntN BigNumber
 
 derive newtype instance showUIntN :: Show (UIntN n)
 derive newtype instance eqUIntN :: Eq (UIntN n)
@@ -32,7 +31,7 @@ uIntNFromBigNumber :: forall n. KnownSize n => Proxy n -> BigNumber -> Maybe (UI
 uIntNFromBigNumber _ a
   | a < zero = Nothing
   | otherwise =
-    let
-      maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n)) - one
-    in
-      if a > maxVal then Nothing else Just <<< UIntN $ a
+      let
+        maxVal = (embed 2) `pow` (sizeVal (Proxy :: Proxy n)) - one
+      in
+        if a > maxVal then Nothing else Just <<< UIntN $ a

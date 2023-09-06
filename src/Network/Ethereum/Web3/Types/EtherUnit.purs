@@ -14,26 +14,18 @@ import Network.Ethereum.Web3.Types.TokenUnit (MinorUnit, MinorUnitE12, MinorUnit
 
 foreign import data ETHER :: TokenK
 
-type Wei
-  = MinorUnit ETHER
+type Wei = MinorUnit ETHER
 
-type Babbage
-  = MinorUnitE3 ETHER
+type Babbage = MinorUnitE3 ETHER
 
-type Lovelace
-  = MinorUnitE6 ETHER
+type Lovelace = MinorUnitE6 ETHER
 
-type Shannon
-  = MinorUnitE9 ETHER
+type Shannon = MinorUnitE9 ETHER
 
-type Szabo
-  = MinorUnitE12 ETHER
+type Szabo = MinorUnitE12 ETHER
 
-type Finney
-  = MinorUnitE15 ETHER
+type Finney = MinorUnitE15 ETHER
 
-type Ether
-  = MinorUnitE18 ETHER
+type Ether = MinorUnitE18 ETHER
 
-type KEther
-  = MinorUnitE21 ETHER
+type KEther = MinorUnitE21 ETHER

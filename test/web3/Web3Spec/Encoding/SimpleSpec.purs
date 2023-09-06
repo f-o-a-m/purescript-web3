@@ -107,26 +107,26 @@ bytesDTests =
         expected =
           unsafePartial fromJust <<< mkHexString
             $ "0000000000000000000000000000000000000000000000000000000000000006"
-            <> "c3a40000c3a40000000000000000000000000000000000000000000000000000"
+                <> "c3a40000c3a40000000000000000000000000000000000000000000000000000"
       roundTrip given expected
     it "can encode long bytesD" do
       let
         given =
           unsafePartial $ fromJust $ flip BS.fromString BS.Hex
             $ "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1"
       let
         expected =
           unsafePartial fromJust <<< mkHexString
             $ "000000000000000000000000000000000000000000000000000000000000009f"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff100"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                <> "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff100"
       roundTrip given expected
     it "can encode dave" do
       let
@@ -277,8 +277,7 @@ blockTests =
 
   upToHex = unsafePartial fromJust <<< mkHexString
 
-newtype KovanBlock
-  = KovanBlock
+newtype KovanBlock = KovanBlock
   { difficulty :: BigNumber
   , extraData :: HexString
   , gasLimit :: BigNumber

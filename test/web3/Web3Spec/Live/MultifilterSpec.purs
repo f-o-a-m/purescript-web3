@@ -29,7 +29,7 @@ spec provider =
             $ \txOpts ->
                 Api.eth_sendTransaction $ txOpts # _data ?~ MultifilterCode.deployBytecode
                   # _value
-                  ?~ (mkValue zero :: Value Wei)
+                      ?~ (mkValue zero :: Value Wei)
         )
     $ it "can receive multiple events in the correct order" \contractCfg -> do
         let
@@ -38,9 +38,9 @@ spec provider =
           txOpts =
             defaultTestTxOptions
               # _from
-              ?~ userAddress
+                  ?~ userAddress
               # _to
-              ?~ multifilterAddress
+                  ?~ multifilterAddress
 
           vals1 = 1 .. 5
 
@@ -59,14 +59,16 @@ spec provider =
         count1V <- AVar.new 0
         f1 <-
           forkWeb3 provider
-            $ let
+            $
+              let
                 h1 = mkHandler (Proxy :: Proxy Multifilter.E1) provider raceV count1V (_ == length vals1) true
               in
                 void $ event filter1 h1
         count2V <- AVar.new 0
         f2 <-
           forkWeb3 provider
-            $ let
+            $
+              let
                 h2 = mkHandler (Proxy :: Proxy Multifilter.E2) provider raceV count2V (_ == length vals2) false
               in
                 void $ event filter2 h2
@@ -84,7 +86,8 @@ spec provider =
           f <- forkWeb3 provider $ event' multiFilter multiHandler { trailBy: 0, windowSize: 0 }
           pure $ (rmap (const unit) <$> f)
         parSequence_
-          $ [ parTraverse_ fireE1 vals1
+          $
+            [ parTraverse_ fireE1 vals1
             , parTraverse_ fireE2 vals2
             ]
         parTraverse_ joinWeb3Fork [ f1, f2, f3 ]
@@ -94,15 +97,15 @@ spec provider =
         sort race `shouldEqual` sync
         sort sync `shouldEqual` sync
 
-mkHandler ::
-  forall e.
-  Proxy e ->
-  Provider ->
-  AVar.AVar (Array (Tuple BlockNumber BigNumber)) ->
-  AVar.AVar Int ->
-  (Int -> Boolean) ->
-  Boolean ->
-  EventHandler Web3 e
+mkHandler
+  :: forall e
+   . Proxy e
+  -> Provider
+  -> AVar.AVar (Array (Tuple BlockNumber BigNumber))
+  -> AVar.AVar Int
+  -> (Int -> Boolean)
+  -> Boolean
+  -> EventHandler Web3 e
 mkHandler _ provider indexV countV p shouldDelay = \_ -> do
   Change c <- ask
   iAcc <- liftAff $ AVar.take indexV

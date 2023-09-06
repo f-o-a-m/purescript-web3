@@ -45,66 +45,65 @@ instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (P
 instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
   arrayParser = map Constructor <<< arrayParser
 
-genericArrayParser ::
-  forall a rep.
-  Generic a rep =>
-  ArrayParser rep =>
-  Array HexString ->
-  Maybe a
+genericArrayParser
+  :: forall a rep
+   . Generic a rep
+  => ArrayParser rep
+  => Array HexString
+  -> Maybe a
 genericArrayParser = map to <<< arrayParser
 
 --------------------------------------------------------------------------------
 -- | Event Parsers
 --------------------------------------------------------------------------------
-data Event i ni
-  = Event i ni
+data Event i ni = Event i ni
 
-parseChange ::
-  forall a b arep brep.
-  Generic a arep =>
-  ArrayParser arep =>
-  Generic b brep =>
-  GenericABIDecode brep =>
-  Change ->
-  Boolean ->
-  Maybe (Event a b)
+parseChange
+  :: forall a b arep brep
+   . Generic a arep
+  => ArrayParser arep
+  => Generic b brep
+  => GenericABIDecode brep
+  => Change
+  -> Boolean
+  -> Maybe (Event a b)
 parseChange (Change change) anonymous = do
   topics <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
   a <- genericArrayParser topics
   b <- hush <<< genericFromData $ change.data
   pure $ Event a b
 
-combineChange ::
-  forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes.
-  RecordFieldsIso aargs afields al =>
-  Generic a (Constructor aname aargs) =>
-  RecordFieldsIso bargs bfields bl =>
-  Generic b (Constructor bname bargs) =>
-  Row.Union afields bfields cfields =>
-  Row.Nub cfields cfieldsRes =>
-  Newtype c (Record cfieldsRes) =>
-  Event a b ->
-  c
+combineChange
+  :: forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes
+   . RecordFieldsIso aargs afields al
+  => Generic a (Constructor aname aargs)
+  => RecordFieldsIso bargs bfields bl
+  => Generic b (Constructor bname bargs)
+  => Row.Union afields bfields cfields
+  => Row.Nub cfields cfieldsRes
+  => Newtype c (Record cfieldsRes)
+  => Event a b
+  -> c
 combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
 
 class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
-decodeEventDef ::
-  forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes.
-  ArrayParser aargs =>
-  RecordFieldsIso aargs afields al =>
-  Generic a (Constructor aname aargs) =>
-  RecordFieldsIso bargs bfields bl =>
-  Generic b (Constructor bname bargs) =>
-  GenericABIDecode bargs =>
-  Row.Union afields bfields cfields =>
-  Row.Nub cfields cfieldsRes =>
-  Newtype c (Record cfieldsRes) =>
-  IndexedEvent a b c =>
-  Change ->
-  Maybe c
+decodeEventDef
+  :: forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes
+   . ArrayParser aargs
+  => RecordFieldsIso aargs afields al
+  => Generic a (Constructor aname aargs)
+  => RecordFieldsIso bargs bfields bl
+  => Generic b (Constructor bname bargs)
+  => GenericABIDecode bargs
+  => Row.Union afields bfields cfields
+  => Row.Nub cfields cfieldsRes
+  => Newtype c (Record cfieldsRes)
+  => IndexedEvent a b c
+  => Change
+  -> Maybe c
 decodeEventDef change = do
   let
     anonymous = isAnonymous (Proxy :: Proxy c)
@@ -113,7 +112,9 @@ decodeEventDef change = do
 
 class DecodeEvent :: forall k1 k2. k1 -> k2 -> Type -> Constraint
 class
-  IndexedEvent a b c <= DecodeEvent a b c | c -> a b where
+  IndexedEvent a b c <=
+  DecodeEvent a b c
+  | c -> a b where
   decodeEvent :: Change -> Maybe c
 
 instance defaultInstance ::

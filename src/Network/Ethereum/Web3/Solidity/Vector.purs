@@ -20,8 +20,7 @@ import Prim.Int (class Add)
 
 -- | Represents a statically sized vector of length `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype Vector (n :: Int) a
-  = Vector (Array a)
+newtype Vector (n :: Int) a = Vector (Array a)
 
 derive newtype instance showVector :: Show a => Show (Vector n a)
 derive newtype instance eqVector :: Eq a => Eq (Vector n a)

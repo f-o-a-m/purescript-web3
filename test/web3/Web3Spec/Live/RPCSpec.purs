@@ -129,9 +129,9 @@ spec provider =
             txOpts =
               defaultTransactionOptions # _from ?~ sender
                 # _to
-                ?~ receiver
+                    ?~ receiver
                 # _value
-                ?~ fromMinorUnit one
+                    ?~ fromMinorUnit one
           Api.eth_sendTransaction txOpts
       TransactionReceipt txReceipt <- pollTransactionReceipt provider txHash pure
       Tuple tx tx' <-
@@ -161,7 +161,8 @@ makeRidiculousEthereumMessage s =
       Hex.fromByteString
         $ BS.toUTF8
         $ "\x19" -- NOTE: 19 in hexadecimal is 25
-        <> "Ethereum Signed Message:\n" -- NOTE: length of this string is 25
-        <> show (Hex.numberOfBytes s)
+
+            <> "Ethereum Signed Message:\n" -- NOTE: length of this string is 25
+            <> show (Hex.numberOfBytes s)
   in
     prefix <> s
