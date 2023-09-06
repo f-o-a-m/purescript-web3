@@ -1,0 +1,23 @@
+name: Run test suite
+
+on:
+  push:
+    branches:
+    - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: run tests
+      run: |
+        docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:v1.9.12
+        npm install
+        while ! curl -f http://localhost:8545 >/dev/null 2>/dev/null; do "echo Waiting for Cliquebait to be ready"; sleep 10; done
+        npm run build
+        npm run test
