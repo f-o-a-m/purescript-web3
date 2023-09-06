@@ -3,7 +3,7 @@ name: Code style and lint
 on:
   pull_request:
     branches:
-    - main
+    - master
 
   workflow_dispatch:
 
