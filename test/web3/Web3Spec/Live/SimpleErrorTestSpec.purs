@@ -22,7 +22,7 @@ spec provider =
             $ \txOpts ->
                 Api.eth_sendTransaction $ txOpts # _data ?~ SimpleErrorTestCode.deployBytecode
                   # _value
-                  ?~ (mkValue zero :: Value Wei)
+                      ?~ (mkValue zero :: Value Wei)
         )
     $ describe "SimpleError" do
         it "can raise a left for unset values"
@@ -33,7 +33,7 @@ spec provider =
                 txOptions =
                   defaultTestTxOptions # _to ?~ simpleErrorTestAddress
                     # _from
-                    ?~ userAddress
+                        ?~ userAddress
 
                 n = mkUIntN s256 1
               resp1 <- assertWeb3 provider $ SimpleErrorTest.names txOptions Latest n

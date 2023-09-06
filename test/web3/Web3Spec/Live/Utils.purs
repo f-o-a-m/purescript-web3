@@ -25,8 +25,7 @@ import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Type.Proxy (Proxy)
 
-type Logger m
-  = String -> m Unit
+type Logger m = String -> m Unit
 
 go :: SpecT (ReaderT (Logger Aff) Aff) Unit Aff ~> SpecT Aff Unit Aff
 go =
@@ -40,15 +39,15 @@ go =
 
 -- | Run a `Web3` action which will dispatch a single event, wait for the event,
 -- | then return the action's result and the event.
-takeEvent ::
-  forall a ev i ni.
-  DecodeEvent i ni ev =>
-  Show ev =>
-  EventFilter ev =>
-  Proxy ev ->
-  Address ->
-  Web3 a ->
-  Web3 (Tuple a ev)
+takeEvent
+  :: forall a ev i ni
+   . DecodeEvent i ni ev
+  => Show ev
+  => EventFilter ev
+  => Proxy ev
+  -> Address
+  -> Web3 a
+  -> Web3 (Tuple a ev)
 takeEvent prx addrs web3Action = do
   var <- liftAff AVar.empty
   _ <-
@@ -62,24 +61,24 @@ takeEvent prx addrs web3Action = do
   pure $ Tuple efRes event
 
 -- | Assert the `Web3` action's result, crash the program if it doesn't succeed.
-assertWeb3 ::
-  forall m a.
-  MonadAff m =>
-  Provider ->
-  Web3 a ->
-  m a
+assertWeb3
+  :: forall m a
+   . MonadAff m
+  => Provider
+  -> Web3 a
+  -> m a
 assertWeb3 provider a =
   liftAff $ runWeb3 provider a
     <#> case _ of
-        Right x -> x
-        Left err -> unsafeCrashWith $ "expected Right in `assertWeb3`, got error" <> show err
+      Right x -> x
+      Left err -> unsafeCrashWith $ "expected Right in `assertWeb3`, got error" <> show err
 
-assertStorageCall ::
-  forall m a.
-  MonadAff m =>
-  Provider ->
-  Web3 (Either CallError a) ->
-  m a
+assertStorageCall
+  :: forall m a
+   . MonadAff m
+  => Provider
+  -> Web3 (Either CallError a)
+  -> m a
 assertStorageCall p f =
   liftAff do
     eRes <- assertWeb3 p f
@@ -87,13 +86,13 @@ assertStorageCall p f =
       Right x -> pure x
       Left err -> unsafeCrashWith $ "expected Right in `assertStorageCall`, got error" <> show err
 
-pollTransactionReceipt ::
-  forall m a.
-  MonadAff m =>
-  Provider ->
-  HexString ->
-  (TransactionReceipt -> Aff a) ->
-  m a
+pollTransactionReceipt
+  :: forall m a
+   . MonadAff m
+  => Provider
+  -> HexString
+  -> (TransactionReceipt -> Aff a)
+  -> m a
 pollTransactionReceipt provider txHash k =
   liftAff do
     eRes <- runWeb3 provider $ Api.eth_getTransactionReceipt txHash
@@ -105,13 +104,13 @@ pollTransactionReceipt provider txHash k =
         Succeeded -> k receipt
         Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
 
-hangOutTillBlock ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  Logger m ->
-  BlockNumber ->
-  m Unit
+hangOutTillBlock
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> Logger m
+  -> BlockNumber
+  -> m Unit
 hangOutTillBlock provider logger bn = do
   bn' <- assertWeb3 provider Api.eth_blockNumber
   logger $ "Current block number : " <> show bn'
@@ -119,12 +118,12 @@ hangOutTillBlock provider logger bn = do
     liftAff $ delay (Milliseconds 1000.0)
     hangOutTillBlock provider logger bn
 
-awaitNextBlock ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  Logger m ->
-  m Unit
+awaitNextBlock
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> Logger m
+  -> m Unit
 awaitNextBlock provider logger = do
   n <- assertWeb3 provider Api.eth_blockNumber
   let
@@ -132,19 +131,19 @@ awaitNextBlock provider logger = do
   logger $ "Awaiting block number " <> show next
   hangOutTillBlock provider logger next
 
-type ContractConfig
-  = { contractAddress :: Address
-    , userAddress :: Address
-    }
+type ContractConfig =
+  { contractAddress :: Address
+  , userAddress :: Address
+  }
 
-deployContract ::
-  forall m.
-  MonadAff m =>
-  Provider ->
-  Logger m ->
-  String ->
-  (TransactionOptions NoPay -> Web3 HexString) ->
-  m ContractConfig
+deployContract
+  :: forall m
+   . MonadAff m
+  => Provider
+  -> Logger m
+  -> String
+  -> (TransactionOptions NoPay -> Web3 HexString)
+  -> m ContractConfig
 deployContract p logger contractName deploymentTx = do
   userAddress <-
     assertWeb3 p
@@ -166,11 +165,11 @@ deployContract p logger contractName deploymentTx = do
   logger $ contractName <> " successfully deployed to " <> show contractAddress
   pure $ { contractAddress, userAddress }
 
-joinWeb3Fork ::
-  forall a m.
-  MonadAff m =>
-  Fiber (Either Web3Error a) ->
-  m a
+joinWeb3Fork
+  :: forall a m
+   . MonadAff m
+  => Fiber (Either Web3Error a)
+  -> m a
 joinWeb3Fork fiber =
   liftAff do
     eRes <- joinFiber fiber
@@ -178,33 +177,33 @@ joinWeb3Fork fiber =
       Left e -> unsafeCrashWith $ "Error in forked web3 process " <> show e
       Right a -> pure a
 
-mkHexString' ::
-  String ->
-  HexString
+mkHexString'
+  :: String
+  -> HexString
 mkHexString' hx = unsafePartial fromJust $ mkHexString hx
 
-mkUIntN ::
-  forall n.
-  KnownSize n =>
-  Proxy n ->
-  Int ->
-  UIntN n
+mkUIntN
+  :: forall n
+   . KnownSize n
+  => Proxy n
+  -> Int
+  -> UIntN n
 mkUIntN p n = unsafePartial fromJust $ uIntNFromBigNumber p $ embed n
 
-mkIntN ::
-  forall n.
-  KnownSize n =>
-  Proxy n ->
-  Int ->
-  IntN n
+mkIntN
+  :: forall n
+   . KnownSize n
+  => Proxy n
+  -> Int
+  -> IntN n
 mkIntN p n = unsafePartial fromJust $ intNFromBigNumber p $ embed n
 
-mkBytesN ::
-  forall n.
-  KnownSize n =>
-  Proxy n ->
-  String ->
-  BytesN n
+mkBytesN
+  :: forall n
+   . KnownSize n
+  => Proxy n
+  -> String
+  -> BytesN n
 mkBytesN p s = unsafePartial fromJust $ fromByteString p =<< flip BS.fromString BS.Hex s
 
 defaultTestTxOptions :: TransactionOptions NoPay

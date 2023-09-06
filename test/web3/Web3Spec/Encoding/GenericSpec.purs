@@ -55,8 +55,7 @@ toRecordFieldsSpec =
     it "can combine events" do
       decodeEvent change `shouldEqual` Just transfer
 
-newtype WeirdTuple
-  = WeirdTuple { a :: Int, d :: String, e :: Char }
+newtype WeirdTuple = WeirdTuple { a :: Int, d :: String, e :: Char }
 
 derive instance genericWeirdTuple :: Generic WeirdTuple _
 
@@ -66,8 +65,7 @@ instance showWeirdTuple :: Show WeirdTuple where
 instance eqWeirdTuple :: Eq WeirdTuple where
   eq = genericEq
 
-newtype OtherTuple
-  = OtherTuple { b :: Int, c :: String }
+newtype OtherTuple = OtherTuple { b :: Int, c :: String }
 
 derive instance genericOtherTuple :: Generic OtherTuple _
 
@@ -77,8 +75,7 @@ instance showOtherTuple :: Show OtherTuple where
 instance eqOtherTuple :: Eq OtherTuple where
   eq = genericEq
 
-data CombinedTuple
-  = CombinedTuple { a :: Int, b :: Int, c :: String, d :: String, e :: Char }
+data CombinedTuple = CombinedTuple { a :: Int, b :: Int, c :: String, d :: String, e :: Char }
 
 derive instance genericCombinedTuple :: Generic CombinedTuple _
 
@@ -89,8 +86,7 @@ instance eqCombinedTuple :: Eq CombinedTuple where
   eq = genericEq
 
 --------------------------------------------------------------------------------
-newtype Transfer
-  = Transfer { to :: Address, from :: Address, amount :: UIntN 256 }
+newtype Transfer = Transfer { to :: Address, from :: Address, amount :: UIntN 256 }
 
 derive instance newtypeTransfer :: Newtype Transfer _
 

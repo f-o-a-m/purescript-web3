@@ -2,31 +2,31 @@ module Network.Ethereum.Web3.Solidity.Sizes where
 
 import Type.Proxy (Proxy(..))
 
-s1  :: Proxy 1
+s1 :: Proxy 1
 s1 = Proxy
 
-s2  :: Proxy 2
+s2 :: Proxy 2
 s2 = Proxy
 
-s3  :: Proxy 3
+s3 :: Proxy 3
 s3 = Proxy
 
-s4  :: Proxy 4
+s4 :: Proxy 4
 s4 = Proxy
 
-s5  :: Proxy 5
+s5 :: Proxy 5
 s5 = Proxy
 
-s6  :: Proxy 6
+s6 :: Proxy 6
 s6 = Proxy
 
-s7  :: Proxy 7
+s7 :: Proxy 7
 s7 = Proxy
 
-s8  :: Proxy 8
+s8 :: Proxy 8
 s8 = Proxy
 
-s9  :: Proxy 9
+s9 :: Proxy 9
 s9 = Proxy
 
 s10 :: Proxy 10

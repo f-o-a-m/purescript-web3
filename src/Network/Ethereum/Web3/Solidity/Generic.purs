@@ -26,52 +26,52 @@ class GenericABIDecode a where
   genericFromDataParser :: Parser HexString a
 
 -- | An internally used type for encoding
-type EncodedValue
-  = { order :: Int
-    , isDynamic :: Boolean
-    , encoding :: HexString
-    , encodingLengthInBytes :: Int -- cache
-    }
+type EncodedValue =
+  { order :: Int
+  , isDynamic :: Boolean
+  , encoding :: HexString
+  , encodingLengthInBytes :: Int -- cache
+  }
 
 combineEncodedValues :: Array EncodedValue -> HexString
 combineEncodedValues =
   sortBy (\a b -> a.order `compare` b.order)
     >>> \encodings ->
-        let
-          wordLengthInBytes = 32
+      let
+        wordLengthInBytes = 32
 
-          headsOffsetInBytes :: Int
-          headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
+        headsOffsetInBytes :: Int
+        headsOffsetInBytes = foldl (+) 0 $ map (\encodedValueSimple -> if encodedValueSimple.isDynamic then wordLengthInBytes else encodedValueSimple.encodingLengthInBytes) encodings
 
-          (heads :: HexString) =
-            foldl
-              ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
-                  if encodedValue.isDynamic then
-                    { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
-                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
-                    }
-                  else
-                    { accumulator: accumulator <> encodedValue.encoding
-                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
-                    }
-              )
-              { accumulator: mempty
-              , lengthOfPreviousDynamicValues: 0
-              }
-              encodings
-              # _.accumulator
+        (heads :: HexString) =
+          foldl
+            ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
+                if encodedValue.isDynamic then
+                  { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
+                  , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
+                  }
+                else
+                  { accumulator: accumulator <> encodedValue.encoding
+                  , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
+                  }
+            )
+            { accumulator: mempty
+            , lengthOfPreviousDynamicValues: 0
+            }
+            encodings
+            # _.accumulator
 
-          (tails :: HexString) =
-            foldMap
-              ( \encodedValue ->
-                  if encodedValue.isDynamic then
-                    encodedValue.encoding
-                  else
-                    mempty
-              )
-              encodings
-        in
-          heads <> tails
+        (tails :: HexString) =
+          foldMap
+            ( \encodedValue ->
+                if encodedValue.isDynamic then
+                  encodedValue.encoding
+                else
+                  mempty
+            )
+            encodings
+      in
+        heads <> tails
 
 mkEncodedValue :: forall a. EncodingType a => ABIEncode a => Array EncodedValue -> a -> EncodedValue
 mkEncodedValue otherEncodedArray a =
@@ -102,12 +102,12 @@ instance abiEncodeConstructor :: ABIData a => GenericABIEncode (Constructor name
 
 -- | Encode a generic type into its abi encoding, works only for types of the form
 -- | `Constructor name (Product (Argument a1) (Product ... (Argument an)))`
-genericABIEncode ::
-  forall a rep.
-  Generic a rep =>
-  GenericABIEncode rep =>
-  a ->
-  HexString
+genericABIEncode
+  :: forall a rep
+   . Generic a rep
+  => GenericABIEncode rep
+  => a
+  -> HexString
 genericABIEncode = genericToDataBuilder <<< from
 
 instance baseAbiDecode :: (EncodingType a, ABIDecode a) => GenericABIDecode (Argument a) where
@@ -124,27 +124,27 @@ instance abiDecodeConstructor :: GenericABIDecode a => GenericABIDecode (Constru
 
 -- | Encode a generic type into its abi encoding, works only for types of the form
 -- | `Constructor name (Product (Argument a1) (Product ... (Argument an)))`
-genericABIDecode ::
-  forall a rep.
-  Generic a rep =>
-  GenericABIDecode rep =>
-  Parser HexString a
+genericABIDecode
+  :: forall a rep
+   . Generic a rep
+  => GenericABIDecode rep
+  => Parser HexString a
 genericABIDecode = to <$> genericFromDataParser
 
-genericFromData ::
-  forall a rep.
-  Generic a rep =>
-  GenericABIDecode rep =>
-  HexString ->
-  Either ParseError a
+genericFromData
+  :: forall a rep
+   . Generic a rep
+  => GenericABIDecode rep
+  => HexString
+  -> Either ParseError a
 genericFromData = flip runParser genericABIDecode
 
 -- helpers
-factorParser ::
-  forall a.
-  ABIDecode a =>
-  EncodingType a =>
-  Parser HexString a
+factorParser
+  :: forall a
+   . ABIDecode a
+  => EncodingType a
+  => Parser HexString a
 factorParser
   | isDynamic (Proxy :: Proxy a) = dynamicFactorParser
   | otherwise = fromDataParser
@@ -208,22 +208,22 @@ instance isoRecordInductive ::
     in
       Product a rest
 
-genericToRecordFields ::
-  forall args fields l a name.
-  RecordFieldsIso args fields l =>
-  Generic a (Constructor name args) =>
-  a ->
-  Record fields
+genericToRecordFields
+  :: forall args fields l a name
+   . RecordFieldsIso args fields l
+  => Generic a (Constructor name args)
+  => a
+  -> Record fields
 genericToRecordFields a =
   let
     Constructor row = from a
   in
     toRecordFields (Proxy :: Proxy l) row
 
-genericFromRecordFields ::
-  forall args fields l a name.
-  RecordFieldsIso args fields l =>
-  Generic a (Constructor name args) =>
-  Record fields ->
-  a
+genericFromRecordFields
+  :: forall args fields l a name
+   . RecordFieldsIso args fields l
+  => Generic a (Constructor name args)
+  => Record fields
+  -> a
 genericFromRecordFields r = to $ Constructor $ fromRecordFields (Proxy :: Proxy l) r

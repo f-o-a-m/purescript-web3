@@ -79,8 +79,7 @@ import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, 
 --------------------------------------------------------------------------------
 -- * Block
 --------------------------------------------------------------------------------
-newtype BlockNumber
-  = BlockNumber BigNumber
+newtype BlockNumber = BlockNumber BigNumber
 
 derive instance genericBlockNumber :: Generic BlockNumber _
 derive newtype instance showBlockNumber :: Show BlockNumber
@@ -118,21 +117,20 @@ instance ordChainCursor :: Ord ChainCursor where
 instance readFChainCursor :: ReadForeign ChainCursor where
   readImpl f = readLatest <|> readBN
     where
-      readLatest = do
-        s <- readString f
-        if s == "latest" then
-          pure Latest
-        else
-          fail (TypeMismatch "Latest" s)
-      readBN = BN <$> readImpl f
+    readLatest = do
+      s <- readString f
+      if s == "latest" then
+        pure Latest
+      else
+        fail (TypeMismatch "Latest" s)
+    readBN = BN <$> readImpl f
 
 instance writeFChainCursor :: WriteForeign ChainCursor where
   writeImpl cm = case cm of
     Latest -> writeImpl "latest"
     BN n -> writeImpl n
 
-newtype Block
-  = Block
+newtype Block = Block
   { difficulty :: BigNumber
   , extraData :: HexString
   , gasLimit :: BigNumber
@@ -163,12 +161,10 @@ derive newtype instance writeFBlock :: WriteForeign Block
 instance showBlock :: Show Block where
   show = genericShow
 
-
 --------------------------------------------------------------------------------
 -- * Transaction
 --------------------------------------------------------------------------------
-newtype Transaction
-  = Transaction
+newtype Transaction = Transaction
   { hash :: HexString
   , nonce :: BigNumber
   , blockHash :: Maybe HexString
@@ -218,8 +214,7 @@ instance writeFTransactionStatus :: WriteForeign TransactionStatus where
     Succeeded -> writeImpl "0x1"
     Failed -> writeImpl "0x0"
 
-newtype TransactionReceipt
-  = TransactionReceipt
+newtype TransactionReceipt = TransactionReceipt
   { transactionHash :: HexString
   , transactionIndex :: BigNumber
   , blockHash :: HexString
@@ -240,12 +235,10 @@ derive newtype instance writeFTxReceipt :: WriteForeign TransactionReceipt
 instance showTxReceipt :: Show TransactionReceipt where
   show = genericShow
 
-
 --------------------------------------------------------------------------------
 -- * TransactionOptions
 --------------------------------------------------------------------------------
-newtype TransactionOptions u
-  = TransactionOptions
+newtype TransactionOptions u = TransactionOptions
   { from :: Maybe Address
   , to :: Maybe Address
   , value :: Maybe (Value (u ETHER))
@@ -332,8 +325,7 @@ _nonce =
 --------------------------------------------------------------------------------
 -- * Node Synchronisation
 --------------------------------------------------------------------------------
-newtype SyncStatus
-  = SyncStatus
+newtype SyncStatus = SyncStatus
   { startingBlock :: BigNumber
   , currentBlock :: BigNumber
   , highestBlock :: BigNumber
@@ -355,8 +347,7 @@ instance showSyncStatus :: Show SyncStatus where
 -- * Web3
 --------------------------------------------------------------------------------
 -- | A monad for asynchronous Web3 actions
-newtype Web3 a
-  = Web3 (ReaderT Provider Aff a)
+newtype Web3 a = Web3 (ReaderT Provider Aff a)
 
 unWeb3 :: Web3 ~> ReaderT Provider Aff
 unWeb3 (Web3 s) = s
@@ -385,7 +376,7 @@ derive newtype instance monadReaderWeb3 :: MonadReader Provider Web3
 
 derive newtype instance monadRecWeb3 :: MonadRec Web3
 
-instance lazyWeb3 ∷ Lazy (Web3 a) where
+instance lazyWeb3 :: Lazy (Web3 a) where
   defer f = pure unit >>= f
 
 instance monadForkWeb3 :: MFork.MonadFork Fiber Web3 where
@@ -401,8 +392,7 @@ instance monadBracketWeb3 :: MFork.MonadBracket Error Fiber Web3 where
   uninterruptible = Web3 <<< MFork.uninterruptible <<< unWeb3
   never = Web3 MFork.never
 
-newtype Web3Par a
-  = Web3Par (ReaderT Provider ParAff a)
+newtype Web3Par a = Web3Par (ReaderT Provider ParAff a)
 
 derive newtype instance functorWeb3Par :: Functor Web3Par
 
@@ -428,8 +418,8 @@ runWeb3 :: forall a. Provider -> Web3 a -> Aff (Either Web3Error a)
 runWeb3 p (Web3 action) =
   attempt (runReaderT action p)
     >>= case _ of
-        Left err -> maybe (throwError err) (pure <<< Left) $ parseMsg $ message err
-        Right x -> pure $ Right x
+      Left err -> maybe (throwError err) (pure <<< Left) $ parseMsg $ message err
+      Right x -> pure $ Right x
   where
   -- NOTE: it's a bit hacky
   -- for this to work, errors of type `Web3Error` should be converted to json
@@ -438,14 +428,15 @@ runWeb3 p (Web3 action) =
   -- see Network.Ethereum.Web3.JsonRPC#asError
   parseMsg :: String -> Maybe Web3Error
   parseMsg = hush <<< runExcept <<< readJSON'
-  -- parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
+
+-- parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
 
 -- | Fork an asynchronous `ETH` action
-forkWeb3 ::
-  forall a.
-  Provider ->
-  Web3 a ->
-  Aff (Fiber (Either Web3Error a))
+forkWeb3
+  :: forall a
+   . Provider
+  -> Web3 a
+  -> Aff (Fiber (Either Web3Error a))
 forkWeb3 p = forkAff <<< runWeb3 p
 
 -- | Fork an asynchronous `ETH` action inside Web3 monad
@@ -455,8 +446,7 @@ forkWeb3' web3Action = do
   liftAff $ forkWeb3 p web3Action
 
 newtype Filter :: forall k. k -> Type
-newtype Filter a
-  = Filter
+newtype Filter a = Filter
   { address :: Maybe Address
   , topics :: Maybe (Array (Maybe HexString))
   , fromBlock :: ChainCursor
@@ -505,8 +495,7 @@ _toBlock =
     (\(Filter f) b -> Filter $ f { toBlock = b })
 
 -- | Used by the ethereum client to identify the filter you are querying
-newtype FilterId
-  = FilterId BigNumber
+newtype FilterId = FilterId BigNumber
 
 derive instance genericFilterId :: Generic FilterId _
 derive newtype instance readFFilterId :: ReadForeign FilterId
@@ -517,7 +506,6 @@ instance showFilterId :: Show FilterId where
 
 instance eqFilterId :: Eq FilterId where
   eq = genericEq
-
 
 --------------------------------------------------------------------------------
 -- | EventAction
@@ -542,8 +530,7 @@ instance eqEventAction :: Eq EventAction where
 --------------------------------------------------------------------------------
 -- | Changes pulled by low-level call `eth_getFilterChanges`, `eth_getLogs`,
 -- | and `eth_getFilterLogs`
-newtype Change
-  = Change
+newtype Change = Change
   { logIndex :: BigNumber
   , transactionIndex :: BigNumber
   , transactionHash :: HexString
@@ -571,8 +558,7 @@ instance eqChange :: Eq Change where
 --------------------------------------------------------------------------------
 -- | Newtype wrapper around `Maybe` to handle cases where Web3 passes back
 -- | either `false` or some data type
-newtype FalseOrObject a
-  = FalseOrObject (Maybe a)
+newtype FalseOrObject a = FalseOrObject (Maybe a)
 
 derive instance newtypeFalseOrObj :: Newtype (FalseOrObject a) _
 
@@ -602,11 +588,9 @@ instance readFFalseOrObj :: ReadForeign a => ReadForeign (FalseOrObject a) where
 --------------------------------------------------------------------------------
 -- | Web3 RPC
 --------------------------------------------------------------------------------
-type MethodName
-  = String
+type MethodName = String
 
-newtype Request
-  = Request
+newtype Request = Request
   { jsonrpc :: String
   , id :: Int
   , method :: MethodName
@@ -625,8 +609,7 @@ mkRequest name reqId ps =
     , params: ps
     }
 
-newtype Response a
-  = Response (Either Web3Error a)
+newtype Response a = Response (Either Web3Error a)
 
 instance readFResponse' :: ReadForeign a => ReadForeign (Response a) where
   readImpl a = Response <$> ((Left <$> readImpl a) <|> (Right <$> (readProp "result" a >>= readImpl)))
@@ -634,11 +617,10 @@ instance readFResponse' :: ReadForeign a => ReadForeign (Response a) where
 --------------------------------------------------------------------------------
 -- * Errors
 --------------------------------------------------------------------------------
-data CallError
-  = NullStorageError
-    { signature :: String
-    , _data :: HexString
-    }
+data CallError = NullStorageError
+  { signature :: String
+  , _data :: HexString
+  }
 
 derive instance genericCallError :: Generic CallError _
 
@@ -648,8 +630,7 @@ instance showCallError :: Show CallError where
 instance eqCallError :: Eq CallError where
   eq = genericEq
 
-newtype RpcError
-  = RpcError
+newtype RpcError = RpcError
   { code :: Int
   , message :: String
   }
@@ -691,7 +672,6 @@ instance readFWeb3Error :: ReadForeign Web3Error where
         pure NullError
       else
         readString res >>= \r -> fail (TypeMismatch "NullError" r)
-
 
 foreign import _null :: Foreign
 

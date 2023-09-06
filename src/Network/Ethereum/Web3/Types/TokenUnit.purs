@@ -36,8 +36,7 @@ data TokenK
 data TokenUnitK
 
 -- | A value of some token in specific denomination
-newtype Value (a :: TokenUnitK)
-  = Value BigNumber
+newtype Value (a :: TokenUnitK) = Value BigNumber
 
 derive newtype instance eqValue :: Eq (Value a)
 derive newtype instance showValue :: Show (Value a)

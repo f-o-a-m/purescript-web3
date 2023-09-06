@@ -23,7 +23,7 @@ spec provider =
             $ \txOpts ->
                 Api.eth_sendTransaction $ txOpts # _data ?~ MockERC20Code.deployBytecode
                   # _value
-                  ?~ (mkValue zero :: Value Wei)
+                      ?~ (mkValue zero :: Value Wei)
         )
     $ it "can make a transfer"
     $ \cfg -> do
@@ -37,7 +37,7 @@ spec provider =
           txOptions =
             defaultTestTxOptions # _from ?~ userAddress
               # _to
-              ?~ mockERC20Address
+                  ?~ mockERC20Address
 
           transferAction = MockERC20.transfer txOptions { to: recipient, amount: amount }
         Tuple _ (MockERC20.Transfer tfr) <-

@@ -31,8 +31,7 @@ spec =
         fullDat = sel <> toDataBuilder addr <> toDataBuilder val
       approvalD `shouldEqual` fullDat
 
-type ApproveFn
-  = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))
+type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))
 
 approve :: TransactionOptions NoPay -> { _spender :: Address, _value :: (UIntN 256) } -> Web3 HexString
 approve txOpts r = sendTx txOpts (tagged (genericFromRecordFields r) :: ApproveFn)

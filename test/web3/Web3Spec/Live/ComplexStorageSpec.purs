@@ -24,7 +24,7 @@ spec provider =
             $ \txOpts ->
                 Api.eth_sendTransaction $ txOpts # _data ?~ ComplexStorageCode.deployBytecode
                   # _value
-                  ?~ (mkValue zero :: Value Wei)
+                      ?~ (mkValue zero :: Value Wei)
         )
     $ it "Can encode and decode complex objects to / from a smart contract"
     $ \complexStorageCfg -> do
@@ -54,7 +54,7 @@ spec provider =
           txOptions =
             defaultTestTxOptions # _from ?~ userAddress
               # _to
-              ?~ complexStorageAddress
+                  ?~ complexStorageAddress
 
           arg =
             { _uintVal: uint

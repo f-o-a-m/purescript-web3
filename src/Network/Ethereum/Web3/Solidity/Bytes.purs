@@ -20,8 +20,7 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- Represents a statically sized bytestring of size `n` bytes.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype BytesN (n :: Int)
-  = BytesN ByteString
+newtype BytesN (n :: Int) = BytesN ByteString
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
 instance showBytesN :: KnownSize n => Show (BytesN n) where

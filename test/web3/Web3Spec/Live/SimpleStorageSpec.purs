@@ -34,7 +34,7 @@ spec provider =
           txOpts =
             defaultTestTxOptions # _from ?~ userAddress
               # _to
-              ?~ simpleStorageAddress
+                  ?~ simpleStorageAddress
 
           setCountTx = SimpleStorage.setCount txOpts { _count: newCount }
         Tuple _ (SimpleStorage.CountSet { _count }) <-

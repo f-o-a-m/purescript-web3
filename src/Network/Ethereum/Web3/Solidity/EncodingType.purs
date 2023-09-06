@@ -1,5 +1,7 @@
 module Network.Ethereum.Web3.Solidity.EncodingType
-  ( class EncodingType, typeName, isDynamic
+  ( class EncodingType
+  , typeName
+  , isDynamic
   ) where
 
 import Prelude

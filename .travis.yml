@@ -22,8 +22,7 @@ jobs:
     name: "Ensure that code matches style guidleines for PRs to master (Purescript)"
     if: branch = master
     script:
-    - echo "test formatting disabled since purty isn't up-to-date with purescript v0.14"
-    # - npm run purty-check
+    - npm run tidy-check
 
 after_success:
 - >-

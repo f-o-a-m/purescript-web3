@@ -127,7 +127,8 @@ instance abiDecodeVec :: (EncodingType a, KnownSize n, ABIDecode a) => ABIDecode
 instance abiEncodeAray :: (EncodingType a, ABIEncode a) => ABIEncode (Array a) where
   toDataBuilder l = do
     uInt256HexBuilder (embed $ length l)
-      <> if isDynamic (Proxy :: Proxy a) then do
+      <>
+        if isDynamic (Proxy :: Proxy a) then do
           let
             encs = map toDataBuilder l
 
@@ -252,8 +253,9 @@ parseByte = do
 
       position' = Position $ position { column = position.column + 1 }
 
-    let newState = ParseState (unsafeMkHex after) position' true
-        ret = unsafeMkHex before
+    let
+      newState = ParseState (unsafeMkHex after) position' true
+      ret = unsafeMkHex before
 
     -- equivalent to: do
     --    put newState -- ParserT is no longer it's own MonadState and theres no putParserT

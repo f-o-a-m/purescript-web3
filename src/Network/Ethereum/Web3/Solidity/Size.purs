@@ -17,6 +17,7 @@ instance (Reflectable n Int) => KnownSize n where
 -- | `IntSize` is empty class, if there is instance of `IntSize` for some number it means there
 -- | is solidity type `int` of that size specific number in like `int16`, `int24` ... `int256`
 class KnownSize n <= IntSize (n :: Int)
+
 instance intSize8 :: IntSize 8
 instance intSize16 :: IntSize 16
 instance intSize24 :: IntSize 24
@@ -53,15 +54,16 @@ instance intSize256 :: IntSize 256
 -- | `ByteSize` is empty class, if there is instance of `ByteSize` for some number it means there
 -- | is solidity type `bytes` of that size specific number in like `bytes1`, `bytes2` ... `bytes32`
 class KnownSize n <= ByteSize (n :: Int)
-instance byteSize1  :: ByteSize 1
-instance byteSize2  :: ByteSize 2
-instance byteSize3  :: ByteSize 3
-instance byteSize4  :: ByteSize 4
-instance byteSize5  :: ByteSize 5
-instance byteSize6  :: ByteSize 6
-instance byteSize7  :: ByteSize 7
-instance byteSize8  :: ByteSize 8
-instance byteSize9  :: ByteSize 9
+
+instance byteSize1 :: ByteSize 1
+instance byteSize2 :: ByteSize 2
+instance byteSize3 :: ByteSize 3
+instance byteSize4 :: ByteSize 4
+instance byteSize5 :: ByteSize 5
+instance byteSize6 :: ByteSize 6
+instance byteSize7 :: ByteSize 7
+instance byteSize8 :: ByteSize 8
+instance byteSize9 :: ByteSize 9
 instance byteSize10 :: ByteSize 10
 instance byteSize11 :: ByteSize 11
 instance byteSize12 :: ByteSize 12
