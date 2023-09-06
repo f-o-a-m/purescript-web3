@@ -10,11 +10,11 @@ on:
 jobs:
   tidy:
     runs-on: ubuntu-latest
-    uses: actions/checkout@v3
-    with:
-      submodules: recursive
     steps:
     - name: run tidy
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
       run: |
         npm install
         npm run tidy-check
