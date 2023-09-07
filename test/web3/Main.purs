@@ -19,7 +19,6 @@ import Web3Spec.Live.RPCSpec as RPCSpec
 import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
 import Web3Spec.Types.VectorSpec as VectorSpec
 
-
 main :: Effect Unit
 main =
   launchAff_ do
