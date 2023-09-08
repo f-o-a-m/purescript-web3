@@ -26,7 +26,7 @@ import Data.Maybe (fromJust)
 import Data.Ring.Module (class LeftModule, (^*))
 import Data.String (joinWith)
 import Data.Unfoldable (replicate)
-import Network.Ethereum.Core.BigNumber (BigNumber, decimal, floorBigNumber, parseBigNumber, divide)
+import Network.Ethereum.Core.BigNumber (BigNumber, decimal, parseBigNumber)
 import Partial.Unsafe (unsafePartial)
 import Simple.JSON (class ReadForeign, class WriteForeign, writeImpl)
 import Type.Proxy (Proxy(..))
@@ -79,11 +79,11 @@ class TokenUnitSpec (a :: TokenUnitK) where
   divider :: forall proxy. proxy a -> BigNumber
 
 formatValue :: forall a. TokenUnitSpec a => Value a -> String
-formatValue v = show $ toMinorUnit v `divide` divider (Proxy :: Proxy a)
+formatValue v = show $ toMinorUnit v `div` divider (Proxy :: Proxy a)
 
 -- | Convert a big number into value, first using `floor` function to take the integer part
 mkValue :: forall a. TokenUnitSpec a => BigNumber -> Value a
-mkValue = Value <<< floorBigNumber <<< (mul (divider (Proxy :: Proxy a)))
+mkValue = Value <<< (mul (divider (Proxy :: Proxy a)))
 
 foreign import data NoPay :: TokenK -> TokenUnitK
 
