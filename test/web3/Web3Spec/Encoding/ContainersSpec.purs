@@ -6,10 +6,9 @@ import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (fromJust)
-import Debug (spy)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, toDataBuilder, uIntNFromBigNumber, (:<))
+import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
 import Network.Ethereum.Web3.Solidity.Sizes (s1, s16, s2, s224, s256, s4)
@@ -17,16 +16,16 @@ import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
 import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString, unHex)
 import Parsing (ParseError)
 import Partial.Unsafe (unsafePartial)
-import Test.QuickCheck (quickCheck, (<?>), (===))
+import Test.QuickCheck (quickCheck, (<?>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
 spec =
   describe "encoding-spec for containers" do
-    --staticArraysTests
-    --dynamicArraysTests
-    --tuplesTest
+    staticArraysTests
+    dynamicArraysTests
+    tuplesTest
     typePropertyTests
 
 roundTrip :: forall a. Show a => Eq a => ABIEncode a => ABIDecode a => a -> HexString -> Aff Unit

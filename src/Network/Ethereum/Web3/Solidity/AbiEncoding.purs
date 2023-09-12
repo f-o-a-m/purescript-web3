@@ -22,12 +22,12 @@ import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, length) as BS
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
-import Data.Maybe (Maybe(..), fromJust, maybe)
-import Data.String (codePointFromChar, dropWhile, splitAt)
+import Data.Maybe (fromJust, maybe)
+import Data.String (splitAt)
 import Data.Traversable (for, scanl)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicateA)
-import Network.Ethereum.Core.BigNumber (fromString, fromStringAs, fromTwosComplement256, hexadecimal, toString, toTwosComplement256, unsafeToInt)
+import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement256, toString, toTwosComplement256, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, toByteString, unHex)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
@@ -38,7 +38,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
 import Parsing (ParseError, Parser, ParseState(..), Position(..), ParserT, fail, getParserT, stateParserT, runParser)
 import Parsing.Combinators (lookAhead)
-import Partial.Unsafe (unsafeCrashWith, unsafePartial)
+import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
@@ -212,12 +212,6 @@ instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged s a) where
 -- | Special Builders and Parsers
 --------------------------------------------------------------------------------
 
-unsafeFromJust :: forall a. String -> Maybe a -> a
-unsafeFromJust str a =
-  case a of
-    Just a' -> a'
-    Nothing -> unsafeCrashWith str
-
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
 bytesBuilder = padRight Zero <<< fromByteString
@@ -227,18 +221,15 @@ int256HexBuilder :: BigNumber -> HexString
 int256HexBuilder x =
   let
     a = toTwosComplement256 x
-    x' = unsafeFromJust ("int256HexBuilder " <> show a) $ mkHexString (toString a)
+    x' = unsafePartial $ fromJust $ mkHexString (toString a)
   in
     if x < zero then padLeft FF x'
     else padLeft Zero x'
 
 -- | Encode something that is essentially an unsigned integer.
 uInt256HexBuilder :: BigNumber -> HexString
-uInt256HexBuilder x =
-  let
-    a = mkHexString $ toString x
-  in
-    padLeft Zero $ unsafeFromJust ("uInt256HexBuilder " <> show x) a
+uInt256HexBuilder x = unsafePartial $ fromJust $
+  padLeft Zero <$> mkHexString (toString x)
 
 -- | Parse as a signed `BigNumber`
 int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
@@ -275,7 +266,7 @@ parseByte = do
     let
       { after, before } = splitAt 2 (unHex input)
 
-      mkHex s = maybe (fail $ "Unable to parse HexString: " <> s) pure $ mkHexString s
+      mkHex s = maybe (fail $ "Unable to parse bytes from hex: " <> s) pure $ mkHexString s
 
       position' = Position $ position { column = position.column + 1 }
 
