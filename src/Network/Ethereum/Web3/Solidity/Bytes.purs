@@ -7,12 +7,15 @@ module Network.Ethereum.Web3.Solidity.Bytes
   ) where
 
 import Prelude
+
 import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
+import Network.Ethereum.Core.HexString (genBytes, toByteString)
 import Network.Ethereum.Types (mkHexString)
+import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Partial.Unsafe (unsafePartial)
+import Test.QuickCheck (class Arbitrary)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -25,6 +28,11 @@ newtype BytesN (n :: Int) = BytesN ByteString
 derive newtype instance eqBytesN :: Eq (BytesN n)
 instance showBytesN :: KnownSize n => Show (BytesN n) where
   show (BytesN bs) = show <<< unsafePartial fromJust <<< mkHexString $ BS.toString bs Hex
+
+instance KnownSize n => Arbitrary (BytesN n) where
+  arbitrary = do
+    bs <- genBytes (sizeVal (Proxy :: Proxy n))
+    pure $ BytesN $ toByteString bs
 
 -- | Access the underlying raw bytestring
 unBytesN :: forall n. KnownSize n => BytesN n -> ByteString

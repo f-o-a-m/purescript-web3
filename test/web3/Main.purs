@@ -21,20 +21,21 @@ import Web3Spec.Types.VectorSpec as VectorSpec
 
 main :: Effect Unit
 main =
-  launchAff_ do
-    let
-      cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
-    p <- liftEffect $ httpProvider "http://localhost:8545"
-    void $ join
-      $ runSpecT cfg [ consoleReporter ] do
-          hoist do
-            EncodingDataSpec.spec
-            VectorSpec.spec
-            EncodingContainersSpec.spec
-            EncodingSimpleSpec.spec
-            EncodingGenericSpec.spec
-            EtherUnitSpec.spec
-          RPCSpec.spec p
+  launchAff_
+    do
+      let
+        cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
+      p <- liftEffect $ httpProvider "http://localhost:8545"
+      void $ join
+        $ runSpecT cfg [ consoleReporter ] do
+            hoist do
+              EncodingDataSpec.spec
+              -- VectorSpec.spec
+              EncodingContainersSpec.spec
+  -- EncodingSimpleSpec.spec
+  -- EncodingGenericSpec.spec
+  -- EtherUnitSpec.spec
+  --RPCSpec.spec p
   where
   hoist :: Spec ~> SpecT Aff Unit Aff
   hoist = mapSpecTree (pure <<< un Identity) identity

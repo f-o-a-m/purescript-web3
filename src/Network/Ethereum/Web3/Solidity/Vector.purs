@@ -9,6 +9,7 @@ module Network.Ethereum.Web3.Solidity.Vector
   ) where
 
 import Prelude
+
 import Data.Array ((:))
 import Data.Array as A
 import Data.Foldable (class Foldable)
@@ -17,6 +18,7 @@ import Data.Traversable (class Traversable)
 import Data.Unfoldable (class Unfoldable, class Unfoldable1)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Prim.Int (class Add)
+import Test.QuickCheck (class Arbitrary, arbitrary)
 
 -- | Represents a statically sized vector of length `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
@@ -29,6 +31,11 @@ derive newtype instance unfoldable1Vector :: Unfoldable1 (Vector n)
 derive newtype instance unfoldableVector :: Unfoldable (Vector n)
 derive newtype instance foldableVector :: Foldable (Vector n)
 derive newtype instance traversableVector :: Traversable (Vector n)
+
+instance Arbitrary (Vector 0 a) where
+  arbitrary = pure nilVector
+else instance (Arbitrary a, Arbitrary (Vector n a), Add n 1 m) => Arbitrary (Vector m a) where
+  arbitrary = vCons <$> arbitrary <*> arbitrary
 
 -- | Access the underlying array
 unVector :: forall a n. Vector n a -> Array a

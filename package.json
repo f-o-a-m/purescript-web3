@@ -7,7 +7,6 @@
     "test": "spago -x test.dhall test"
   },
   "dependencies": {
-    "bn.js": "^4.11.0",
     "ethjs-provider-http": "^0.1.6",
     "keccak": "^1.0.2",
     "rlp": "^2.0.0",

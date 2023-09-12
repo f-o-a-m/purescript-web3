@@ -22,11 +22,12 @@ module Network.Ethereum.Web3.Types.TokenUnit
   ) where
 
 import Prelude
+
 import Data.Maybe (fromJust)
 import Data.Ring.Module (class LeftModule, (^*))
 import Data.String (joinWith)
 import Data.Unfoldable (replicate)
-import Network.Ethereum.Core.BigNumber (BigNumber, decimal, parseBigNumber)
+import Network.Ethereum.Core.BigNumber (BigNumber, decimal, fromStringAs)
 import Partial.Unsafe (unsafePartial)
 import Simple.JSON (class ReadForeign, class WriteForeign, writeImpl)
 import Type.Proxy (Proxy(..))
@@ -134,4 +135,4 @@ createDivider :: forall a. Int -> a -> BigNumber
 createDivider denomination _ = unsafeConvert $ "1" <> joinWith "" (replicate denomination "0")
   where
   unsafeConvert :: String -> BigNumber
-  unsafeConvert a = unsafePartial fromJust <<< parseBigNumber decimal $ a
+  unsafeConvert a = unsafePartial fromJust <<< fromStringAs decimal $ a
