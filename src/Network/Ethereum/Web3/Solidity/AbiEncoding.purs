@@ -7,7 +7,6 @@ module Network.Ethereum.Web3.Solidity.AbiEncoding
   , fromBool
   , fromData
   , int256HexBuilder
-  , parseByte
   , parseBytes
   , toBool
   , uInt256HexBuilder
@@ -27,8 +26,8 @@ import Data.String (splitAt)
 import Data.Traversable (for, scanl)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicateA)
-import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement256, toString, toTwosComplement256, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, toByteString, unHex)
+import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement, toString, toTwosComplement, unsafeToInt)
+import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, splitAtByteOffset, toByteString, unHex)
 import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
@@ -38,7 +37,7 @@ import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
 import Parsing (ParseError, Parser, ParseState(..), Position(..), ParserT, fail, getParserT, stateParserT, runParser)
 import Parsing.Combinators (lookAhead)
-import Partial.Unsafe (unsafePartial)
+import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Type.Proxy (Proxy(..))
 
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
@@ -220,8 +219,10 @@ bytesBuilder = padRight Zero <<< fromByteString
 int256HexBuilder :: BigNumber -> HexString
 int256HexBuilder x =
   let
-    a = toTwosComplement256 x
-    x' = unsafePartial $ fromJust $ mkHexString (toString a)
+    a = toTwosComplement 256 x
+    x' =
+      if a < zero then unsafeCrashWith $ "FUCK " <> show a
+      else unsafePartial $ fromJust $ mkHexString (toString a)
   in
     if x < zero then padLeft FF x'
     else padLeft Zero x'
@@ -236,7 +237,7 @@ int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
 int256HexParser = do
   bs <- unHex <$> parseBytes 32
   a <- maybe (fail $ "Failed to parse bytes as BigNumber " <> bs) pure (fromString bs)
-  pure $ fromTwosComplement256 a
+  pure $ fromTwosComplement 256 a
 
 -- | Parse an unsigned `BigNumber`
 uInt256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
@@ -255,22 +256,15 @@ toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 parseBytes :: forall m. Monad m => Int -> ParserT HexString m HexString
-parseBytes n = fold <$> replicateA n parseByte
-
-parseByte :: forall m. Monad m => ParserT HexString m HexString
-parseByte = do
+parseBytes n = do
   ParseState input (Position position) _ <- getParserT
-  if numberOfBytes input < 1 then
+  if numberOfBytes input < n then
     fail "Unexpected EOF"
   else do
     let
-      { after, before } = splitAt 2 (unHex input)
-
-      mkHex s = maybe (fail $ "Unable to parse bytes from hex: " <> s) pure $ mkHexString s
+      { after, before } = splitAtByteOffset n input
 
       position' = Position $ position { column = position.column + 1 }
 
-    _after <- mkHex after
-    _before <- mkHex before
-    let newState = ParseState _after position' true
-    stateParserT $ const (Tuple _before newState)
+    let newState = ParseState after position' true
+    stateParserT $ const (Tuple before newState)

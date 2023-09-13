@@ -6,10 +6,11 @@ module Network.Ethereum.Web3.Solidity.Int
 
 import Prelude
 
+import Control.Alternative ((<|>))
 import Control.Monad.Gen as Gen
 import Data.Maybe (Maybe(..), fromJust)
 import Data.NonEmpty (NonEmpty(..))
-import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, pow)
+import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, fromTwosComplement, pow)
 import Network.Ethereum.Core.HexString (genBytes, unHex)
 import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
 import Partial.Unsafe (unsafePartial)
@@ -29,11 +30,12 @@ derive newtype instance ordIntN :: Ord (IntN n)
 
 instance KnownSize n => Arbitrary (IntN n) where
   arbitrary = do
-    sign <- embed <$> Gen.elements (NonEmpty (-1) [ 1 ])
-    nBytes <- (flip div 8) <$> Gen.chooseInt 1 (sizeVal (Proxy @n))
-    ma <- fromString <<< unHex <$> genBytes nBytes
-    let a = unsafePartial $ fromJust ma
-    pure <<< IntN $ sign * a
+    bs <- genBytes (sizeVal (Proxy @n) `div` 8)
+    let
+      a =
+        if bs == mempty then zero
+        else unsafePartial $ fromJust $ fromString $ unHex $ bs
+    pure $ IntN $ fromTwosComplement (sizeVal (Proxy @n)) a
 
 -- | Access the raw underlying integer
 unIntN :: forall n. IntN n -> BigNumber

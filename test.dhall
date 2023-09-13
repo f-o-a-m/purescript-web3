@@ -12,5 +12,7 @@ in    conf
             , "avar"
             , "console"
             , "identity"
+            , "enums"
+            , "integers"
             ]
       }

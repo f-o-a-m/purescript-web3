@@ -29,8 +29,11 @@ derive newtype instance ordUIntN :: Ord (UIntN n)
 instance KnownSize n => Arbitrary (UIntN n) where
   arbitrary = do
     nBytes <- (flip div 8) <$> Gen.chooseInt 1 (sizeVal (Proxy @n))
-    ma <- fromString <<< unHex <$> genBytes nBytes
-    let a = unsafePartial $ fromJust ma
+    bs <- genBytes nBytes
+    let
+      a =
+        if bs == mempty then zero
+        else unsafePartial $ fromJust $ fromString $ unHex bs
     pure $ UIntN $ if a < zero then -a else a
 
 -- | Access the raw underlying unsigned integer
