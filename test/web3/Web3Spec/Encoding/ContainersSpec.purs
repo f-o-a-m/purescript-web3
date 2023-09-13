@@ -13,21 +13,19 @@ import Data.Maybe (fromJust)
 import Data.NonEmpty (NonEmpty(..))
 import Data.String (CodePoint, fromCodePointArray)
 import Data.Tuple (Tuple(..))
-import Debug (spy)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Network.Ethereum.Core.BigNumber (BigNumber(..))
-import Network.Ethereum.Core.HexString (HexString, toByteString)
-import Network.Ethereum.Web3.Solidity (Address, BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, Vector, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
+import Network.Ethereum.Core.HexString (toByteString)
+import Network.Ethereum.Web3.Solidity (BytesN, IntN, Tuple1(..), Tuple2(..), Tuple4(..), Tuple9(..), UIntN, fromByteString, intNFromBigNumber, nilVector, uIntNFromBigNumber, (:<))
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Generic (genericFromData, genericABIEncode, class GenericABIDecode, class GenericABIEncode)
 import Network.Ethereum.Web3.Solidity.Sizes (s1, s16, s2, s224, s256, s4)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, toVector)
-import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString, unHex)
+import Network.Ethereum.Web3.Types (Address, HexString, embed, mkAddress, mkHexString)
 import Parsing (ParseError)
 import Partial.Unsafe (unsafePartial)
-import Test.QuickCheck (class Arbitrary, arbitrary, quickCheck, quickCheck', (<?>), (===))
-import Test.QuickCheck.Gen (arrayOf, vectorOf)
+import Test.QuickCheck (class Arbitrary, arbitrary, quickCheck, (===))
+import Test.QuickCheck.Gen (arrayOf)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -470,8 +468,7 @@ data UnicodeChar = Normal CodePoint | Surrogates CodePoint CodePoint
 
 instance Arbitrary BMPString where
   arbitrary = BMPString <$> do
-    n <- chooseInt 0 10
-    ucs <- vectorOf n arbitrary
+    ucs <- arrayOf arbitrary
     pure $ fromCodePointArray $ foldMap f ucs
     where
     f uc = case uc of

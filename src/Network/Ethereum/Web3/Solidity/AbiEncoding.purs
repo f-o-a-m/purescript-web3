@@ -264,7 +264,7 @@ parseBytes n = do
     let
       { after, before } = splitAtByteOffset n input
 
-      position' = Position $ position { column = position.column + 1 }
+      position' = Position $ position { column = position.column + n }
 
     let newState = ParseState after position' true
     stateParserT $ const (Tuple before newState)
