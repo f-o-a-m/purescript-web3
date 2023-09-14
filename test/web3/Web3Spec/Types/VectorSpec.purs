@@ -67,27 +67,6 @@ test8 :: Vector 100000000000001 Int
 -- test8 :: Vector _ Int
 test8 = 1 :< 1 :< vec99999999999999
 
--- todo: delete this?
--- test10 :: forall (n :: Int). Add n 1 10 => Vector n Int -> Vector 10 Int
--- test10 l = 2 :< l
-
--- test10_ :: Vector _ Int
--- test10_ :: Vector 10 Int
--- test10_ = test10 vec9
-
--- todo: delete this?
--- test11 :: forall n. Add n 1 0 => Vector n Int -> Vector 0 Int
--- test11 l = 2 :< l
-
--- As expected `test11` can be written, but can't be called
--- test11_ = test11 nilVector
--- we can write uncons like this, but when it's used see `test12` if you
--- remove type annotation code will fail to compile. if inc and all
--- classes which it's using had reverse functional dependencies
--- then compiler could potentially infer type, but we don't have
--- such implementation for `Inc` and even with such version [1]
--- compiler still gives horrible error
--- https://gist.github.com/safareli/e1d3805a48a0a772d72ed895945c3607#file-digitswithsupperclass-purs-L38-L103
 vUncons :: forall a n nDec. Add nDec 1 n => Vector n a -> { head :: a, tail :: Vector nDec a }
 vUncons as = case uncons $ unsafeCoerce as of
   Nothing -> unsafeCrashWith "impossible case in vUncons from Network.Ethereum.Web3.Solidity.Vector"

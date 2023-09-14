@@ -1,16 +1,21 @@
-module Web3Spec.Live.Utils where
+module Web3Spec.Live.Utils
+  ( assertWeb3
+  , bigGasLimit
+  , defaultTestTxOptions
+  , go
+  , joinWeb3Fork
+  , nullAddress
+  , pollTransactionReceipt
+  , takeEvent
+  ) where
 
 import Prelude
 
 import Control.Monad.Reader (ReaderT, runReaderT)
-import Data.Array ((!!))
 import Data.Array.NonEmpty as NAE
-import Data.ByteString as BS
 import Data.Either (Either(..))
 import Data.Lens ((?~))
-import Data.Maybe (Maybe(..), fromJust)
-import Data.Newtype (wrap, unwrap)
-import Data.Reflectable (class Reflectable)
+import Data.Maybe (fromJust)
 import Data.Traversable (intercalate)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
@@ -19,9 +24,9 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, fromStringAs)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, Web3Error, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
+import Network.Ethereum.Web3.Solidity (class DecodeEvent)
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Test.Spec (ComputationType(..), SpecT, hoistSpec)
@@ -75,19 +80,6 @@ assertWeb3 provider a =
       Right x -> x
       Left err -> unsafeCrashWith $ "expected Right in `assertWeb3`, got error" <> show err
 
-assertStorageCall
-  :: forall m a
-   . MonadAff m
-  => Provider
-  -> Web3 (Either CallError a)
-  -> m a
-assertStorageCall p f =
-  liftAff do
-    eRes <- assertWeb3 p f
-    case eRes of
-      Right x -> pure x
-      Left err -> unsafeCrashWith $ "expected Right in `assertStorageCall`, got error" <> show err
-
 pollTransactionReceipt
   :: forall m a
    . MonadAff m
@@ -106,67 +98,6 @@ pollTransactionReceipt provider txHash k =
         Succeeded -> k receipt
         Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
 
-hangOutTillBlock
-  :: forall m
-   . MonadAff m
-  => Provider
-  -> Logger m
-  -> BlockNumber
-  -> m Unit
-hangOutTillBlock provider logger bn = do
-  bn' <- assertWeb3 provider Api.eth_blockNumber
-  logger $ "Current block number : " <> show bn'
-  when (bn' < bn) do
-    liftAff $ delay (Milliseconds 1000.0)
-    hangOutTillBlock provider logger bn
-
-awaitNextBlock
-  :: forall m
-   . MonadAff m
-  => Provider
-  -> Logger m
-  -> m Unit
-awaitNextBlock provider logger = do
-  n <- assertWeb3 provider Api.eth_blockNumber
-  let
-    next = wrap $ embed 1 + unwrap n
-  logger $ "Awaiting block number " <> show next
-  hangOutTillBlock provider logger next
-
-type ContractConfig =
-  { contractAddress :: Address
-  , userAddress :: Address
-  }
-
-deployContract
-  :: forall m
-   . MonadAff m
-  => Provider
-  -> Logger m
-  -> String
-  -> (TransactionOptions NoPay -> Web3 HexString)
-  -> m ContractConfig
-deployContract p logger contractName deploymentTx = do
-  userAddress <-
-    assertWeb3 p
-      $ do
-          accounts <- Api.eth_getAccounts
-          pure $ unsafePartial fromJust $ accounts !! 0
-  txHash <-
-    assertWeb3 p do
-      let
-        txOpts = defaultTestTxOptions # _from ?~ userAddress
-      txHash <- deploymentTx txOpts
-      pure txHash
-  logger $ "Submitted " <> contractName <> " deployment : " <> show txHash
-  let
-    k (TransactionReceipt rec) = case rec.contractAddress of
-      Nothing -> unsafeCrashWith "Contract deployment missing contractAddress in receipt"
-      Just addr -> pure addr
-  contractAddress <- pollTransactionReceipt p txHash k
-  logger $ contractName <> " successfully deployed to " <> show contractAddress
-  pure $ { contractAddress, userAddress }
-
 joinWeb3Fork
   :: forall a m
    . MonadAff m
@@ -178,35 +109,6 @@ joinWeb3Fork fiber =
     case eRes of
       Left e -> unsafeCrashWith $ "Error in forked web3 process " <> show e
       Right a -> pure a
-
-mkHexString'
-  :: String
-  -> HexString
-mkHexString' hx = unsafePartial fromJust $ mkHexString hx
-
-mkUIntN
-  :: forall n
-   . Reflectable n Int
-  => Proxy n
-  -> Int
-  -> UIntN n
-mkUIntN p n = unsafePartial fromJust $ uIntNFromBigNumber p $ embed n
-
-mkIntN
-  :: forall n
-   . Reflectable n Int
-  => Proxy n
-  -> Int
-  -> IntN n
-mkIntN p n = unsafePartial fromJust $ intNFromBigNumber p $ embed n
-
-mkBytesN
-  :: forall n
-   . Reflectable n Int
-  => Proxy n
-  -> String
-  -> BytesN n
-mkBytesN p s = unsafePartial fromJust $ fromByteString p =<< flip BS.fromString BS.Hex s
 
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions = defaultTransactionOptions # _gas ?~ bigGasLimit
