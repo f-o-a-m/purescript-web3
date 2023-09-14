@@ -17,7 +17,8 @@ import Data.Reflectable (reifyType)
 import Data.String (CodePoint, fromCodePointArray)
 import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
-import Network.Ethereum.Core.HexString (genBytes, toByteString)
+import Network.Ethereum.Core.HexString as Hex
+import Network.Ethereum.Core.Signatures as Address
 import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple4(..), Tuple5(..), genericABIEncode, genericFromData)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIEncode, class ABIDecode, toDataBuilder, fromData)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
@@ -25,7 +26,6 @@ import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType)
 import Network.Ethereum.Web3.Solidity.Int as IntN
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
 import Network.Ethereum.Web3.Solidity.Vector as Vector
-import Network.Ethereum.Web3.Types (Address, HexString)
 import Parsing (ParseError)
 import Partial.Unsafe (unsafePartial)
 import Test.QuickCheck (class Arbitrary, arbitrary, quickCheck, quickCheckGen, (===))
@@ -48,17 +48,18 @@ typePropertyTests =
       quickCheck \(x :: BMPString) -> (encodeDecode x) === Right x
 
     it "can encode/decode bytestring" $ liftEffect $ do
-      quickCheck \(_x :: HexString) ->
-        let
-          x = toByteString _x
-        in
-          (encodeDecode x) === Right x
+      quickCheckGen $ do
+        n <- chooseInt 1 100
+        x <- Hex.toByteString <$> Hex.generator n
+        pure $ encodeDecode x === Right x
 
     it "can encode/decode bool" $ liftEffect $ do
       quickCheck \(x :: Boolean) -> encodeDecode x === Right x
 
     it "can encode/decode address" $ liftEffect $ do
-      quickCheck \(x :: Address) -> encodeDecode x === Right x
+      quickCheckGen $ do
+        x <- Address.generator
+        pure $ encodeDecode x === Right x
 
     it "can encode/decode intN" $ liftEffect $ do
       for_ intSizes $ \n -> quickCheckGen $ do
@@ -105,7 +106,9 @@ arrayTypePropertyTests = do
           pure $ encodeDecode x === Right x
 
     it "Can encode/decode address[]" $ liftEffect do
-      quickCheck $ \(x :: Address) -> encodeDecode x === Right x
+      quickCheckGen $ do
+        x <- Address.generator
+        pure $ encodeDecode x === Right x
 
     it "Can encode/decode string[]" $ liftEffect do
       quickCheck $ \(x :: Array BMPString) ->
@@ -147,7 +150,7 @@ vecTypePropertyTests = do
       quickCheckGen $ do
         k <- chooseInt 1 10
         reifyType k \pk -> do
-          x <- Vector.generator pk (arbitrary :: Gen Address)
+          x <- Vector.generator pk Address.generator
           pure $ encodeDecode x === Right x
 
     it "Can encode/decode string[k]" $ liftEffect do
@@ -243,7 +246,7 @@ tupleTests = do
           reifyType m \pm ->
             reifyType k \pk -> do
               int <- IntN.generator pn
-              addr <- arbitrary :: Gen Address
+              addr <- Address.generator
               bool <- arbitrary :: Gen Boolean
               uint <- UIntN.generator pm
               bytes <- BytesN.generator pk
@@ -260,7 +263,7 @@ tupleTests = do
           reifyType k2 \pk2 ->
             reifyType n \pn -> do
               reifyType m \pm -> do
-                addrs <- arrayOf (Vector.generator pk1 (arbitrary @Address))
+                addrs <- arrayOf (Vector.generator pk1 Address.generator)
                 bool <- arbitrary @Boolean
                 ints <- Vector.generator pk2 (IntN.generator pn)
                 uint <- (UIntN.generator pm)
@@ -278,8 +281,8 @@ tupleTests = do
           reifyType m \pm ->
             reifyType k \pk -> do
               ints <- arrayOf (IntN.generator pn)
-              bytes <- toByteString <$> (chooseInt 1 100 >>= genBytes)
-              addrs <- Vector.generator pm (arrayOf $ arbitrary @Address)
+              bytes <- Hex.toByteString <$> (chooseInt 1 100 >>= Hex.generator)
+              addrs <- Vector.generator pm (arrayOf Address.generator)
               strings <- arrayOf (Vector.generator pk (arbitrary @BMPString))
               bool <- arbitrary :: Gen Boolean
               let x = Tuple5 ints bytes addrs strings bool
@@ -295,7 +298,7 @@ tupleTests = do
           reifyType k2 \pk2 ->
             reifyType n \pn -> do
               reifyType m \pm -> do
-                addrs <- arrayOf (Vector.generator pk1 (arbitrary @Address))
+                addrs <- arrayOf (Vector.generator pk1 Address.generator)
                 bool <- arbitrary @Boolean
                 ints <- Vector.generator pk2 (IntN.generator pn)
                 uint <- (UIntN.generator pm)

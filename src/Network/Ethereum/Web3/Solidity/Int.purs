@@ -11,7 +11,7 @@ import Control.Monad.Gen (class MonadGen)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Reflectable (class Reflectable, reflectType)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, fromTwosComplement, pow)
-import Network.Ethereum.Core.HexString (genBytes, unHex)
+import Network.Ethereum.Core.HexString as Hex
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
@@ -28,11 +28,11 @@ derive newtype instance ordIntN :: Ord (IntN n)
 
 generator :: forall n m. Reflectable n Int => MonadGen m => Proxy n -> m (IntN n)
 generator p = do
-  bs <- genBytes (reflectType p `div` 8)
+  bs <- Hex.generator (reflectType p `div` 8)
   let
     a =
       if bs == mempty then zero
-      else unsafePartial $ fromJust $ fromString $ unHex $ bs
+      else unsafePartial $ fromJust $ fromString $ Hex.unHex $ bs
   pure $ IntN $ fromTwosComplement (reflectType (Proxy @n)) a
 
 -- | Access the raw underlying integer

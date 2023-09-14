@@ -11,7 +11,7 @@ import Control.Monad.Gen (class MonadGen, chooseInt)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Reflectable (class Reflectable, reflectType)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, pow)
-import Network.Ethereum.Core.HexString (genBytes, unHex)
+import Network.Ethereum.Core.HexString as Hex
 import Partial.Unsafe (unsafePartial)
 import Test.QuickCheck (class Arbitrary)
 import Test.QuickCheck.Gen as Gen
@@ -36,21 +36,21 @@ generator
   -> m (UIntN n)
 generator p = do
   nBytes <- (flip div 8) <$> chooseInt 1 (reflectType p)
-  bs <- genBytes nBytes
+  bs <- Hex.generator nBytes
   let
     a =
       if bs == mempty then zero
-      else unsafePartial $ fromJust $ fromString $ unHex bs
+      else unsafePartial $ fromJust $ fromString $ Hex.unHex bs
   pure $ UIntN $ if a < zero then -a else a
 
 instance Reflectable n Int => Arbitrary (UIntN n) where
   arbitrary = do
     nBytes <- (flip div 8) <$> Gen.chooseInt 1 (reflectType (Proxy @n))
-    bs <- genBytes nBytes
+    bs <- Hex.generator nBytes
     let
       a =
         if bs == mempty then zero
-        else unsafePartial $ fromJust $ fromString $ unHex bs
+        else unsafePartial $ fromJust $ fromString $ Hex.unHex bs
     pure $ UIntN $ if a < zero then -a else a
 
 -- | Access the raw underlying unsigned integer

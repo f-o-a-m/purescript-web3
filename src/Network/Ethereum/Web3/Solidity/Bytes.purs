@@ -14,7 +14,7 @@ import Data.ByteString (empty, ByteString, Encoding(Hex))
 import Data.ByteString as BS
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Reflectable (class Reflectable, reflectType)
-import Network.Ethereum.Core.HexString (genBytes, toByteString)
+import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Types (mkHexString)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
@@ -32,8 +32,8 @@ instance showBytesN :: Show (BytesN n) where
 
 generator :: forall n m. Reflectable n Int => MonadGen m => Proxy n -> m (BytesN n)
 generator p = do
-  bs <- genBytes (reflectType p)
-  pure $ BytesN $ toByteString bs
+  bs <- Hex.generator (reflectType p)
+  pure $ BytesN $ Hex.toByteString bs
 
 -- | Access the underlying raw bytestring
 unBytesN :: forall n. BytesN n -> ByteString

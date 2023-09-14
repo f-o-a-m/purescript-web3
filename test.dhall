@@ -14,5 +14,6 @@ in    conf
             , "identity"
             , "enums"
             , "integers"
+            , "quickcheck"
             ]
       }
