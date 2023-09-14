@@ -10,6 +10,7 @@ import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (wrap, unwrap)
+import Data.Reflectable (class Reflectable)
 import Data.Traversable (intercalate)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
@@ -18,7 +19,7 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, fromStringAs)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, class KnownSize, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
+import Network.Ethereum.Web3 (class EventFilter, Address, Web3Error, BigNumber, BlockNumber, BytesN, CallError, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), UIntN, Web3, _from, _gas, defaultTransactionOptions, event, embed, eventFilter, forkWeb3', fromByteString, intNFromBigNumber, mkHexString, runWeb3, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, IntN)
 import Network.Ethereum.Web3.Types (NoPay)
@@ -185,7 +186,7 @@ mkHexString' hx = unsafePartial fromJust $ mkHexString hx
 
 mkUIntN
   :: forall n
-   . KnownSize n
+   . Reflectable n Int
   => Proxy n
   -> Int
   -> UIntN n
@@ -193,7 +194,7 @@ mkUIntN p n = unsafePartial fromJust $ uIntNFromBigNumber p $ embed n
 
 mkIntN
   :: forall n
-   . KnownSize n
+   . Reflectable n Int
   => Proxy n
   -> Int
   -> IntN n
@@ -201,7 +202,7 @@ mkIntN p n = unsafePartial fromJust $ intNFromBigNumber p $ embed n
 
 mkBytesN
   :: forall n
-   . KnownSize n
+   . Reflectable n Int
   => Proxy n
   -> String
   -> BytesN n

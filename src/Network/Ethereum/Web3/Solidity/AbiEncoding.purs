@@ -22,6 +22,7 @@ import Data.ByteString (toUTF8, fromUTF8, length) as BS
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Maybe (fromJust, maybe)
+import Data.Reflectable (class Reflectable, reflectType)
 import Data.String (splitAt)
 import Data.Traversable (for, scanl)
 import Data.Tuple (Tuple(..))
@@ -32,7 +33,6 @@ import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Size (class ByteSize, class IntSize, class KnownSize, sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
 import Parsing (ParseError, Parser, ParseState(..), Position(..), ParserT, fail, getParserT, stateParserT, runParser)
@@ -92,26 +92,26 @@ instance abiEncodeString :: ABIEncode String where
 instance abiDecodeString :: ABIDecode String where
   fromDataParser = BS.fromUTF8 <$> fromDataParser
 
-instance abiEncodeBytesN :: ByteSize n => ABIEncode (BytesN n) where
+instance abiEncodeBytesN :: Reflectable n Int => ABIEncode (BytesN n) where
   toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
 
-instance abiDecodeBytesN :: ByteSize n => ABIDecode (BytesN n) where
+instance abiDecodeBytesN :: Reflectable n Int => ABIDecode (BytesN n) where
   fromDataParser = do
     let
-      len = sizeVal (Proxy :: Proxy n)
+      len = reflectType (Proxy :: Proxy n)
 
       zeroBytes = 32 - len
     raw <- parseBytes len
     _ <- parseBytes zeroBytes
     pure <<< update proxyBytesN <<< toByteString $ raw
 
-instance abiEncodeVec :: (EncodingType a, ABIEncode a, KnownSize n) => ABIEncode (Vector n a) where
+instance abiEncodeVec :: (EncodingType a, ABIEncode a, Reflectable n Int) => ABIEncode (Vector n a) where
   toDataBuilder l =
     if isDynamic (Proxy :: Proxy a) then do
       let
         encs = map toDataBuilder (unVector l)
         lengths = map numberOfBytes encs
-        len = sizeVal (Proxy :: Proxy n)
+        len = reflectType (Proxy :: Proxy n)
         offsets =
           let
             seed = 32 * len
@@ -121,10 +121,10 @@ instance abiEncodeVec :: (EncodingType a, ABIEncode a, KnownSize n) => ABIEncode
     else
       foldMap toDataBuilder $ (unVector l :: Array a)
 
-instance abiDecodeVec :: (EncodingType a, KnownSize n, ABIDecode a) => ABIDecode (Vector n a) where
+instance abiDecodeVec :: (EncodingType a, Reflectable n Int, ABIDecode a) => ABIDecode (Vector n a) where
   fromDataParser = do
     let
-      len = sizeVal (Proxy :: Proxy n)
+      len = reflectType (Proxy :: Proxy n)
     if isDynamic (Proxy :: Proxy a) then do
       offsets <- replicateA len uInt256HexParser
       let
@@ -173,31 +173,31 @@ instance abiDecodeArray :: (EncodingType a, ABIDecode a) => ABIDecode (Array a) 
     else
       replicateA len fromDataParser
 
-instance abiEncodeUint :: IntSize n => ABIEncode (UIntN n) where
+instance abiEncodeUint :: Reflectable n Int => ABIEncode (UIntN n) where
   toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
 
-instance abiDecodeUint :: IntSize n => ABIDecode (UIntN n) where
+instance abiDecodeUint :: Reflectable n Int => ABIDecode (UIntN n) where
   fromDataParser = do
     a <- uInt256HexParser
     maybe (fail $ msg a) pure <<< uIntNFromBigNumber (Proxy :: Proxy n) $ a
     where
     msg n =
       let
-        size = sizeVal (Proxy :: Proxy n)
+        size = reflectType (Proxy :: Proxy n)
       in
         "Couldn't parse as uint" <> show size <> " : " <> show n
 
-instance abiEncodeIntN :: IntSize n => ABIEncode (IntN n) where
+instance abiEncodeIntN :: Reflectable n Int => ABIEncode (IntN n) where
   toDataBuilder a = int256HexBuilder <<< unIntN $ a
 
-instance abiDecodeIntN :: IntSize n => ABIDecode (IntN n) where
+instance abiDecodeIntN :: Reflectable n Int => ABIDecode (IntN n) where
   fromDataParser = do
     a <- int256HexParser
     maybe (fail $ msg a) pure <<< intNFromBigNumber (Proxy :: Proxy n) $ a
     where
     msg n =
       let
-        size = sizeVal (Proxy :: Proxy n)
+        size = reflectType (Proxy :: Proxy n)
       in
         "Couldn't parse as int" <> show size <> " : " <> show n
 

@@ -9,11 +9,7 @@ module Network.Ethereum.Web3
 import Network.Ethereum.Web3.Contract (class EventFilter, event, eventFilter, call, sendTx, deployContract, mkDataField)
 import Network.Ethereum.Web3.Contract.Events (event', EventHandler, MultiFilterStreamState(..), FilterStreamState, ChangeReceipt)
 import Network.Ethereum.Web3.Solidity
-  ( class KnownSize
-  , sizeVal
-  , class IntSize
-  , class ByteSize
-  , Address
+  ( Address
   , BigNumber
   , ByteString
   , BytesN

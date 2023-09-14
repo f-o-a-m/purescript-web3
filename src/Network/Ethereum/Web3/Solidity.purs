@@ -1,6 +1,5 @@
 module Network.Ethereum.Web3.Solidity
-  ( module Network.Ethereum.Web3.Solidity.Size
-  , module Network.Ethereum.Web3.Solidity.Vector
+  ( module Network.Ethereum.Web3.Solidity.Vector
   , module Network.Ethereum.Web3.Solidity.Bytes
   , module Network.Ethereum.Web3.Solidity.Tuple
   , module Network.Ethereum.Web3.Solidity.Generic
@@ -12,12 +11,6 @@ module Network.Ethereum.Web3.Solidity
   , module Data.ByteString
   ) where
 
-import Network.Ethereum.Web3.Solidity.Size
-  ( class KnownSize
-  , sizeVal
-  , class IntSize
-  , class ByteSize
-  )
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector, nilVector, vCons, (:<), vectorLength, toVector)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromByteString)
 import Network.Ethereum.Web3.Solidity.Tuple
