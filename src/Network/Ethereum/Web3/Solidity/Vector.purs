@@ -20,7 +20,6 @@ import Data.Reflectable (class Reflectable, reflectType)
 import Data.Traversable (class Traversable)
 import Data.Unfoldable (class Unfoldable, class Unfoldable1, replicateA)
 import Prim.Int (class Add)
-import Test.QuickCheck (class Arbitrary, arbitrary)
 import Type.Proxy (Proxy(..))
 
 -- | Represents a statically sized vector of length `n`.
