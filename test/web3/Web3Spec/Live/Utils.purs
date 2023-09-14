@@ -6,7 +6,6 @@ module Web3Spec.Live.Utils
   , joinWeb3Fork
   , nullAddress
   , pollTransactionReceipt
-  , takeEvent
   ) where
 
 import Prelude
@@ -17,20 +16,16 @@ import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (fromJust)
 import Data.Traversable (intercalate)
-import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
-import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, fromStringAs)
 import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (class EventFilter, Address, BigNumber, EventAction(..), HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, Web3Error, _gas, defaultTransactionOptions, event, eventFilter, forkWeb3', mkHexString, runWeb3)
+import Network.Ethereum.Web3 (Address, BigNumber, HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, Web3Error, _gas, defaultTransactionOptions, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
-import Network.Ethereum.Web3.Solidity (class DecodeEvent)
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Test.Spec (ComputationType(..), SpecT, hoistSpec)
-import Type.Proxy (Proxy)
 
 type Logger m = String -> m Unit
 
@@ -43,29 +38,6 @@ go =
         TestWithName n -> intercalate " > " $ NAE.toArray n
     in
       runReaderT m \logMsg -> C.log $ prefix <> "| " <> logMsg
-
--- | Run a `Web3` action which will dispatch a single event, wait for the event,
--- | then return the action's result and the event.
-takeEvent
-  :: forall a ev i ni
-   . DecodeEvent i ni ev
-  => Show ev
-  => EventFilter ev
-  => Proxy ev
-  -> Address
-  -> Web3 a
-  -> Web3 (Tuple a ev)
-takeEvent prx addrs web3Action = do
-  var <- liftAff AVar.empty
-  _ <-
-    forkWeb3' do
-      event (eventFilter prx addrs)
-        $ \e -> do
-            _ <- liftAff $ AVar.put e var
-            pure TerminateEvent
-  efRes <- web3Action
-  event <- liftAff $ AVar.take var
-  pure $ Tuple efRes event
 
 -- | Assert the `Web3` action's result, crash the program if it doesn't succeed.
 assertWeb3
