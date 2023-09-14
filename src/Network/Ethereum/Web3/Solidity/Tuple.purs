@@ -1,6 +1,5 @@
 module Network.Ethereum.Web3.Solidity.Tuple
   ( Tuple0(..)
-  , Tuple1(..)
   , Tuple10(..)
   , Tuple11(..)
   , Tuple12(..)
@@ -8,6 +7,7 @@ module Network.Ethereum.Web3.Solidity.Tuple
   , Tuple14(..)
   , Tuple15(..)
   , Tuple16(..)
+  , Tuple1(..)
   , Tuple2(..)
   , Tuple3(..)
   , Tuple4(..)
@@ -56,8 +56,6 @@ import Prelude
 import Data.Eq.Generic (genericEq)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Test.QuickCheck (class Arbitrary)
-import Test.QuickCheck.Arbitrary (genericArbitrary)
 
 -- * Tuple0
 data Tuple0 = Tuple0
@@ -69,9 +67,6 @@ instance Show Tuple0 where
 
 instance Eq Tuple0 where
   eq _ _ = true
-
-instance Arbitrary Tuple0 where
-  arbitrary = pure Tuple0
 
 -- * Tuple 1
 newtype Tuple1 a = Tuple1 a
@@ -86,9 +81,6 @@ instance Show a => Show (Tuple1 a) where
 
 instance Eq a => Eq (Tuple1 a) where
   eq = genericEq
-
-instance Arbitrary a => Arbitrary (Tuple1 a) where
-  arbitrary = genericArbitrary
 
 uncurry1 :: forall a b. (a -> b) -> Tuple1 a -> b
 uncurry1 fun (Tuple1 a) = fun a
@@ -113,9 +105,6 @@ uncurry2 fun (Tuple2 a b) = fun a b
 curry2 :: forall a b c. (Tuple2 a b -> c) -> a -> b -> c
 curry2 fun a b = fun (Tuple2 a b)
 
-instance (Arbitrary a, Arbitrary b) => Arbitrary (Tuple2 a b) where
-  arbitrary = genericArbitrary
-
 -- * Tuple3
 data Tuple3 a b c = Tuple3 a b c
 
@@ -126,9 +115,6 @@ instance (Show a, Show b, Show c) => Show (Tuple3 a b c) where
 
 instance (Eq a, Eq b, Eq c) => Eq (Tuple3 a b c) where
   eq = genericEq
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c) => Arbitrary (Tuple3 a b c) where
-  arbitrary = genericArbitrary
 
 uncurry3 :: forall a b c d. (a -> b -> c -> d) -> Tuple3 a b c -> d
 uncurry3 fun (Tuple3 a b c) = fun a b c
@@ -152,9 +138,6 @@ uncurry4 fun (Tuple4 a b c d) = fun a b c d
 
 curry4 :: forall a b c d e. (Tuple4 a b c d -> e) -> a -> b -> c -> d -> e
 curry4 fun a b c d = fun (Tuple4 a b c d)
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d) => Arbitrary (Tuple4 a b c d) where
-  arbitrary = genericArbitrary
 
 -- * Tuple5
 data Tuple5 a b c d e = Tuple5 a b c d e
@@ -184,9 +167,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f) => Show (Tuple6 a b c 
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (Tuple6 a b c d e f) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f) => Arbitrary (Tuple6 a b c d e f) where
-  arbitrary = genericArbitrary
-
 uncurry6 :: forall a b c d e f g. (a -> b -> c -> d -> e -> f -> g) -> Tuple6 a b c d e f -> g
 uncurry6 fun (Tuple6 a b c d e f) = fun a b c d e f
 
@@ -204,9 +184,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g) => Show (Tuple
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (Tuple7 a b c d e f g) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g) => Arbitrary (Tuple7 a b c d e f g) where
-  arbitrary = genericArbitrary
-
 uncurry7 :: forall a b c d e f g h. (a -> b -> c -> d -> e -> f -> g -> h) -> Tuple7 a b c d e f g -> h
 uncurry7 fun (Tuple7 a b c d e f g) = fun a b c d e f g
 
@@ -220,9 +197,6 @@ derive instance Generic (Tuple8 a b c d e f g h) _
 
 instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h) => Show (Tuple8 a b c d e f g h) where
   show = genericShow
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h) => Arbitrary (Tuple8 a b c d e f g h) where
-  arbitrary = genericArbitrary
 
 uncurry8 :: forall a b c d e f g h i. (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Tuple8 a b c d e f g h -> i
 uncurry8 fun (Tuple8 a b c d e f g h) = fun a b c d e f g h
@@ -241,9 +215,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => Eq (Tuple9 a b c d e f g h i) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i) => Arbitrary (Tuple9 a b c d e f g h i) where
-  arbitrary = genericArbitrary
-
 uncurry9 :: forall a b c d e f g h i j. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j) -> Tuple9 a b c d e f g h i -> j
 uncurry9 fun (Tuple9 a b c d e f g h i) = fun a b c d e f g h i
 
@@ -261,9 +232,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq (Tuple10 a b c d e f g h i j) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j) => Arbitrary (Tuple10 a b c d e f g h i j) where
-  arbitrary = genericArbitrary
-
 uncurry10 :: forall a b c d e f g h i j k. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k) -> Tuple10 a b c d e f g h i j -> k
 uncurry10 fun (Tuple10 a b c d e f g h i j) = fun a b c d e f g h i j
 
@@ -277,9 +245,6 @@ derive instance Generic (Tuple11 a b c d e f g h i j k) _
 
 instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i, Show j, Show k) => Show (Tuple11 a b c d e f g h i j k) where
   show = genericShow
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k) => Arbitrary (Tuple11 a b c d e f g h i j k) where
-  arbitrary = genericArbitrary
 
 uncurry11 :: forall a b c d e f g h i j k l. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l) -> Tuple11 a b c d e f g h i j k -> l
 uncurry11 fun (Tuple11 a b c d e f g h i j k) = fun a b c d e f g h i j k
@@ -298,9 +263,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l) => Eq (Tuple12 a b c d e f g h i j k l) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k, Arbitrary l) => Arbitrary (Tuple12 a b c d e f g h i j k l) where
-  arbitrary = genericArbitrary
-
 uncurry12 :: forall a b c d e f g h i j k l m. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m) -> Tuple12 a b c d e f g h i j k l -> m
 uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 
@@ -317,9 +279,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m) => Eq (Tuple13 a b c d e f g h i j k l m) where
   eq = genericEq
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k, Arbitrary l, Arbitrary m) => Arbitrary (Tuple13 a b c d e f g h i j k l m) where
-  arbitrary = genericArbitrary
 
 uncurry13 :: forall a b c d e f g h i j k l m n. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n) -> Tuple13 a b c d e f g h i j k l m -> n
 uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l m
@@ -338,9 +297,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) => Eq (Tuple14 a b c d e f g h i j k l m n) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k, Arbitrary l, Arbitrary m, Arbitrary n) => Arbitrary (Tuple14 a b c d e f g h i j k l m n) where
-  arbitrary = genericArbitrary
-
 uncurry14 :: forall a b c d e f g h i j k l m n o. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o) -> Tuple14 a b c d e f g h i j k l m n -> o
 uncurry14 fun (Tuple14 a b c d e f g h i j k l m n) = fun a b c d e f g h i j k l m n
 
@@ -358,9 +314,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o) => Eq (Tuple15 a b c d e f g h i j k l m n o) where
   eq = genericEq
 
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k, Arbitrary l, Arbitrary m, Arbitrary n, Arbitrary o) => Arbitrary (Tuple15 a b c d e f g h i j k l m n o) where
-  arbitrary = genericArbitrary
-
 uncurry15 :: forall a b c d e f g h i j k l m n o p. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p) -> Tuple15 a b c d e f g h i j k l m n o -> p
 uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j k l m n o
 
@@ -377,9 +330,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o, Eq p) => Eq (Tuple16 a b c d e f g h i j k l m n o p) where
   eq = genericEq
-
-instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d, Arbitrary e, Arbitrary f, Arbitrary g, Arbitrary h, Arbitrary i, Arbitrary j, Arbitrary k, Arbitrary l, Arbitrary m, Arbitrary n, Arbitrary o, Arbitrary p) => Arbitrary (Tuple16 a b c d e f g h i j k l m n o p) where
-  arbitrary = genericArbitrary
 
 uncurry16 :: forall a b c d e f g h i j k l m n o p q. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q) -> Tuple16 a b c d e f g h i j k l m n o p -> q
 uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i j k l m n o p

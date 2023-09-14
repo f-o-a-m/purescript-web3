@@ -13,8 +13,6 @@ import Data.Reflectable (class Reflectable, reflectType)
 import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, pow)
 import Network.Ethereum.Core.HexString as Hex
 import Partial.Unsafe (unsafePartial)
-import Test.QuickCheck (class Arbitrary)
-import Test.QuickCheck.Gen as Gen
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -42,16 +40,6 @@ generator p = do
       if bs == mempty then zero
       else unsafePartial $ fromJust $ fromString $ Hex.unHex bs
   pure $ UIntN $ if a < zero then -a else a
-
-instance Reflectable n Int => Arbitrary (UIntN n) where
-  arbitrary = do
-    nBytes <- (flip div 8) <$> Gen.chooseInt 1 (reflectType (Proxy @n))
-    bs <- Hex.generator nBytes
-    let
-      a =
-        if bs == mempty then zero
-        else unsafePartial $ fromJust $ fromString $ Hex.unHex bs
-    pure $ UIntN $ if a < zero then -a else a
 
 -- | Access the raw underlying unsigned integer
 unUIntN :: forall n. UIntN n -> BigNumber
