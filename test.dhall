@@ -9,7 +9,6 @@ in    conf
             , "lists"
             , "quotient"
             , "unsafe-coerce"
-            , "avar"
             , "console"
             , "identity"
             , "enums"
