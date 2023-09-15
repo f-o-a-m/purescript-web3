@@ -14,5 +14,6 @@ in    conf
             , "enums"
             , "integers"
             , "quickcheck"
+            , "quickcheck-laws"
             ]
       }

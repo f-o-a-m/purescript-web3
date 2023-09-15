@@ -28,7 +28,7 @@ import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement, toString, toTwosComplement, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, splitAtByteOffset, toByteString, unHex)
-import Network.Ethereum.Types (Address, BigNumber, embed, mkAddress, unAddress)
+import Network.Ethereum.Types (Address, BigNumber, fromInt, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
@@ -63,7 +63,7 @@ instance abiDecodeBool :: ABIDecode Boolean where
   fromDataParser = toBool <$> uInt256HexParser
 
 instance abiEncodeInt :: ABIEncode Int where
-  toDataBuilder = int256HexBuilder <<< embed
+  toDataBuilder = int256HexBuilder <<< fromInt
 
 instance abiDecodeInt :: ABIDecode Int where
   fromDataParser = unsafeToInt <$> int256HexParser
@@ -78,7 +78,7 @@ instance abiDecodeAddress :: ABIDecode Address where
     maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
 instance abiEncodeBytesD :: ABIEncode ByteString where
-  toDataBuilder bytes = uInt256HexBuilder (embed $ BS.length bytes) <> bytesBuilder bytes
+  toDataBuilder bytes = uInt256HexBuilder (fromInt $ BS.length bytes) <> bytesBuilder bytes
 
 instance abiDecodeBytesD :: ABIDecode ByteString where
   fromDataParser = do
@@ -139,7 +139,7 @@ instance abiDecodeVec :: (EncodingType a, Reflectable n Int, ABIDecode a) => ABI
 
 instance abiEncodeAray :: (EncodingType a, ABIEncode a) => ABIEncode (Array a) where
   toDataBuilder l = do
-    uInt256HexBuilder (embed $ length l)
+    uInt256HexBuilder (fromInt $ length l)
       <>
         if isDynamic (Proxy :: Proxy a) then do
           let
@@ -152,7 +152,7 @@ instance abiEncodeAray :: (EncodingType a, ABIEncode a) => ABIEncode (Array a) w
                 seed = 32 * length l
               in
                 seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
-          foldMap (uInt256HexBuilder <<< embed) offsets <> fold encs
+          foldMap (uInt256HexBuilder <<< fromInt) offsets <> fold encs
         else
           foldMap toDataBuilder l
 

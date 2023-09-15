@@ -10,7 +10,7 @@ import Prelude
 import Control.Monad.Gen (class MonadGen)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Reflectable (class Reflectable, reflectType)
-import Network.Ethereum.Core.BigNumber (BigNumber, embed, fromString, fromTwosComplement, pow)
+import Network.Ethereum.Core.BigNumber (BigNumber, fromInt, fromString, fromTwosComplement, pow)
 import Network.Ethereum.Core.HexString as Hex
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
@@ -45,11 +45,11 @@ intNFromBigNumber :: forall n proxy. Reflectable n Int => proxy n -> BigNumber -
 intNFromBigNumber _ a
   | a < zero =
       let
-        minVal = negate $ (embed 2) `pow` (reflectType (Proxy @n) - one)
+        minVal = negate $ (fromInt 2) `pow` (reflectType (Proxy @n) - one)
       in
         if a < minVal then Nothing else Just <<< IntN $ a
   | otherwise =
       let
-        maxVal = (embed 2) `pow` (reflectType (Proxy @n) - one) - one
+        maxVal = (fromInt 2) `pow` (reflectType (Proxy @n) - one) - one
       in
         if a > maxVal then Nothing else Just <<< IntN $ a

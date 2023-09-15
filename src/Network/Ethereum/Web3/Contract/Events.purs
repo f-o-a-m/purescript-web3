@@ -41,7 +41,7 @@ import Effect.Aff (delay, Milliseconds(..))
 import Effect.Aff.Class (liftAff)
 import Heterogeneous.Folding (class FoldingWithIndex, class FoldlRecord, hfoldlWithIndex)
 import Heterogeneous.Mapping (class MapRecordWithIndex, class Mapping, ConstMapping, hmap)
-import Network.Ethereum.Core.BigNumber (BigNumber, embed)
+import Network.Ethereum.Core.BigNumber (BigNumber, fromInt)
 import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent)
@@ -205,12 +205,12 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
   -- otherwise try make progress
   else case hfoldlWithIndex MultiFilterMinToBlock Latest currentState.filters of
     -- consume as many as possible up to the chain head
-    Latest -> continueTo $ over BlockNumber (_ - embed currentState.trailBy) chainHead
+    Latest -> continueTo $ over BlockNumber (_ - fromInt currentState.trailBy) chainHead
     -- if the original fitler ends at a specific block, consume as many as possible up to that block
     -- or terminate if we're already past it
     BN targetEnd ->
       let
-        targetEnd' = min targetEnd $ over BlockNumber (_ - embed currentState.trailBy) chainHead
+        targetEnd' = min targetEnd $ over BlockNumber (_ - fromInt currentState.trailBy) chainHead
       in
         if currentState.currentBlock <= targetEnd' then
           continueTo targetEnd'
@@ -218,7 +218,7 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
           pure cs
   where
   newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
-  newTo upper current window = min upper $ over BlockNumber (_ + embed window) current
+  newTo upper current window = min upper $ over BlockNumber (_ + fromInt window) current
 
   succ :: BlockNumber -> BlockNumber
   succ = over BlockNumber (_ + one)
