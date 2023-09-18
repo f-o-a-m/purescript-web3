@@ -6,17 +6,21 @@ module Network.Ethereum.Web3.Solidity.Vector
   , (:<)
   , vectorLength
   , toVector
+  , generator
   ) where
 
 import Prelude
+
+import Control.Monad.Gen (class MonadGen)
 import Data.Array ((:))
 import Data.Array as A
 import Data.Foldable (class Foldable)
 import Data.Maybe (Maybe(..))
+import Data.Reflectable (class Reflectable, reflectType)
 import Data.Traversable (class Traversable)
-import Data.Unfoldable (class Unfoldable, class Unfoldable1)
-import Network.Ethereum.Web3.Solidity.Size (class KnownSize, sizeVal)
+import Data.Unfoldable (class Unfoldable, class Unfoldable1, replicateA)
 import Prim.Int (class Add)
+import Type.Proxy (Proxy(..))
 
 -- | Represents a statically sized vector of length `n`.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
@@ -29,6 +33,15 @@ derive newtype instance unfoldable1Vector :: Unfoldable1 (Vector n)
 derive newtype instance unfoldableVector :: Unfoldable (Vector n)
 derive newtype instance foldableVector :: Foldable (Vector n)
 derive newtype instance traversableVector :: Traversable (Vector n)
+
+generator
+  :: forall n m proxy a
+   . Reflectable n Int
+  => MonadGen m
+  => proxy n
+  -> m a
+  -> m (Vector n a)
+generator _ gen = Vector <$> replicateA (reflectType (Proxy @n)) gen
 
 -- | Access the underlying array
 unVector :: forall a n. Vector n a -> Array a
@@ -50,9 +63,9 @@ vectorLength (Vector as) = A.length as
 
 -- | Attempt to coerce an array into a statically sized array.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-toVector :: forall a (n :: Int) proxy. KnownSize n => proxy n -> Array a -> Maybe (Vector n a)
-toVector proxy as =
-  if sizeVal proxy /= A.length as then
+toVector :: forall a (n :: Int) proxy. Reflectable n Int => proxy n -> Array a -> Maybe (Vector n a)
+toVector _ as =
+  if reflectType (Proxy @n) /= A.length as then
     Nothing
   else
     Just (Vector as)

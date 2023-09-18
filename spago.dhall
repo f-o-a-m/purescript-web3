@@ -17,6 +17,7 @@
   , "foreign"
   , "foreign-object"
   , "fork"
+  , "gen"
   , "heterogeneous"
   , "maybe"
   , "newtype"

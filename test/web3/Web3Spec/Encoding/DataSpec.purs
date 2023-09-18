@@ -1,35 +1,34 @@
 module Web3Spec.Encoding.DataSpec (spec, approve) where
 
 import Prelude
-import Data.Maybe (fromJust)
-import Network.Ethereum.Web3.Solidity (UIntN, Tuple2, uIntNFromBigNumber)
-import Network.Ethereum.Web3.Solidity.Sizes (s256)
-import Network.Ethereum.Web3.Types (Address, HexString, TransactionOptions, NoPay, Web3, mkHexString, mkAddress)
+
 import Data.Functor.Tagged (Tagged, tagged)
-import Network.Ethereum.Web3.Contract (sendTx, mkDataField)
+import Effect.Class (liftEffect)
 import Network.Ethereum.Core.Keccak256 (toSelector)
-import Network.Ethereum.Web3.Solidity.Generic (genericFromRecordFields)
-import Type.Proxy (Proxy(..))
-import Partial.Unsafe (unsafePartial)
+import Network.Ethereum.Core.Signatures as Address
+import Network.Ethereum.Web3.Contract (sendTx, mkDataField)
+import Network.Ethereum.Web3.Solidity (Tuple2, UIntN)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (toDataBuilder)
+import Network.Ethereum.Web3.Solidity.Generic (genericFromRecordFields)
+import Network.Ethereum.Web3.Solidity.UInt as UIntN
+import Network.Ethereum.Web3.Types (Address, HexString, NoPay, TransactionOptions, Web3)
+import Test.QuickCheck (quickCheckGen, (===))
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
+import Type.Proxy (Proxy(..))
 
 spec :: Spec Unit
 spec =
   describe "data maker" do
-    it "can make the approval data" do
-      let
-        addr = unsafePartial fromJust $ (mkAddress =<< mkHexString "78534a937a855e15be172de35f2211626f92f8ec")
+    it "can make the approval data" $ liftEffect do
+      quickCheckGen do
+        args <- { _spender: _, _value: _ } <$> Address.generator <*> UIntN.generator (Proxy @256)
+        let
+          approvalD = mkDataField (Proxy :: Proxy ApproveFn) args
 
-        val = unsafePartial fromJust $ uIntNFromBigNumber s256 one
+          sel = toSelector "approve(address,uint256)"
 
-        approvalD = mkDataField (Proxy :: Proxy ApproveFn) { _spender: addr, _value: val }
-
-        sel = toSelector "approve(address,uint256)"
-
-        fullDat = sel <> toDataBuilder addr <> toDataBuilder val
-      approvalD `shouldEqual` fullDat
+          fullDat = sel <> toDataBuilder args._spender <> toDataBuilder args._value
+        pure $ approvalD === fullDat
 
 type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))
 

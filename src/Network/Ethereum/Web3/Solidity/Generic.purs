@@ -6,7 +6,7 @@ import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Core.BigNumber (embed, unsafeToInt)
+import Network.Ethereum.Core.BigNumber (fromInt, unsafeToInt)
 import Network.Ethereum.Core.HexString (HexString, numberOfBytes)
 import Parsing (ParseError, ParseState(..), Parser, Position(..), getParserT, runParser)
 import Parsing.Combinators (lookAhead)
@@ -47,7 +47,7 @@ combineEncodedValues =
           foldl
             ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
                 if encodedValue.isDynamic then
-                  { accumulator: accumulator <> uInt256HexBuilder (embed $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
+                  { accumulator: accumulator <> uInt256HexBuilder (fromInt $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
                   , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
                   }
                 else

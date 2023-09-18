@@ -1,6 +1,7 @@
 module Test.Main where
 
 import Prelude
+
 import Data.Identity (Identity(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (un)
@@ -19,22 +20,24 @@ import Web3Spec.Live.RPCSpec as RPCSpec
 import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
 import Web3Spec.Types.VectorSpec as VectorSpec
 
+-- import Web3Spec.Types.EtherUnitSpec as EtherUnitSpec
+
 main :: Effect Unit
 main =
-  launchAff_ do
-    let
-      cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
-    p <- liftEffect $ httpProvider "http://localhost:8545"
-    void $ join
-      $ runSpecT cfg [ consoleReporter ] do
-          hoist do
-            EncodingDataSpec.spec
-            VectorSpec.spec
-            EncodingContainersSpec.spec
-            EncodingSimpleSpec.spec
-            EncodingGenericSpec.spec
-            EtherUnitSpec.spec
-          RPCSpec.spec p
+  launchAff_
+    do
+      let
+        cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
+      p <- liftEffect $ httpProvider "http://localhost:8545"
+      void $ join $ runSpecT cfg [ consoleReporter ] do
+        hoist do
+          EncodingDataSpec.spec
+          EncodingContainersSpec.spec
+          EncodingSimpleSpec.spec
+          EncodingGenericSpec.spec
+          EtherUnitSpec.spec
+          VectorSpec.spec
+        RPCSpec.spec p
   where
   hoist :: Spec ~> SpecT Aff Unit Aff
   hoist = mapSpecTree (pure <<< un Identity) identity

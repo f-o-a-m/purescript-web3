@@ -9,11 +9,7 @@ module Network.Ethereum.Web3
 import Network.Ethereum.Web3.Contract (class EventFilter, event, eventFilter, call, sendTx, deployContract, mkDataField)
 import Network.Ethereum.Web3.Contract.Events (event', EventHandler, MultiFilterStreamState(..), FilterStreamState, ChangeReceipt)
 import Network.Ethereum.Web3.Solidity
-  ( class KnownSize
-  , sizeVal
-  , class IntSize
-  , class ByteSize
-  , Address
+  ( Address
   , BigNumber
   , ByteString
   , BytesN
@@ -31,5 +27,5 @@ import Network.Ethereum.Web3.Solidity
   , vCons
   , (:<)
   )
-import Network.Ethereum.Web3.Types (forkWeb3, forkWeb3', runWeb3, Address, Babbage, BigNumber, Block(..), BlockNumber(..), ChainCursor(..), Change(..), Ether, EventAction(..), Filter, FilterId, Finney, HexString, KEther, Lovelace, CallError(..), Shannon, Szabo, Transaction(..), TransactionOptions(..), TransactionReceipt(..), TransactionStatus(..), Value, Web3, Web3Par, Web3Error(..), Wei, _address, _data, _from, _fromBlock, _gas, _gasPrice, _nonce, _to, _toBlock, _topics, _value, convert, defaultFilter, defaultTransactionOptions, embed, formatValue, fromMinorUnit, mkAddress, mkHexString, mkValue, toMinorUnit, throwWeb3, unAddress, unHex)
+import Network.Ethereum.Web3.Types (forkWeb3, forkWeb3', runWeb3, Address, Babbage, BigNumber, Block(..), BlockNumber(..), ChainCursor(..), Change(..), Ether, EventAction(..), Filter, FilterId, Finney, HexString, KEther, Lovelace, CallError(..), Shannon, Szabo, Transaction(..), TransactionOptions(..), TransactionReceipt(..), TransactionStatus(..), Value, Web3, Web3Par, Web3Error(..), Wei, _address, _data, _from, _fromBlock, _gas, _gasPrice, _nonce, _to, _toBlock, _topics, _value, convert, defaultFilter, defaultTransactionOptions, fromInt, formatValue, fromMinorUnit, mkAddress, mkHexString, mkValue, toMinorUnit, throwWeb3, unAddress, unHex)
 import Network.Ethereum.Web3.Types.Provider (Provider, httpProvider, metamaskProvider)

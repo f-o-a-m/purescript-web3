@@ -5,14 +5,15 @@ module Network.Ethereum.Web3.Solidity.EncodingType
   ) where
 
 import Prelude
+
 import Data.ByteString (ByteString)
 import Data.Functor.Tagged (Tagged)
+import Data.Reflectable (class Reflectable, reflectType)
+import Network.Ethereum.Types (Address, BigNumber)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN)
-import Network.Ethereum.Web3.Solidity.Size (class IntSize, class KnownSize, sizeVal)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN)
 import Network.Ethereum.Web3.Solidity.Vector (Vector)
-import Network.Ethereum.Types (Address, BigNumber)
 import Type.Proxy (Proxy(..))
 
 class EncodingType :: forall k. k -> Constraint
@@ -32,12 +33,12 @@ instance encodingTypeBigNumber :: EncodingType BigNumber where
   typeName = const "int"
   isDynamic = const false
 
-instance encodingTypeUIntN :: IntSize n => EncodingType (UIntN n) where
-  typeName = const $ "uint" <> (show $ sizeVal (Proxy :: Proxy n))
+instance encodingTypeUIntN :: Reflectable n Int => EncodingType (UIntN n) where
+  typeName = const $ "uint" <> (show $ reflectType (Proxy :: Proxy n))
   isDynamic = const false
 
-instance encodingTypeIntN :: IntSize n => EncodingType (IntN n) where
-  typeName = const $ "int" <> (show $ sizeVal (Proxy :: Proxy n))
+instance encodingTypeIntN :: Reflectable n Int => EncodingType (IntN n) where
+  typeName = const $ "int" <> (show $ reflectType (Proxy :: Proxy n))
   isDynamic = const false
 
 instance encodingTypeString :: EncodingType String where
@@ -52,18 +53,18 @@ instance encodingTypeArray :: EncodingType a => EncodingType (Array a) where
   typeName = const "[]"
   isDynamic = const true
 
-instance encodingTypeBytes :: KnownSize n => EncodingType (BytesN n) where
+instance encodingTypeBytes :: Reflectable n Int => EncodingType (BytesN n) where
   typeName =
     let
-      n = show (sizeVal (Proxy :: Proxy n))
+      n = show (reflectType (Proxy :: Proxy n))
     in
       const $ "bytes[" <> n <> "]"
   isDynamic = const false
 
-instance encodingTypeVector :: (KnownSize n, EncodingType a) => EncodingType (Vector n a) where
+instance encodingTypeVector :: (Reflectable n Int, EncodingType a) => EncodingType (Vector n a) where
   typeName =
     let
-      n = show (sizeVal (Proxy :: Proxy n))
+      n = show (reflectType (Proxy :: Proxy n))
 
       baseTypeName = typeName (Proxy :: Proxy a)
     in

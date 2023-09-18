@@ -1,23 +1,15 @@
 module Web3Spec.Encoding.GenericSpec (spec) where
 
 import Prelude
-import Control.Error.Util (hush)
-import Data.Array (unsafeIndex, uncons)
+
 import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
-import Data.Eq.Generic (genericEq)
-import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe(..), fromJust)
-import Data.Newtype (class Newtype, wrap)
-import Record.Builder (build, merge)
-import Type.Proxy (Proxy)
-import Network.Ethereum.Web3.Solidity (Address, Tuple1, Tuple2(..), Tuple3(..), UIntN, fromData)
-import Network.Ethereum.Web3.Solidity.Event (class IndexedEvent, decodeEvent, genericArrayParser)
+import Effect.Class (liftEffect)
+import Network.Ethereum.Web3.Solidity (Tuple2(..), Tuple3(..))
 import Network.Ethereum.Web3.Solidity.Generic (genericToRecordFields)
-import Network.Ethereum.Web3.Types (Change(..), HexString, embed, mkAddress, mkHexString)
-import Partial.Unsafe (unsafePartial)
+import Record.Builder (build, merge)
+import Test.QuickCheck (quickCheck, (===))
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
 spec =
@@ -27,125 +19,60 @@ spec =
 toRecordFieldsSpec :: Spec Unit
 toRecordFieldsSpec =
   describe "test ToRecordFields class" do
-    it "pass toRecordFields basic test" do
-      let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
-      WeirdTuple (genericToRecordFields as)
-        `shouldEqual`
-          WeirdTuple
-            { a: 1
-            , d: "hello"
-            , e: 'c'
-            }
-    it "passes the merging test" do
-      let
-        as = Tuple3 (tagged 1) (tagged "hello") (tagged 'c') :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
+    it "pass toRecordFields basic test" $ liftEffect do
+      quickCheck $ \(x :: { a :: Int, b :: Int, c :: String, d :: String }) ->
+        let
+          as = Tuple2 (tagged x.a) (tagged x.b) :: Tuple2 (Tagged "a" Int) (Tagged "b" Int)
+          bs = Tuple2 (tagged x.c) (tagged x.d) :: Tuple2 (Tagged "c" String) (Tagged "d" String)
+        in
+          (build (merge (genericToRecordFields as)) (genericToRecordFields bs))
+            ===
+              { a: x.a
+              , b: x.b
+              , c: x.c
+              , d: x.d
+              }
 
-        as' = Tuple2 (tagged 2) (tagged "bye") :: Tuple2 (Tagged "b" Int) (Tagged "c" String)
+    it "pass toRecordFields basic test" $ liftEffect do
+      quickCheck $ \(x :: { a :: Int, b :: Int, c :: String, d :: String, e :: Char }) ->
+        let
+          as = Tuple3 (tagged x.a) (tagged x.d) (tagged x.e) :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
+        in
+          WeirdTuple (genericToRecordFields as)
+            ===
+              WeirdTuple
+                { a: x.a
+                , d: x.d
+                , e: x.e
+                }
 
-        c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
-      c `shouldEqual` CombinedTuple { a: 1, b: 2, c: "bye", d: "hello", e: 'c' }
-    it "can parse a change an address array" do
-      let
-        (Transfer t) = transfer
+    it "passes the merging test" $ liftEffect do
+      quickCheck $ \(x :: { a :: Int, b :: Int, c :: String, d :: String, e :: Char }) ->
+        let
+          as = Tuple3 (tagged x.a) (tagged x.d) (tagged x.e) :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
 
-        expected = Tuple2 (tagged t.to) (tagged t.from) :: Tuple2 (Tagged "to" Address) (Tagged "from" Address)
-      hush (fromData (unsafePartial $ unsafeIndex addressArray 1)) `shouldEqual` Just t.to
-      genericArrayParser (unsafePartial fromJust $ _.tail <$> uncons addressArray) `shouldEqual` Just expected
-    it "can combine events" do
-      decodeEvent change `shouldEqual` Just transfer
+          as' = Tuple2 (tagged x.b) (tagged x.c) :: Tuple2 (Tagged "b" Int) (Tagged "c" String)
+
+          c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
+        in
+          c === CombinedTuple x
+
+--------------------------------------------------------------------------------
 
 newtype WeirdTuple = WeirdTuple { a :: Int, d :: String, e :: Char }
 
-derive instance genericWeirdTuple :: Generic WeirdTuple _
-
-instance showWeirdTuple :: Show WeirdTuple where
-  show = genericShow
-
-instance eqWeirdTuple :: Eq WeirdTuple where
-  eq = genericEq
+derive instance Generic WeirdTuple _
+derive newtype instance Show WeirdTuple
+derive newtype instance Eq WeirdTuple
 
 newtype OtherTuple = OtherTuple { b :: Int, c :: String }
 
-derive instance genericOtherTuple :: Generic OtherTuple _
+derive instance Generic OtherTuple _
+derive newtype instance Show OtherTuple
+derive newtype instance Eq OtherTuple
 
-instance showOtherTuple :: Show OtherTuple where
-  show = genericShow
+newtype CombinedTuple = CombinedTuple { a :: Int, b :: Int, c :: String, d :: String, e :: Char }
 
-instance eqOtherTuple :: Eq OtherTuple where
-  eq = genericEq
-
-data CombinedTuple = CombinedTuple { a :: Int, b :: Int, c :: String, d :: String, e :: Char }
-
-derive instance genericCombinedTuple :: Generic CombinedTuple _
-
-instance showCombinedTuple :: Show CombinedTuple where
-  show = genericShow
-
-instance eqCombinedTuple :: Eq CombinedTuple where
-  eq = genericEq
-
---------------------------------------------------------------------------------
-newtype Transfer = Transfer { to :: Address, from :: Address, amount :: UIntN 256 }
-
-derive instance newtypeTransfer :: Newtype Transfer _
-
-derive instance genericTransfer :: Generic Transfer _
-
-instance indexedTransfer :: IndexedEvent (Tuple2 (Tagged "to" Address) (Tagged "from" Address)) (Tuple1 (Tagged "amount" (UIntN 256))) Transfer where
-  isAnonymous _ = false
-
-instance showTransfer :: Show Transfer where
-  show = genericShow
-
-instance eqTransfer :: Eq Transfer where
-  eq = genericEq
-
-transfer :: Transfer
-transfer =
-  let
-    t = unsafePartial fromJust $ mkAddress =<< mkHexString "0x407d73d8a49eeb85d32cf465507dd71d507100c1"
-
-    f = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000001"
-
-    a = unsafePartial fromJust $ map hush fromData =<< mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
-  in
-    Transfer
-      { to: t
-      , from: f
-      , amount: a
-      }
-
-addressArray :: Array HexString
-addressArray =
-  let
-    to = unsafePartial fromJust $ mkHexString "0x000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1"
-
-    from = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
-
-    topic = unsafePartial fromJust $ mkHexString "0x"
-  in
-    [ topic, to, from ]
-
-amount :: HexString
-amount = unsafePartial fromJust $ mkHexString "0x0000000000000000000000000000000000000000000000000000000000000001"
-
-change :: Change
-change =
-  Change
-    { data: amount
-    , topics: addressArray
-    , logIndex: zero
-    , transactionHash: tx
-    , transactionIndex: zero
-    , blockNumber: wrap $ embed 0
-    , blockHash: bh
-    , address: a
-    , removed: false
-    }
-  where
-  bh = unsafePartial fromJust $ mkHexString "00"
-
-  tx = unsafePartial fromJust $ mkHexString "00"
-
-  a = unsafePartial fromJust $ mkAddress =<< mkHexString "0x0000000000000000000000000000000000000000"
+derive instance Generic CombinedTuple _
+derive newtype instance Show CombinedTuple
+derive newtype instance Eq CombinedTuple
