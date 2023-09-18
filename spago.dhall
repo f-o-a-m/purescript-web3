@@ -21,7 +21,6 @@
   , "heterogeneous"
   , "maybe"
   , "newtype"
-  , "nonempty"
   , "parallel"
   , "parsing"
   , "partial"
