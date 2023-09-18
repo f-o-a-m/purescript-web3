@@ -1,24 +1,20 @@
 # purescript-web3
 <img src=https://github.com/f-o-a-m/purescript-web3/blob/master/purescript-web3-logo.png width="75">
 
-[![Latest release](http://img.shields.io/github/release/f-o-a-m/purescript-web3.svg?branch=master)](https://github.com/f-o-a-m/purescript-web3/releases)
-[![purescript-web3 on Pursuit](https://pursuit.purescript.org/packages/purescript-web3/badge)](https://pursuit.purescript.org/packages/purescript-web3)
-[![Build status](https://travis-ci.com/f-o-a-m/purescript-web3.svg?branch=master)](https://travis-ci.com/f-o-a-m/purescript-web3?branch=master)
 
 # A Purescript Client for the Web3 API
 
-`purescript-web3` is a library for interacting with an ethereum node purescript. At the moment it covers most endpoints of the web3 api, which means it is suitable for sending transactions, querying blockchain state and metadata, and monitoring events.
+`purescript-web3` is a library for interacting with an ethereum node in purescript.
 
-Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator) it is also possible (and recommended) to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
+Using [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web3-generator) or [chanterelle](https://github.com/f-o-a-m/chanterelle) it is also possible (and recommended) to generate a library from a set of smart contract abis which is capable of templating transactions and event filters/watchers. The README has instructions for getting started.
 
-We do not yet have a build tool similar to truffle, but if you are looking for a template of how to use truffle and write your tests using purescript, check out out the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests)
-
-To see an example project using all of the purescript-web3 tools and with thermite/react ui, check out [purescript-web3-example](https://github.com/f-o-a-m/purescript-web3-example).
+To see an example project, it is recommended to look at the [tests repository](https://github.com/f-o-a-m/purescript-web3-tests) (which uses Chanterelle)
 
 ## Build Instructions
 ```
 > npm install
 > npm run build
+> docker run -d -p 8545:8545 -e ACCOUNTS_TO_CREATE=10 foamspace/cliquebait:v1.9.12
 > npm run test
 ```
 
@@ -52,7 +48,7 @@ If we used [purescript-web3-generator](https://github.com/f-o-a-m/purescript-web
 ```purescript
 setTuple :: forall e.
             TransactionOptions NoPay 
-         -> {_x :: UIntN (D2 :& D5 :& DOne D6), _y :: UIntN (D2 :& D5 :& DOne D6)} 
+         -> {_x :: UIntN 256, _y :: UIntN 256} 
          -> Web3 HexString 
 ```
 
@@ -76,7 +72,7 @@ We also need to pass a callback to the event watcher that performs some action a
 
 ```purescript
 event tupleFilter $ \(TupleSet {newX,newY} -> do
-  liftAff <<< log $ "Received New Tuple : " <> show (Tuple newX newY) 
+  log $ "Received New Tuple : " <> show (Tuple newX newY) 
   if newX == newY
     then pure TerminateEvent
     else do
@@ -84,9 +80,7 @@ event tupleFilter $ \(TupleSet {newX,newY} -> do
       pure ContinueEvent
 ```
 
-For more examples, check out the foam [kitty monitor](https://github.com/f-o-a-m/purescript-kitty-monitor), the [example](https://github.com/f-o-a-m/purescript-web3-example) project using thermite, or the [purescript-web3-tests](https://github.com/f-o-a-m/purescript-web3-tests) repo.
-
 ## Resources
  
- - [web3 RPC spec](https://github.com/ethereum/wiki/wiki/JSON-RPC)
- - [solidity documentation](http://solidity.readthedocs.io/en/develop/index.html)
+ - [web3 api spec](https://github.com/ethereum/execution-apis)
+ - [solidity ABI spec](https://docs.soliditylang.org/en/latest/abi-spec.html)
