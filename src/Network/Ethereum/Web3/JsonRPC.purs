@@ -22,7 +22,7 @@ import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, 
 class Remote a where
   remote_ :: (Provider -> Array Foreign -> Aff Foreign) -> a
 
-instance remoteBase :: (ReadForeign a) => Remote (Web3 a) where
+instance ReadForeign a => Remote (Web3 a) where
   remote_ f = do
     p <- ask
     res' <- liftAff $ attempt $ f p mempty
@@ -40,7 +40,7 @@ instance remoteBase :: (ReadForeign a) => Remote (Web3 a) where
     asError :: Web3Error -> Error
     asError e = error $ writeJSON e
 
-instance remoteInductive :: (WriteForeign a, Remote b) => Remote (a -> b) where
+instance (WriteForeign a, Remote b) => Remote (a -> b) where
   remote_ f x = remote_ $ \p args -> f p (writeImpl x : args)
 
 foreign import _sendAsync :: Provider -> Request -> EffectFnAff Foreign

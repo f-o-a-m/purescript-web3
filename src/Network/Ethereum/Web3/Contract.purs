@@ -80,10 +80,10 @@ class CallMethod (selector :: Symbol) a b where
     -> Web3 (Either CallError b)
 
 -- ^ `Web3` wrapped result
-instance txmethodAbiEncode :: (Generic a rep, GenericABIEncode rep) => TxMethod s a where
+instance (Generic a rep, GenericABIEncode rep) => TxMethod s a where
   sendTx = _sendTransaction
 
-instance callmethodAbiEncode :: (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
+instance (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
   call = _call
 
 _sendTransaction
