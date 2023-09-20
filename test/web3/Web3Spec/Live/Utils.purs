@@ -3,8 +3,6 @@ module Web3Spec.Live.Utils
   , bigGasLimit
   , defaultTestTxOptions
   , go
-  , joinWeb3Fork
-  , nullAddress
   , pollTransactionReceipt
   ) where
 
@@ -16,12 +14,11 @@ import Data.Either (Either(..))
 import Data.Lens ((?~))
 import Data.Maybe (fromJust)
 import Data.Traversable (intercalate)
-import Effect.Aff (Aff, Milliseconds(..), Fiber, joinFiber, delay)
+import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class.Console as C
 import Network.Ethereum.Core.BigNumber (decimal, fromStringAs)
-import Network.Ethereum.Core.Signatures (mkAddress)
-import Network.Ethereum.Web3 (Address, BigNumber, HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, Web3Error, _gas, defaultTransactionOptions, mkHexString, runWeb3)
+import Network.Ethereum.Web3 (BigNumber, HexString, Provider, TransactionOptions, TransactionReceipt(..), TransactionStatus(..), Web3, _gas, defaultTransactionOptions, runWeb3)
 import Network.Ethereum.Web3.Api as Api
 import Network.Ethereum.Web3.Types (NoPay)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
@@ -70,23 +67,8 @@ pollTransactionReceipt provider txHash k =
         Succeeded -> k receipt
         Failed -> unsafeCrashWith $ "Transaction failed : " <> show txHash
 
-joinWeb3Fork
-  :: forall a m
-   . MonadAff m
-  => Fiber (Either Web3Error a)
-  -> m a
-joinWeb3Fork fiber =
-  liftAff do
-    eRes <- joinFiber fiber
-    case eRes of
-      Left e -> unsafeCrashWith $ "Error in forked web3 process " <> show e
-      Right a -> pure a
-
 defaultTestTxOptions :: TransactionOptions NoPay
 defaultTestTxOptions = defaultTransactionOptions # _gas ?~ bigGasLimit
-
-nullAddress :: Address
-nullAddress = unsafePartial $ fromJust $ mkAddress =<< mkHexString "0000000000000000000000000000000000000000"
 
 bigGasLimit :: BigNumber
 bigGasLimit = unsafePartial fromJust $ fromStringAs decimal "4712388"
