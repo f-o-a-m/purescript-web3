@@ -42,6 +42,7 @@ module Network.Ethereum.Web3.Types.Types
   ) where
 
 import Prelude
+
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
 import Control.Error.Util (hush)
@@ -54,24 +55,24 @@ import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Ordering (invert)
+import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
-import Effect.Aff (Aff, Fiber, ParAff, attempt, forkAff, message, throwError)
+import Effect.Aff (Aff, Fiber, ParAff, attempt, error, forkAff, message, throwError)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Exception (Error, throwException)
+import Effect.Class (class MonadEffect)
+import Effect.Exception (Error)
 import Foreign (F, Foreign, ForeignError(..), fail, isNull, readBoolean, readString)
-import Foreign.Object as FO
 import Foreign.Index (readProp)
+import Foreign.Object as FO
 import Network.Ethereum.Types (Address, BigNumber, HexString)
 import Network.Ethereum.Web3.Types.EtherUnit (ETHER, Wei)
 import Network.Ethereum.Web3.Types.Provider (Provider)
 import Network.Ethereum.Web3.Types.TokenUnit (class TokenUnit, MinorUnit, NoPay, Value, convert)
-import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl, readJSON', undefined)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, readJSON', undefined, writeImpl, writeJSON)
 
 --------------------------------------------------------------------------------
 -- * Block
@@ -381,9 +382,6 @@ instance Parallel Web3Par Web3 where
   parallel (Web3 m) = Web3Par (parallel m)
   sequential (Web3Par m) = Web3 (sequential m)
 
-throwWeb3 :: forall a. Error -> Web3 a
-throwWeb3 = liftEffect <<< throwException
-
 -- | Run an asynchronous `ETH` action
 runWeb3 :: forall a. Provider -> Web3 a -> Aff (Either Web3Error a)
 runWeb3 p (Web3 action) =
@@ -400,7 +398,8 @@ runWeb3 p (Web3 action) =
   parseMsg :: String -> Maybe Web3Error
   parseMsg = hush <<< runExcept <<< readJSON'
 
--- parseMsg msg = hush $ runExcept $ genericDecodeJSON defaultOptions msg
+throwWeb3 :: forall a. Web3Error -> Web3 a
+throwWeb3 e = throwError $ error $ writeJSON e
 
 -- | Fork an asynchronous `ETH` action
 forkWeb3
