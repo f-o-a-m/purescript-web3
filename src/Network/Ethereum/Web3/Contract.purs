@@ -11,13 +11,14 @@ module Network.Ethereum.Web3.Contract
   ) where
 
 import Prelude
+
+import Control.Monad.Error.Class (throwError)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
 import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (%~), (?~))
 import Data.Maybe (Maybe(..))
-import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Effect.Exception (error)
 import Network.Ethereum.Core.Keccak256 (toSelector)
@@ -25,7 +26,8 @@ import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
 import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
-import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert, throwWeb3)
+import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert)
+import Type.Proxy (Proxy(..))
 
 class EventFilter :: forall k. k -> Constraint
 class EventFilter e where
@@ -133,7 +135,7 @@ _call txOptions cursor dat = do
               , _data: fullData
               }
       else
-        throwWeb3 <<< error $ show err
+        throwError $ error $ show err
     Right x -> pure $ Right x
   where
   txdata d = txOptions # _data .~ Just d
