@@ -8,8 +8,8 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Core.Signatures as Address
 import Network.Ethereum.Web3.Contract (sendTx, mkDataField)
 import Network.Ethereum.Web3.Solidity (Tuple2, UIntN)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (toDataBuilder)
-import Network.Ethereum.Web3.Solidity.Generic (genericFromRecordFields)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (encodeABIValue)
+import Network.Ethereum.Web3.Solidity.Internal (genericFromRecordFields)
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
 import Network.Ethereum.Web3.Types (Address, HexString, NoPay, TransactionOptions, Web3)
 import Test.QuickCheck (quickCheckGen, (===))
@@ -27,7 +27,7 @@ spec =
 
           sel = toSelector "approve(address,uint256)"
 
-          fullDat = sel <> toDataBuilder args._spender <> toDataBuilder args._value
+          fullDat = sel <> encodeABIValue args._spender <> encodeABIValue args._value
         pure $ approvalD === fullDat
 
 type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))

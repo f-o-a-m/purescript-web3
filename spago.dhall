@@ -21,6 +21,7 @@
   , "heterogeneous"
   , "maybe"
   , "newtype"
+  , "orders"
   , "parallel"
   , "parsing"
   , "partial"

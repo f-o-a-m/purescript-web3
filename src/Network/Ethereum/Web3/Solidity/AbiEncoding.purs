@@ -1,27 +1,34 @@
 module Network.Ethereum.Web3.Solidity.AbiEncoding
-  ( bytesBuilder
-  , class ABIDecode
-  , fromDataParser
-  , class ABIEncode
-  , toDataBuilder
-  , fromBool
-  , fromData
-  , int256HexBuilder
-  , parseBytes
-  , toBool
-  , uInt256HexBuilder
-  , uInt256HexParser
+  ( class ABIDecodableValue
+  , abiValueParser
+  , class ABIEncodableValue
+  , encodeABIValue
+  , parseABIValue
+  , class GenericABIDecode
+  , gABIDecode
+  , abiDecode
+  , class GenericABIEncode
+  , gAbiEncode
+  , abiEncode
+  , class EncodingType
+  , isDynamic
+  , class GEncodingType
+  , gIsDynamic
   ) where
 
 import Prelude
 
-import Data.Array (cons, fold, foldMap, length)
+import Data.Array (cons, fold, foldMap, foldl, length, sortBy, (:))
 import Data.Array.Partial (init)
 import Data.ByteString (ByteString)
 import Data.ByteString (toUTF8, fromUTF8, length) as BS
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, repOf, to)
 import Data.Maybe (fromJust, maybe)
+import Data.Monoid.Endo (Endo(..))
+import Data.Newtype (un)
+import Data.Ord.Down (Down(..))
 import Data.Reflectable (class Reflectable, reflectType)
 import Data.Traversable (for, scanl)
 import Data.Tuple (Tuple(..))
@@ -30,120 +37,103 @@ import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement, toString
 import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, splitAtByteOffset, toByteString, unHex)
 import Network.Ethereum.Types (Address, BigNumber, fromInt, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
-import Network.Ethereum.Web3.Solidity.EncodingType (class EncodingType, isDynamic)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.UInt (UIntN, unUIntN, uIntNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Vector (Vector, unVector)
-import Parsing (ParseError, Parser, ParseState(..), Position(..), ParserT, fail, getParserT, stateParserT, runParser)
+import Parsing (ParseError, ParseState(..), Parser, ParserT, Position(..), fail, getParserT, runParser, stateParserT)
 import Parsing.Combinators (lookAhead)
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Type.Proxy (Proxy(..))
 
+class EncodingType :: forall k. k -> Constraint
+class EncodingType a where
+  isDynamic :: Proxy a -> Boolean
+
+instance EncodingType Boolean where
+  isDynamic = const false
+else instance EncodingType Int where
+  isDynamic = const false
+else instance EncodingType BigNumber where
+  isDynamic = const false
+else instance EncodingType (UIntN n) where
+  isDynamic = const false
+else instance EncodingType (IntN n) where
+  isDynamic = const false
+else instance EncodingType String where
+  isDynamic = const true
+else instance EncodingType Address where
+  isDynamic = const false
+else instance EncodingType a => EncodingType (Array a) where
+  isDynamic = const true
+else instance EncodingType (BytesN n) where
+  isDynamic = const false
+else instance EncodingType a => EncodingType (Vector n a) where
+  isDynamic _ = isDynamic (Proxy :: Proxy a)
+else instance EncodingType ByteString where
+  isDynamic = const true
+else instance EncodingType a => EncodingType (Tagged s a) where
+  isDynamic _ = isDynamic (Proxy :: Proxy a)
+---- this next one shouldn't be necessary, but I'm getting indications that it is
+--else instance (Generic a rep, GEncodingType rep) => EncodingType (Tagged s a) where
+--  isDynamic _ = gIsDynamic (repOf (Proxy :: Proxy a))
+else instance (Generic a rep, GEncodingType rep) => EncodingType a where
+  isDynamic p = gIsDynamic (repOf p)
+
+class GEncodingType :: forall k. k -> Constraint
+class GEncodingType rep where
+  gIsDynamic :: Proxy rep -> Boolean
+
+instance GEncodingType NoArguments where
+  gIsDynamic _ = false
+else instance EncodingType a => GEncodingType (Argument a) where
+  gIsDynamic _ = isDynamic (Proxy @a)
+else instance GEncodingType a => GEncodingType (Argument a) where
+  gIsDynamic _ = gIsDynamic (Proxy @a)
+else instance (GEncodingType a, GEncodingType b) => GEncodingType (Product a b) where
+  gIsDynamic _ = gIsDynamic (Proxy @a) || gIsDynamic (Proxy @b)
+else instance GEncodingType a => GEncodingType (Constructor s a) where
+  gIsDynamic _ = gIsDynamic (Proxy @a)
+
 -- | Class representing values that have an encoding and decoding instance to/from a solidity type.
-class ABIEncode a where
-  toDataBuilder :: a -> HexString
+class EncodingType a <= ABIEncodableValue a where
+  encodeABIValue :: a -> HexString
 
-class ABIDecode a where
-  fromDataParser :: Parser HexString a
+instance ABIEncodableValue BigNumber where
+  encodeABIValue = int256HexBuilder
 
-instance abiEncodeAlgebra :: ABIEncode BigNumber where
-  toDataBuilder = int256HexBuilder
+else instance ABIEncodableValue Boolean where
+  encodeABIValue = uInt256HexBuilder <<< fromBool
+    where
+    fromBool b = if b then one else zero
 
-instance abiDecodeAlgebra :: ABIDecode BigNumber where
-  fromDataParser = int256HexParser
+else instance ABIEncodableValue Int where
+  encodeABIValue = int256HexBuilder <<< fromInt
 
--- | Parse encoded value, droping the leading `0x`
-fromData :: forall a. ABIDecode a => HexString -> Either ParseError a
-fromData = flip runParser fromDataParser
+else instance Reflectable n Int => ABIEncodableValue (UIntN n) where
+  encodeABIValue a = uInt256HexBuilder <<< unUIntN $ a
 
-instance abiEncodeBool :: ABIEncode Boolean where
-  toDataBuilder = uInt256HexBuilder <<< fromBool
+else instance ABIEncodableValue Address where
+  encodeABIValue addr = padLeft Zero <<< unAddress $ addr
 
-instance abiDecodeBool :: ABIDecode Boolean where
-  fromDataParser = toBool <$> uInt256HexParser
+else instance Reflectable n Int => ABIEncodableValue (BytesN n) where
+  encodeABIValue bs = bytesBuilder <<< unBytesN $ bs
 
-instance abiEncodeInt :: ABIEncode Int where
-  toDataBuilder = int256HexBuilder <<< fromInt
+else instance Reflectable n Int => ABIEncodableValue (IntN n) where
+  encodeABIValue a = int256HexBuilder <<< unIntN $ a
 
-instance abiDecodeInt :: ABIDecode Int where
-  fromDataParser = unsafeToInt <$> int256HexParser
+else instance ABIEncodableValue ByteString where
+  encodeABIValue bytes = uInt256HexBuilder (fromInt $ BS.length bytes) <> bytesBuilder bytes
 
-instance abiEncodeAddress :: ABIEncode Address where
-  toDataBuilder addr = padLeft Zero <<< unAddress $ addr
+else instance ABIEncodableValue String where
+  encodeABIValue = encodeABIValue <<< BS.toUTF8
 
-instance abiDecodeAddress :: ABIDecode Address where
-  fromDataParser = do
-    _ <- parseBytes 12
-    maddr <- mkAddress <$> parseBytes 20
-    maybe (fail "Address is 20 bytes, receieved more") pure maddr
-
-instance abiEncodeBytesD :: ABIEncode ByteString where
-  toDataBuilder bytes = uInt256HexBuilder (fromInt $ BS.length bytes) <> bytesBuilder bytes
-
-instance abiDecodeBytesD :: ABIDecode ByteString where
-  fromDataParser = do
-    len <- fromDataParser
-    toByteString <$> parseBytes (unsafeToInt len)
-
-instance abiEncodeString :: ABIEncode String where
-  toDataBuilder = toDataBuilder <<< BS.toUTF8
-
-instance abiDecodeString :: ABIDecode String where
-  fromDataParser = BS.fromUTF8 <$> fromDataParser
-
-instance abiEncodeBytesN :: Reflectable n Int => ABIEncode (BytesN n) where
-  toDataBuilder bs = bytesBuilder <<< unBytesN $ bs
-
-instance abiDecodeBytesN :: Reflectable n Int => ABIDecode (BytesN n) where
-  fromDataParser = do
-    let
-      len = reflectType (Proxy :: Proxy n)
-
-      zeroBytes = 32 - len
-    raw <- parseBytes len
-    _ <- parseBytes zeroBytes
-    pure <<< update proxyBytesN <<< toByteString $ raw
-
-instance abiEncodeVec :: (EncodingType a, ABIEncode a, Reflectable n Int) => ABIEncode (Vector n a) where
-  toDataBuilder l =
-    if isDynamic (Proxy :: Proxy a) then do
-      let
-        encs = map toDataBuilder (unVector l)
-        lengths = map numberOfBytes encs
-        len = reflectType (Proxy :: Proxy n)
-        offsets =
-          let
-            seed = 32 * len
-          in
-            seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
-      foldMap toDataBuilder offsets <> fold encs
-    else
-      foldMap toDataBuilder $ (unVector l :: Array a)
-
-instance abiDecodeVec :: (EncodingType a, Reflectable n Int, ABIDecode a) => ABIDecode (Vector n a) where
-  fromDataParser = do
-    let
-      len = reflectType (Proxy :: Proxy n)
-    if isDynamic (Proxy :: Proxy a) then do
-      offsets <- replicateA len uInt256HexParser
-      let
-        currentOffset = 32 * len
-      for offsets
-        $ \dataOffset ->
-            lookAhead
-              $ do
-                  _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
-                  fromDataParser
-    else
-      replicateA len fromDataParser
-
-instance abiEncodeAray :: (EncodingType a, ABIEncode a) => ABIEncode (Array a) where
-  toDataBuilder l = do
+else instance ABIEncodableValue a => ABIEncodableValue (Array a) where
+  encodeABIValue l = do
     uInt256HexBuilder (fromInt $ length l)
       <>
         if isDynamic (Proxy :: Proxy a) then do
           let
-            encs = map toDataBuilder l
+            encs = map encodeABIValue l
 
             lengths = map numberOfBytes encs
 
@@ -154,61 +144,116 @@ instance abiEncodeAray :: (EncodingType a, ABIEncode a) => ABIEncode (Array a) w
                 seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
           foldMap (uInt256HexBuilder <<< fromInt) offsets <> fold encs
         else
-          foldMap toDataBuilder l
+          foldMap encodeABIValue l
 
-instance abiDecodeArray :: (EncodingType a, ABIDecode a) => ABIDecode (Array a) where
-  fromDataParser = do
-    len <- unsafeToInt <$> uInt256HexParser
+else instance (ABIEncodableValue a, Reflectable n Int) => ABIEncodableValue (Vector n a) where
+  encodeABIValue l =
     if isDynamic (Proxy :: Proxy a) then do
-      offsets <- replicateA len uInt256HexParser
       let
-        currentOffset = 32 * len
-      for offsets
-        $ \dataOffset ->
-            lookAhead
-              $ do
-                  _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
-                  fromDataParser
+        encs = map encodeABIValue (unVector l)
+        lengths = map numberOfBytes encs
+        len = reflectType (Proxy :: Proxy n)
+        offsets =
+          let
+            seed = 32 * len
+          in
+            seed `cons` (unsafePartial $ init $ scanl (+) seed lengths)
+      foldMap encodeABIValue offsets <> fold encs
     else
-      replicateA len fromDataParser
+      foldMap encodeABIValue $ (unVector l :: Array a)
 
-instance abiEncodeUint :: Reflectable n Int => ABIEncode (UIntN n) where
-  toDataBuilder a = uInt256HexBuilder <<< unUIntN $ a
+else instance ABIEncodableValue a => ABIEncodableValue (Tagged s a) where
+  encodeABIValue = encodeABIValue <<< untagged
 
-instance abiDecodeUint :: Reflectable n Int => ABIDecode (UIntN n) where
-  fromDataParser = do
-    a <- uInt256HexParser
-    maybe (fail $ msg a) pure <<< uIntNFromBigNumber (Proxy :: Proxy n) $ a
-    where
-    msg n =
-      let
-        size = reflectType (Proxy :: Proxy n)
-      in
-        "Couldn't parse as uint" <> show size <> " : " <> show n
+type EncodedValue =
+  { order :: Int
+  , isDynamic :: Boolean
+  , encoding :: HexString
+  , encodingLengthInBytes :: Int -- cache
+  }
 
-instance abiEncodeIntN :: Reflectable n Int => ABIEncode (IntN n) where
-  toDataBuilder a = int256HexBuilder <<< unIntN $ a
+type ABIDataBuilder = Endo (->) (Array EncodedValue)
 
-instance abiDecodeIntN :: Reflectable n Int => ABIDecode (IntN n) where
-  fromDataParser = do
-    a <- int256HexParser
-    maybe (fail $ msg a) pure <<< intNFromBigNumber (Proxy :: Proxy n) $ a
-    where
-    msg n =
-      let
-        size = reflectType (Proxy :: Proxy n)
-      in
-        "Couldn't parse as int" <> show size <> " : " <> show n
+-- | An internally used class for encoding
+class GenericABIEncode rep where
+  gAbiEncode :: rep -> ABIDataBuilder
 
-instance abiEncodeTagged :: ABIEncode a => ABIEncode (Tagged s a) where
-  toDataBuilder = toDataBuilder <<< untagged
+abiEncode
+  :: forall a rep
+   . Generic a rep
+  => GenericABIEncode rep
+  => a
+  -> HexString
+abiEncode a = combineEncodedValues $ un Endo (gAbiEncode $ from a) []
+  where
+  combineEncodedValues :: Array EncodedValue -> HexString
+  combineEncodedValues =
+    sortBy (\_a _b -> Down _a.order `compare` Down _b.order)
+      >>> \encodings ->
+        let
+          wordLengthInBytes = 32
 
-instance abiDecodeTagged :: ABIDecode a => ABIDecode (Tagged s a) where
-  fromDataParser = tagged <$> fromDataParser
+          headsOffsetInBytes :: Int
+          headsOffsetInBytes =
+            let
+              f = \encodedValueSimple ->
+                if encodedValueSimple.isDynamic then wordLengthInBytes
+                else encodedValueSimple.encodingLengthInBytes
+            in
+              foldl (+) 0 $ map f encodings
 
---------------------------------------------------------------------------------
--- | Special Builders and Parsers
---------------------------------------------------------------------------------
+          (heads :: HexString) =
+            foldl
+              ( \{ accumulator, lengthOfPreviousDynamicValues } encodedValue ->
+                  if encodedValue.isDynamic then
+                    { accumulator: accumulator <> uInt256HexBuilder (fromInt $ headsOffsetInBytes + lengthOfPreviousDynamicValues)
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues + encodedValue.encodingLengthInBytes
+                    }
+                  else
+                    { accumulator: accumulator <> encodedValue.encoding
+                    , lengthOfPreviousDynamicValues: lengthOfPreviousDynamicValues
+                    }
+              )
+              { accumulator: mempty
+              , lengthOfPreviousDynamicValues: 0
+              }
+              encodings
+              # _.accumulator
+
+          (tails :: HexString) =
+            foldMap
+              ( \encodedValue ->
+                  if encodedValue.isDynamic then
+                    encodedValue.encoding
+                  else
+                    mempty
+              )
+              encodings
+        in
+          heads <> tails
+
+instance GenericABIEncode NoArguments where
+  gAbiEncode _ = mempty
+
+else instance GenericABIEncode b => GenericABIEncode (Constructor s b) where
+  gAbiEncode (Constructor b) = gAbiEncode b
+
+else instance (GenericABIEncode b, GenericABIEncode a) => GenericABIEncode (Product a b) where
+  gAbiEncode (Product a b) = gAbiEncode a <> gAbiEncode b
+
+else instance (EncodingType b, ABIEncodableValue b) => GenericABIEncode (Argument b) where
+  gAbiEncode (Argument b) = factorBuilder b
+
+factorBuilder :: forall a. EncodingType a => ABIEncodableValue a => a -> ABIDataBuilder
+factorBuilder a = Endo \encoded ->
+  let
+    encoding = encodeABIValue a
+  in
+    { encoding
+    , order: 1 + length encoded
+    , isDynamic: isDynamic (Proxy :: Proxy a)
+    , encodingLengthInBytes: numberOfBytes encoding
+    } : encoded
 
 -- | base16 encode, then utf8 encode, then pad
 bytesBuilder :: ByteString -> HexString
@@ -220,7 +265,7 @@ int256HexBuilder x =
   let
     a = toTwosComplement 256 x
     x' =
-      if a < zero then unsafeCrashWith $ "FUCK " <> show a
+      if a < zero then unsafeCrashWith $ "toTwosComplement produced a negative uint" <> show a
       else unsafePartial $ fromJust $ mkHexString (toString a)
   in
     if x < zero then padLeft FF x'
@@ -230,6 +275,143 @@ int256HexBuilder x =
 uInt256HexBuilder :: BigNumber -> HexString
 uInt256HexBuilder x = unsafePartial $ fromJust $
   padLeft Zero <$> mkHexString (toString x)
+
+--------------------------------------------------------------------------------
+
+class EncodingType a <= ABIDecodableValue a where
+  abiValueParser :: Parser HexString a
+
+parseABIValue :: forall a. ABIDecodableValue a => HexString -> Either ParseError a
+parseABIValue = flip runParser abiValueParser
+
+instance ABIDecodableValue BigNumber where
+  abiValueParser = int256HexParser
+
+else instance ABIDecodableValue Boolean where
+  abiValueParser = toBool <$> uInt256HexParser
+    where
+    toBool bn = not $ bn == zero
+
+else instance ABIDecodableValue Int where
+  abiValueParser = unsafeToInt <$> int256HexParser
+
+else instance ABIDecodableValue Address where
+  abiValueParser = do
+    _ <- parseBytes 12
+    maddr <- mkAddress <$> parseBytes 20
+    maybe (fail "Address is 20 bytes, receieved more") pure maddr
+
+else instance ABIDecodableValue ByteString where
+  abiValueParser = do
+    len <- abiValueParser
+    toByteString <$> parseBytes (unsafeToInt len)
+
+else instance ABIDecodableValue String where
+  abiValueParser = BS.fromUTF8 <$> abiValueParser
+
+else instance Reflectable n Int => ABIDecodableValue (BytesN n) where
+  abiValueParser = do
+    let
+      len = reflectType (Proxy :: Proxy n)
+
+      zeroBytes = 32 - len
+    raw <- parseBytes len
+    _ <- parseBytes zeroBytes
+    pure <<< update proxyBytesN <<< toByteString $ raw
+
+else instance (Reflectable n Int, ABIDecodableValue a) => ABIDecodableValue (Vector n a) where
+  abiValueParser = do
+    let
+      len = reflectType (Proxy :: Proxy n)
+    if isDynamic (Proxy :: Proxy a) then do
+      offsets <- replicateA len uInt256HexParser
+      let
+        currentOffset = 32 * len
+      for offsets
+        $ \dataOffset ->
+            lookAhead
+              $ do
+                  _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
+                  abiValueParser
+    else
+      replicateA len abiValueParser
+
+else instance ABIDecodableValue a => ABIDecodableValue (Array a) where
+  abiValueParser = do
+    len <- unsafeToInt <$> uInt256HexParser
+    if isDynamic (Proxy :: Proxy a) then do
+      offsets <- replicateA len uInt256HexParser
+      let
+        currentOffset = 32 * len
+      for offsets
+        $ \dataOffset ->
+            lookAhead
+              $ do
+                  _ <- parseBytes (unsafeToInt dataOffset - currentOffset)
+                  abiValueParser
+    else
+      replicateA len abiValueParser
+
+else instance Reflectable n Int => ABIDecodableValue (UIntN n) where
+  abiValueParser = do
+    a <- uInt256HexParser
+    maybe (fail $ msg a) pure <<< uIntNFromBigNumber (Proxy :: Proxy n) $ a
+    where
+    msg n =
+      let
+        size = reflectType (Proxy :: Proxy n)
+      in
+        "Couldn't parse as uint" <> show size <> " : " <> show n
+
+else instance Reflectable n Int => ABIDecodableValue (IntN n) where
+  abiValueParser = do
+    a <- int256HexParser
+    maybe (fail $ msg a) pure <<< intNFromBigNumber (Proxy :: Proxy n) $ a
+    where
+    msg n =
+      let
+        size = reflectType (Proxy :: Proxy n)
+      in
+        "Couldn't parse as int" <> show size <> " : " <> show n
+
+else instance ABIDecodableValue a => ABIDecodableValue (Tagged s a) where
+  abiValueParser = tagged <$> abiValueParser
+
+class GenericABIDecode a where
+  gABIDecode :: Parser HexString a
+
+abiDecode
+  :: forall a rep
+   . Generic a rep
+  => GenericABIDecode rep
+  => HexString
+  -> Either ParseError a
+abiDecode hex = to <$> runParser hex gABIDecode
+
+instance GenericABIDecode NoArguments where
+  gABIDecode = pure NoArguments
+
+else instance (EncodingType a, ABIDecodableValue a) => GenericABIDecode (Argument a) where
+  gABIDecode = Argument <$> factorParser
+    where
+    factorParser
+      | isDynamic (Proxy :: Proxy a) = do
+          dataOffset <- unsafeToInt <$> abiValueParser
+          lookAhead
+            $ do
+                (ParseState _ (Position p) _) <- getParserT
+                _ <- parseBytes (dataOffset - (p.column - 1))
+                abiValueParser
+      | otherwise = abiValueParser
+
+else instance GenericABIDecode a => GenericABIDecode (Argument a) where
+  gABIDecode = Argument <$> gABIDecode
+
+else instance GenericABIDecode a => GenericABIDecode (Constructor name a) where
+  gABIDecode = Constructor <$> gABIDecode
+
+else instance (GenericABIDecode a, GenericABIDecode b) => GenericABIDecode (Product a b) where
+  gABIDecode = Product <$> gABIDecode <*> gABIDecode
 
 -- | Parse as a signed `BigNumber`
 int256HexParser :: forall m. Monad m => ParserT HexString m BigNumber
@@ -244,14 +426,6 @@ uInt256HexParser = do
   bs <- unHex <$> parseBytes 32
   a <- maybe (fail $ "Failed to parse bytes as BigNumber " <> bs) pure (fromString bs)
   pure a
-
--- | Decode a `Boolean` as a BigNumber
-fromBool :: Boolean -> BigNumber
-fromBool b = if b then one else zero
-
--- | Encode a `Boolean` as a `BigNumber`
-toBool :: BigNumber -> Boolean
-toBool bn = not $ bn == zero
 
 -- | Read any number of HexDigits
 parseBytes :: forall m. Monad m => Int -> ParserT HexString m HexString

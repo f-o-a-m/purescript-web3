@@ -10,14 +10,15 @@ module Network.Ethereum.Web3.Solidity.Event
   ) where
 
 import Prelude
+
 import Control.Error.Util (hush)
 import Data.Array (uncons)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
 import Network.Ethereum.Types (HexString)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, fromData)
-import Network.Ethereum.Web3.Solidity.Generic (class GenericABIDecode, class RecordFieldsIso, genericFromData, genericToRecordFields)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class GenericABIDecode, abiDecode, parseABIValue)
+import Network.Ethereum.Web3.Solidity.Internal (class RecordFieldsIso, genericToRecordFields)
 import Network.Ethereum.Web3.Types (Change(..))
 import Prim.Row as Row
 import Record.Builder (build, merge)
@@ -29,18 +30,18 @@ import Type.Proxy (Proxy(..))
 class ArrayParser a where
   arrayParser :: Array HexString -> Maybe a
 
-instance arrayParserNoArgs :: ArrayParser NoArguments where
+instance ArrayParser NoArguments where
   arrayParser _ = Just NoArguments
 
-instance arrayParserBase :: ABIDecode a => ArrayParser (Argument a) where
+instance ABIDecodableValue a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of
     Nothing -> Nothing
-    Just { head } -> map Argument <<< hush <<< fromData $ head
+    Just { head } -> map Argument <<< hush <<< parseABIValue $ head
 
-instance arrayParserInductive :: (ArrayParser as, ABIDecode a) => ArrayParser (Product (Argument a) as) where
+instance arrayParserInductive :: (ArrayParser as, ABIDecodableValue a) => ArrayParser (Product (Argument a) as) where
   arrayParser hxs = case uncons hxs of
     Nothing -> Nothing
-    Just { head, tail } -> Product <$> (map Argument <<< hush <<< fromData $ head) <*> arrayParser tail
+    Just { head, tail } -> Product <$> (map Argument <<< hush <<< parseABIValue $ head) <*> arrayParser tail
 
 instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
   arrayParser = map Constructor <<< arrayParser
@@ -70,7 +71,7 @@ parseChange
 parseChange (Change change) anonymous = do
   topics <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
   a <- genericArrayParser topics
-  b <- hush <<< genericFromData $ change.data
+  b <- hush <<< abiDecode $ change.data
   pure $ Event a b
 
 combineChange
