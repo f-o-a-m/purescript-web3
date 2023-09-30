@@ -16,6 +16,7 @@ import Data.Array (uncons)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
+import Data.Symbol (class IsSymbol)
 import Network.Ethereum.Types (HexString)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class GenericABIDecode, abiDecode, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Internal (class RecordFieldsIso, genericToRecordFields)
@@ -96,6 +97,8 @@ decodeEventDef
    . ArrayParser aargs
   => RecordFieldsIso aargs afields al
   => Generic a (Constructor aname aargs)
+  => IsSymbol aname
+  => IsSymbol bname
   => RecordFieldsIso bargs bfields bl
   => Generic b (Constructor bname bargs)
   => GenericABIDecode bargs
@@ -128,6 +131,8 @@ instance defaultInstance ::
   , Row.Union afields bfields cfields
   , Row.Nub cfields cfieldsRes
   , Newtype c (Record cfieldsRes)
+  , IsSymbol aname
+  , IsSymbol bname
   , IndexedEvent a b c
   ) =>
   DecodeEvent a b c where

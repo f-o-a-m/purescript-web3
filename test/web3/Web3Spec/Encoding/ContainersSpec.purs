@@ -11,7 +11,7 @@ import Data.Enum (toEnumWithDefaults)
 import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.Int (toNumber)
-import Data.Maybe (fromJust)
+import Data.Maybe (Maybe(..))
 import Data.NonEmpty (NonEmpty(..))
 import Data.Reflectable (reifyType)
 import Data.String (CodePoint, fromCodePointArray)
@@ -19,25 +19,25 @@ import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Signatures as Address
-import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple4(..), Tuple5(..))
+import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple4(..), Tuple5(..), abiValueParser)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, encodeABIValue, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
 import Network.Ethereum.Web3.Solidity.Int as IntN
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
 import Network.Ethereum.Web3.Solidity.Vector as Vector
 import Parsing (ParseError)
-import Partial.Unsafe (unsafePartial)
-import Test.QuickCheck (class Arbitrary, arbitrary, quickCheck, quickCheckGen, (===))
+import Partial.Unsafe (unsafeCrashWith)
+import Test.QuickCheck (class Arbitrary, arbitrary, quickCheck, quickCheckGen, quickCheckGen', (===))
 import Test.QuickCheck.Gen (Gen, arrayOf)
 import Test.Spec (Spec, describe, it)
 
 spec :: Spec Unit
 spec =
   describe "encoding-spec for containers" do
-    --typePropertyTests
-    --arrayTypePropertyTests
-    --vecTypePropertyTests
-    --nestedTypePropertyTests
+    typePropertyTests
+    arrayTypePropertyTests
+    vecTypePropertyTests
+    nestedTypePropertyTests
     tupleTests
 
 typePropertyTests :: Spec Unit
@@ -253,7 +253,7 @@ tupleTests = do
               pure $ genericEncodeDecode x === Right x
 
     it "Can encode/decode (address[k], bool, intN[k], uint)" $ liftEffect do
-      quickCheckGen $ do
+      quickCheckGen' 1 $ do
         k1 <- chooseInt 1 10
         k2 <- chooseInt 1 10
         n <- oneOf (pure <$> intSizes)
@@ -304,13 +304,53 @@ tupleTests = do
                 let x = Tuple4 addrs bool ints uint
                 pure $ genericEncodeDecode x === Right x
 
+    -- this test is admittedly pretty ad hoc
+    it "Can encode/decode nested tuples" $ liftEffect do
+      quickCheckGen do
+        k1 <- chooseInt 1 10
+        k2 <- chooseInt 1 10
+        n <- oneOf (pure <$> intSizes)
+        m <- oneOf (pure <$> intSizes)
+        reifyType k1 \pk1 ->
+          reifyType k2 \pk2 ->
+            reifyType n \pn ->
+              reifyType m \pm -> do
+                let
+                  mkTuple4 = do
+                    addrs <- arrayOf (Vector.generator pk1 Address.generator)
+                    bool <- arbitrary @Boolean
+                    ints <- Vector.generator pk2 (IntN.generator pn)
+                    uint <- (UIntN.generator pm)
+                    pure $ Tuple4 addrs bool ints uint
+                _n <- oneOf (pure <$> intSizes)
+                _m <- chooseInt 1 10
+                _k <- chooseInt 1 10
+                reifyType _n \_pn ->
+                  reifyType _m \_pm ->
+                    reifyType _k \_pk -> do
+                      let
+                        mkTuple5 = do
+                          ints <- arrayOf (IntN.generator _pn)
+                          bytes <- Hex.toByteString <$> (chooseInt 1 100 >>= Hex.generator)
+                          addrs <- Vector.generator _pm (arrayOf Address.generator)
+                          strings <- arrayOf (Vector.generator _pk (arbitrary @BMPString))
+                          bool <- arbitrary :: Gen Boolean
+                          pure $ Tuple5 ints bytes addrs strings bool
+
+                      t <- Tuple2 <$> mkTuple5 <*> mkTuple4
+                      pure $ genericEncodeDecode t === Right t
+
 --------------------------------------------------------------------------------
 newtype BMPString = BMPString String
 
 derive newtype instance Eq BMPString
 derive newtype instance Show BMPString
-derive newtype instance ABIDecodableValue BMPString
-derive newtype instance ABIEncodableValue BMPString
+instance ABIDecodableValue BMPString where
+  abiValueParser = map BMPString $ abiValueParser
+
+instance ABIEncodableValue BMPString where
+  encodeABIValue (BMPString s) = encodeABIValue s
+
 derive instance Generic BMPString _
 
 data UnicodeChar = Normal CodePoint | Surrogates CodePoint CodePoint
@@ -365,13 +405,14 @@ genericEncodeDecode
   => GenericABIDecode rep
   => a
   -> Either ParseError a
-genericEncodeDecode a =
-  abiDecode $ abiEncode a
+genericEncodeDecode a = do
+  let x = abiEncode a
+  abiDecode x
 
 intSizes :: NonEmptyArray Int
-intSizes = unsafePartial fromJust
-  $ fromArray
-  $ filter (\x -> x `mod` 8 == 0) (8 .. 256)
+intSizes = case fromArray $ filter (\x -> x `mod` 8 == 0) (8 .. 256) of
+  Nothing -> unsafeCrashWith "intSizes: impossible"
+  Just x -> x
 
 bytesSizes :: NonEmptyArray Int
 bytesSizes = 1 NEA... 32

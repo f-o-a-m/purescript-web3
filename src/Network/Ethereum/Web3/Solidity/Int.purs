@@ -8,11 +8,11 @@ module Network.Ethereum.Web3.Solidity.Int
 import Prelude
 
 import Control.Monad.Gen (class MonadGen)
-import Data.Maybe (Maybe(..), fromJust)
+import Data.Maybe (Maybe(..))
 import Data.Reflectable (class Reflectable, reflectType)
 import Network.Ethereum.Core.BigNumber (BigNumber, fromInt, fromString, fromTwosComplement, pow)
 import Network.Ethereum.Core.HexString as Hex
-import Partial.Unsafe (unsafePartial)
+import Partial.Unsafe (unsafeCrashWith)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -30,10 +30,13 @@ generator :: forall n m. Reflectable n Int => MonadGen m => Proxy n -> m (IntN n
 generator p = do
   bs <- Hex.generator (reflectType p `div` 8)
   let
+    n = reflectType (Proxy @n)
     a =
       if bs == mempty then zero
-      else unsafePartial $ fromJust $ fromString $ Hex.unHex $ bs
-  pure $ IntN $ fromTwosComplement (reflectType (Proxy @n)) a
+      else case fromString $ Hex.unHex $ bs of
+        Nothing -> unsafeCrashWith $ "int" <> show n <> " generator: invalid hex string: " <> show bs
+        Just x -> x
+  pure $ IntN $ fromTwosComplement n a
 
 -- | Access the raw underlying integer
 unIntN :: forall n. IntN n -> BigNumber
