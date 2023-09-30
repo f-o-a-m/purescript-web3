@@ -18,10 +18,10 @@ import Type.Proxy (Proxy(..))
 class UncurryFields fields curried result | curried -> result fields where
   uncurryFields :: Record fields -> curried -> result
 
-instance uncurryFieldsEmpty :: UncurryFields () (Web3 b) (Web3 b) where
+instance UncurryFields () (Web3 b) (Web3 b) where
   uncurryFields _ = identity
 
-instance uncurryFieldsInductive :: (IsSymbol s, Row.Cons s a before after, Row.Lacks s before, UncurryFields before f b) => UncurryFields after (Tagged s a -> f) b where
+instance (IsSymbol s, Row.Cons s a before after, Row.Lacks s before, UncurryFields before f b) => UncurryFields after (Tagged s a -> f) b where
   uncurryFields r f =
     let
       arg = (Record.get (Proxy :: Proxy s) r)

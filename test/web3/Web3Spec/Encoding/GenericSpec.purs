@@ -6,7 +6,8 @@ import Data.Functor.Tagged (Tagged, tagged)
 import Data.Generic.Rep (class Generic)
 import Effect.Class (liftEffect)
 import Network.Ethereum.Web3.Solidity (Tuple2(..), Tuple3(..))
-import Network.Ethereum.Web3.Solidity.Internal (genericToRecordFields)
+import Network.Ethereum.Web3.Solidity.Internal (toRecord)
+import Record (disjointUnion)
 import Record.Builder (build, merge)
 import Test.QuickCheck (quickCheck, (===))
 import Test.Spec (Spec, describe, it)
@@ -24,8 +25,9 @@ toRecordFieldsSpec =
         let
           as = Tuple2 (tagged x.a) (tagged x.b) :: Tuple2 (Tagged "a" Int) (Tagged "b" Int)
           bs = Tuple2 (tagged x.c) (tagged x.d) :: Tuple2 (Tagged "c" String) (Tagged "d" String)
+
         in
-          (build (merge (genericToRecordFields as)) (genericToRecordFields bs))
+          disjointUnion (toRecord as) (toRecord bs)
             ===
               { a: x.a
               , b: x.b
@@ -38,7 +40,7 @@ toRecordFieldsSpec =
         let
           as = Tuple3 (tagged x.a) (tagged x.d) (tagged x.e) :: Tuple3 (Tagged "a" Int) (Tagged "d" String) (Tagged "e" Char)
         in
-          WeirdTuple (genericToRecordFields as)
+          WeirdTuple (toRecord as)
             ===
               WeirdTuple
                 { a: x.a
@@ -53,7 +55,7 @@ toRecordFieldsSpec =
 
           as' = Tuple2 (tagged x.b) (tagged x.c) :: Tuple2 (Tagged "b" Int) (Tagged "c" String)
 
-          c = CombinedTuple $ build (merge (genericToRecordFields as)) (genericToRecordFields as')
+          c = CombinedTuple $ build (merge (toRecord as)) (toRecord as')
         in
           c === CombinedTuple x
 

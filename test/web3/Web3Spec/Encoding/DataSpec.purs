@@ -9,7 +9,7 @@ import Network.Ethereum.Core.Signatures as Address
 import Network.Ethereum.Web3.Contract (sendTx, mkDataField)
 import Network.Ethereum.Web3.Solidity (Tuple2, UIntN)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (encodeABIValue)
-import Network.Ethereum.Web3.Solidity.Internal (genericFromRecordFields)
+import Network.Ethereum.Web3.Solidity.Internal (fromRecord)
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
 import Network.Ethereum.Web3.Types (Address, HexString, NoPay, TransactionOptions, Web3)
 import Test.QuickCheck (quickCheckGen, (===))
@@ -33,4 +33,4 @@ spec =
 type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))
 
 approve :: TransactionOptions NoPay -> { _spender :: Address, _value :: (UIntN 256) } -> Web3 HexString
-approve txOpts r = sendTx txOpts (tagged (genericFromRecordFields r) :: ApproveFn)
+approve txOpts r = sendTx txOpts (tagged (fromRecord r) :: ApproveFn)

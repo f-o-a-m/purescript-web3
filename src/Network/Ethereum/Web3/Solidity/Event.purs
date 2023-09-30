@@ -16,13 +16,12 @@ import Data.Array (uncons)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)
-import Data.Symbol (class IsSymbol)
 import Network.Ethereum.Types (HexString)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class GenericABIDecode, abiDecode, parseABIValue)
-import Network.Ethereum.Web3.Solidity.Internal (class RecordFieldsIso, genericToRecordFields)
+import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, toRecord)
 import Network.Ethereum.Web3.Types (Change(..))
 import Prim.Row as Row
-import Record.Builder (build, merge)
+import Record (disjointUnion)
 import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
@@ -76,35 +75,35 @@ parseChange (Change change) anonymous = do
   pure $ Event a b
 
 combineChange
-  :: forall aargs afields al (a :: Type) aname bargs bfields bl (b :: Type) bname c cfields cfieldsRes
-   . RecordFieldsIso aargs afields al
-  => Generic a (Constructor aname aargs)
-  => RecordFieldsIso bargs bfields bl
-  => Generic b (Constructor bname bargs)
+  :: forall afields al a arep bfields bl b brep c cfields
+   . Generic a arep
+  => Generic b brep
+  => GRecordFieldsIso arep afields al
+  => GRecordFieldsIso brep bfields bl
   => Row.Union afields bfields cfields
-  => Row.Nub cfields cfieldsRes
-  => Newtype c (Record cfieldsRes)
+  => Row.Nub cfields cfields
+  => Newtype c (Record cfields)
   => Event a b
   -> c
-combineChange (Event a b) = wrap $ build (merge (genericToRecordFields a)) (genericToRecordFields b)
+combineChange (Event a b) =
+  wrap $ disjointUnion (toRecord a) (toRecord b)
 
 class IndexedEvent :: forall k1 k2 k3. k1 -> k2 -> k3 -> Constraint
 class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
 decodeEventDef
-  :: forall aargs afields al a aname bargs bfields bl b bname c cfields cfieldsRes
-   . ArrayParser aargs
-  => RecordFieldsIso aargs afields al
-  => Generic a (Constructor aname aargs)
-  => IsSymbol aname
-  => IsSymbol bname
-  => RecordFieldsIso bargs bfields bl
-  => Generic b (Constructor bname bargs)
-  => GenericABIDecode bargs
+  :: forall afields al a arep bfields bl b brep c cfields
+   . Generic a arep
+  => GRecordFieldsIso arep afields al
+  => GenericABIDecode arep
+  => ArrayParser arep
+  => GRecordFieldsIso brep bfields bl
+  => Generic b brep
+  => GenericABIDecode brep
   => Row.Union afields bfields cfields
-  => Row.Nub cfields cfieldsRes
-  => Newtype c (Record cfieldsRes)
+  => Row.Nub cfields cfields
+  => Newtype c (Record cfields)
   => IndexedEvent a b c
   => Change
   -> Maybe c
@@ -121,18 +120,17 @@ class
   | c -> a b where
   decodeEvent :: Change -> Maybe c
 
-instance defaultInstance ::
-  ( ArrayParser aargs
-  , RecordFieldsIso aargs afields al
-  , Generic a (Constructor aname aargs)
-  , RecordFieldsIso bargs bfields bl
-  , Generic b (Constructor bname bargs)
-  , GenericABIDecode bargs
+instance
+  ( ArrayParser arep
+  , GRecordFieldsIso arep afields al
+  , Generic a arep
+  , GenericABIDecode arep
+  , GRecordFieldsIso brep bfields bl
+  , Generic b brep
+  , GenericABIDecode brep
   , Row.Union afields bfields cfields
-  , Row.Nub cfields cfieldsRes
-  , Newtype c (Record cfieldsRes)
-  , IsSymbol aname
-  , IsSymbol bname
+  , Row.Nub cfields cfields
+  , Newtype c (Record cfields)
   , IndexedEvent a b c
   ) =>
   DecodeEvent a b c where

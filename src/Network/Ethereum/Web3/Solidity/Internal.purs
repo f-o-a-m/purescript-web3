@@ -1,4 +1,10 @@
-module Network.Ethereum.Web3.Solidity.Internal where
+module Network.Ethereum.Web3.Solidity.Internal
+  ( class GRecordFieldsIso
+  , gToRecordFields
+  , gFromRecordFields
+  , toRecord
+  , fromRecord
+  ) where
 
 import Prelude
 
@@ -8,74 +14,51 @@ import Data.Symbol (class IsSymbol)
 import Prim.Row as Row
 import Record as Record
 import Type.Proxy (Proxy(..))
-import Type.RowList (class ListToRow, Cons, Nil, RowList)
+import Type.RowList (class RowListAppend, Cons, Nil)
+import Unsafe.Coerce (unsafeCoerce)
 
-class ArgsToRowListProxy :: forall k. k -> RowList Type -> Constraint
-class ArgsToRowListProxy args l | args -> l, l -> args where
-  argsToRowListProxy :: Proxy args -> Proxy l
+class GRecordFieldsIso :: forall k1. Type -> Row Type -> k1 -> Constraint
+class GRecordFieldsIso rep fields k | rep -> k, k -> rep fields where
+  gToRecordFields :: Proxy k -> rep -> Record fields
+  gFromRecordFields :: Proxy k -> Record fields -> rep
 
-instance argsToRowListProxyBaseNull :: ArgsToRowListProxy NoArguments Nil where
-  argsToRowListProxy _ = Proxy
+instance GRecordFieldsIso NoArguments () Nil where
+  gToRecordFields _ _ = {}
+  gFromRecordFields _ _ = NoArguments
 
-instance argsToRowListProxyBase :: ArgsToRowListProxy (Argument (Tagged (Proxy s) a)) (Cons s a Nil) where
-  argsToRowListProxy _ = Proxy
-else instance argsToRowListProxyInductive :: ArgsToRowListProxy as l => ArgsToRowListProxy (Product (Argument (Tagged (Proxy s) a)) as) (Cons s a l) where
-  argsToRowListProxy _ = Proxy
-
-class RecordFieldsIso args fields (rowList :: RowList Type) | args -> rowList, rowList -> args fields where
-  toRecordFields :: forall proxy. proxy rowList -> args -> Record fields
-  fromRecordFields :: forall proxy. proxy rowList -> Record fields -> args
-
-instance isoRecordBase ::
+else instance
   ( IsSymbol s
   , Row.Cons s a () r
   , Row.Lacks s ()
   ) =>
-  RecordFieldsIso (Argument (Tagged s a)) r (Cons s a Nil) where
-  toRecordFields _ (Argument a) = Record.insert (Proxy :: Proxy s) (untagged a) {}
-  fromRecordFields _ r = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
+  GRecordFieldsIso (Argument (Tagged s a)) r (Cons s a Nil) where
+  gToRecordFields _ (Argument a) = Record.insert (Proxy @s) (untagged a) {}
+  gFromRecordFields _ r = Argument (tagged $ Record.get (Proxy @s) r)
 
-instance isoRecordBaseNull :: RecordFieldsIso NoArguments () Nil where
-  toRecordFields _ _ = {}
-  fromRecordFields _ _ = NoArguments
-
-instance isoRecordInductive ::
-  ( RecordFieldsIso as r1 (Cons ls la ll)
-  , Row.Cons s a r1 r2
-  , Row.Lacks s r1
-  , IsSymbol s
-  , ListToRow (Cons ls la ll) r1
+else instance
+  ( GRecordFieldsIso as ra rla
+  , GRecordFieldsIso bs rb rlb
+  , RowListAppend rla rlb rl
+  , Row.Union ra rb r
+  , Row.Nub r r
   ) =>
-  RecordFieldsIso (Product (Argument (Tagged s a)) as) r2 (Cons s a (Cons ls la ll)) where
-  toRecordFields _ (Product (Argument a) as) = Record.insert (Proxy :: Proxy s) (untagged a) rest
-    where
-    rest = (toRecordFields (Proxy :: Proxy (Cons ls la ll)) as :: Record r1)
-  fromRecordFields _ r =
+  GRecordFieldsIso (Product as bs) r rl where
+  gToRecordFields _ (Product as bs) =
+    Record.merge (gToRecordFields (Proxy @rla) as) (gToRecordFields (Proxy @rlb) bs)
+
+  gFromRecordFields _ r =
     let
-      a = Argument (tagged $ Record.get (Proxy :: Proxy s) r)
-
-      before = Record.delete (Proxy :: Proxy s) r :: Record r1
-
-      rest = fromRecordFields (Proxy :: Proxy (Cons ls la ll)) before
+      as = gFromRecordFields (Proxy @rla) (unsafeCoerce r)
+      bs = gFromRecordFields (Proxy @rlb) (unsafeCoerce r)
     in
-      Product a rest
+      Product as bs
 
-genericToRecordFields
-  :: forall args fields l a name
-   . RecordFieldsIso args fields l
-  => Generic a (Constructor name args)
-  => a
-  -> Record fields
-genericToRecordFields a =
-  let
-    Constructor row = from a
-  in
-    toRecordFields (Proxy :: Proxy l) row
+else instance GRecordFieldsIso a r rl => GRecordFieldsIso (Constructor name a) r (Cons name rl Nil) where
+  gToRecordFields _ (Constructor a) = gToRecordFields (Proxy @rl) a
+  gFromRecordFields _ r = Constructor (gFromRecordFields (Proxy @rl) r)
 
-genericFromRecordFields
-  :: forall args fields l a name
-   . RecordFieldsIso args fields l
-  => Generic a (Constructor name args)
-  => Record fields
-  -> a
-genericFromRecordFields r = to $ Constructor $ fromRecordFields (Proxy :: Proxy l) r
+toRecord :: forall a rep fields l. Generic a rep => GRecordFieldsIso rep fields l => a -> Record fields
+toRecord a = gToRecordFields (Proxy :: Proxy l) (from a)
+
+fromRecord :: forall a rep fields l. Generic a rep => GRecordFieldsIso rep fields l => Record fields -> a
+fromRecord a = to $ gFromRecordFields (Proxy :: Proxy l) a
