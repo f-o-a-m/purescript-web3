@@ -24,6 +24,7 @@ import Data.ByteString (toUTF8, fromUTF8, length) as BS
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, repOf, to)
+import Data.Identity (Identity(..))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (un)
@@ -71,6 +72,8 @@ else instance EncodingType a => EncodingType (Vector n a) where
 else instance EncodingType ByteString where
   isDynamic = const true
 else instance EncodingType a => EncodingType (Tagged s a) where
+  isDynamic _ = isDynamic (Proxy :: Proxy a)
+else instance EncodingType a => EncodingType (Identity a) where
   isDynamic _ = isDynamic (Proxy :: Proxy a)
 else instance (Generic a rep, GEncodingType rep) => EncodingType a where
   isDynamic p = gIsDynamic (repOf p)
@@ -163,6 +166,9 @@ else instance (ABIEncodableValue a, Reflectable n Int) => ABIEncodableValue (Vec
           foldMap encodeABIValue offsets <> fold encs
         else
           foldMap encodeABIValue $ (unVector l :: Array a)
+
+else instance ABIEncodableValue a => ABIEncodableValue (Identity a) where
+  encodeABIValue = encodeABIValue <<< un Identity
 
 else instance ABIEncodableValue a => ABIEncodableValue (Tagged s a) where
   encodeABIValue = encodeABIValue <<< untagged
@@ -373,6 +379,9 @@ else instance Reflectable n Int => ABIDecodableValue (IntN n) where
 
 else instance ABIDecodableValue a => ABIDecodableValue (Tagged s a) where
   abiValueParser = tagged <$> abiValueParser
+
+else instance ABIDecodableValue a => ABIDecodableValue (Identity a) where
+  abiValueParser = Identity <$> abiValueParser
 
 class GenericABIDecode a where
   gABIDecode :: Parser HexString a

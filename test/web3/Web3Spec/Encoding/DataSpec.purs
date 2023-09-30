@@ -3,6 +3,7 @@ module Web3Spec.Encoding.DataSpec (spec, approve) where
 import Prelude
 
 import Data.Functor.Tagged (Tagged, tagged)
+import Data.Identity (Identity)
 import Effect.Class (liftEffect)
 import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Core.Signatures as Address
@@ -30,7 +31,7 @@ spec =
           fullDat = sel <> encodeABIValue args._spender <> encodeABIValue args._value
         pure $ approvalD === fullDat
 
-type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" Address) (Tagged "_value" (UIntN 256)))
+type ApproveFn = Tagged "approve(address,uint256)" (Tuple2 (Tagged "_spender" (Identity Address)) (Tagged "_value" (Identity (UIntN 256))))
 
 approve :: TransactionOptions NoPay -> { _spender :: Address, _value :: (UIntN 256) } -> Web3 HexString
 approve txOpts r = sendTx txOpts (tagged (fromRecord r) :: ApproveFn)
