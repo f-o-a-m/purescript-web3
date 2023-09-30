@@ -26,6 +26,10 @@ instance GRecordFieldsIso NoArguments () Nil where
   gToRecordFields _ _ = {}
   gFromRecordFields _ _ = NoArguments
 
+else instance GRecordFieldsIso a r rl => GRecordFieldsIso (Constructor name a) r (Cons name rl Nil) where
+  gToRecordFields _ (Constructor a) = gToRecordFields (Proxy @rl) a
+  gFromRecordFields _ r = Constructor (gFromRecordFields (Proxy @rl) r)
+
 else instance
   ( IsSymbol s
   , Row.Cons s a () r
@@ -52,10 +56,6 @@ else instance
       bs = gFromRecordFields (Proxy @rlb) (unsafeCoerce r)
     in
       Product as bs
-
-else instance GRecordFieldsIso a r rl => GRecordFieldsIso (Constructor name a) r (Cons name rl Nil) where
-  gToRecordFields _ (Constructor a) = gToRecordFields (Proxy @rl) a
-  gFromRecordFields _ r = Constructor (gFromRecordFields (Proxy @rl) r)
 
 toRecord :: forall a rep fields l. Generic a rep => GRecordFieldsIso rep fields l => a -> Record fields
 toRecord a = gToRecordFields (Proxy :: Proxy l) (from a)
