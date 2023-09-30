@@ -75,11 +75,11 @@ parseChange (Change change) anonymous = do
   pure $ Event a b
 
 combineChange
-  :: forall afields xs ys a arep bfields b brep c cfields
+  :: forall afields a arep bfields b brep c cfields
    . Generic a arep
   => Generic b brep
-  => GRecordFieldsIso xs arep () afields
-  => GRecordFieldsIso ys brep () bfields
+  => GRecordFieldsIso arep () afields
+  => GRecordFieldsIso brep () bfields
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
   => Newtype c (Record cfields)
@@ -93,12 +93,12 @@ class IndexedEvent a b c | c -> a b where
   isAnonymous :: Proxy c -> Boolean
 
 decodeEventDef
-  :: forall xs ys afields a arep bfields b brep c cfields
+  :: forall afields a arep bfields b brep c cfields
    . Generic a arep
-  => GRecordFieldsIso xs arep () afields
+  => GRecordFieldsIso arep () afields
   => GenericABIDecode arep
   => ArrayParser arep
-  => GRecordFieldsIso ys brep () bfields
+  => GRecordFieldsIso brep () bfields
   => Generic b brep
   => GenericABIDecode brep
   => Row.Union afields bfields cfields
@@ -122,10 +122,10 @@ class
 
 instance
   ( ArrayParser arep
-  , GRecordFieldsIso xs arep () afields
+  , GRecordFieldsIso arep () afields
   , Generic a arep
   , GenericABIDecode arep
-  , GRecordFieldsIso xs brep () bfields
+  , GRecordFieldsIso brep () bfields
   , Generic b brep
   , GenericABIDecode brep
   , Row.Union afields bfields cfields

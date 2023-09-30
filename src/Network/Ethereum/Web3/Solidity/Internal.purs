@@ -13,81 +13,97 @@ import Prelude
 
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
+import Data.Identity (Identity(..))
+import Data.Newtype (un)
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Web3.Solidity.Tuple (Tuple1(..), Tuple2(..))
+import Network.Ethereum.Web3.Solidity.Tuple (Tuple2(..))
 import Prim.Row as Row
-import Prim.RowList (RowList)
-import Prim.RowList as RL
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
 import Type.Proxy (Proxy(..))
-import Type.RowList (class RowListAppend)
 import Unsafe.Coerce (unsafeCoerce)
 
-class GRecordFieldsIso :: forall k. RowList k -> Type -> Row Type -> Row Type -> Constraint
-class GRecordFieldsIso xs rep from to | xs -> rep, rep -> xs, rep -> to, to rep -> from where
-  gToRecordFields :: Proxy xs -> rep -> Builder { | from } { | to }
-  gFromRecordFields :: Proxy xs -> Record to -> rep
+class GRecordFieldsIso rep from to | rep -> to, to rep -> from where
+  gToRecordFields :: rep -> Builder { | from } { | to }
+  gFromRecordFields :: Record to -> rep
 
-instance GRecordFieldsIso RL.Nil NoArguments from from where
-  gToRecordFields _ _ = identity
-  gFromRecordFields _ _ = NoArguments
+instance GRecordFieldsIso NoArguments from from where
+  gToRecordFields _ = identity
+  gFromRecordFields _ = NoArguments
 
-else instance (IsSymbol name, GRecordFieldsIso xs a from to) => GRecordFieldsIso (RL.Cons name xs RL.Nil) (Constructor name a) from to where
-  gToRecordFields _ (Constructor a) = gToRecordFields (Proxy @xs) a
-  gFromRecordFields _ r = Constructor (gFromRecordFields (Proxy @xs) r)
+else instance (IsSymbol name, GRecordFieldsIso a from to) => GRecordFieldsIso (Constructor name a) from to where
+  gToRecordFields (Constructor a) = gToRecordFields a
+  gFromRecordFields r = Constructor (gFromRecordFields r)
 
 else instance
-  ( GRecordFieldsIso xs a bto to
-  , GRecordFieldsIso ys b from bto
-  , RowListAppend xs ys zs
+  ( GRecordFieldsIso a bto to
+  , GRecordFieldsIso b from bto
   ) =>
-  GRecordFieldsIso (RL.Cons p q l) (Product a b) from to where
-  gToRecordFields _ (Product as bs) =
-    (gToRecordFields (Proxy @xs) as) <<< (gToRecordFields (Proxy @ys) bs)
+  GRecordFieldsIso (Product a b) from to where
+  gToRecordFields (Product as bs) = gToRecordFields as <<< gToRecordFields bs
 
-  gFromRecordFields _ r =
+  gFromRecordFields r =
     let
-      as = gFromRecordFields (Proxy @xs) (unsafeCoerce r)
-      bs = gFromRecordFields (Proxy @ys) (unsafeCoerce r)
+      as = gFromRecordFields (unsafeCoerce r)
+      bs = gFromRecordFields (unsafeCoerce r)
     in
       Product as bs
 
 else instance
-  ( ToRecordFields xs a from to
+  ( ToRecordFields a from to
   ) =>
-  GRecordFieldsIso xs (Argument a) from to where
-  gToRecordFields _ (Argument a) = toRecordFields (Proxy @xs) a
-  gFromRecordFields _ r = Argument $ fromRecordFields (Proxy @xs) r
+  GRecordFieldsIso (Argument a) from to where
+  gToRecordFields (Argument a) = toRecordFields a
+  gFromRecordFields r = Argument $ fromRecordFields r
 
-class ToRecordFields :: forall k. RowList k -> Type -> Row Type -> Row Type -> Constraint
-class ToRecordFields xs a from to | xs -> a, a -> xs, from a -> to, a to -> from where
-  toRecordFields :: Proxy xs -> a -> Builder { | from } { | to }
-  fromRecordFields :: Proxy xs -> Record to -> a
+class ToRecordFields a from to | from a -> to, a to -> from where
+  toRecordFields :: a -> Builder { | from } { | to }
+  fromRecordFields :: Record to -> a
 
-instance (IsSymbol s, Row.Cons s a from to, Row.Lacks s from) => ToRecordFields (RL.Cons s a RL.Nil) (Tagged s a) from to where
-  toRecordFields _ a = Builder.insert (Proxy @s) (untagged a)
-  fromRecordFields _ r = tagged $ Record.get (Proxy @s) r
+instance foo ::
+  ( IsSymbol s
+  , Row.Cons s a from to
+  , Row.Lacks s from
+  ) =>
+  ToRecordFields (Tagged s (Identity a)) from to where
+  toRecordFields a = Builder.insert (Proxy @s) (un Identity $ untagged a)
+  fromRecordFields r = tagged $ Identity $ Record.get (Proxy @s) r
 
-toRecord :: forall xs a rep fields. Generic a rep => GRecordFieldsIso xs rep () fields => a -> Record fields
-toRecord a = Builder.buildFromScratch $ gToRecordFields (Proxy @xs) $ from a
+else instance bar ::
+  ( IsSymbol s
+  , Row.Cons s (Record to) from to'
+  , Row.Lacks s from
+  , Generic a rep
+  , GRecordFieldsIso rep () to
+  ) =>
+  ToRecordFields (Tagged s a) from to' where
+  toRecordFields a = Builder.insert (Proxy @s)
+    $ Builder.buildFromScratch (gToRecordFields $ from $ untagged a)
+  fromRecordFields r = tagged $ to $ gFromRecordFields $ Record.get (Proxy @s) r
 
-fromRecord :: forall xs a rep row fields. Generic a rep => GRecordFieldsIso xs rep row fields => Record fields -> a
-fromRecord a = to $ gFromRecordFields (Proxy @xs) a
+else instance ToRecordFields (Record r) r r where
+  toRecordFields _ = identity
+  fromRecordFields = identity
+
+toRecord :: forall a rep fields. Generic a rep => GRecordFieldsIso rep () fields => a -> Record fields
+toRecord a = Builder.buildFromScratch $ gToRecordFields $ from a
+
+fromRecord :: forall a rep row fields. Generic a rep => GRecordFieldsIso rep row fields => Record fields -> a
+fromRecord a = to $ gFromRecordFields a
 
 y :: { a :: Int }
 y = Builder.buildFromScratch $
-  toRecordFields (Proxy @(RL.Cons "a" Int RL.Nil)) (tagged 1 :: Tagged "a" Int)
+  toRecordFields (tagged (Identity 1) :: Tagged "a" (Identity Int))
 
-type T = RL.Cons "Tuple2" (RL.Cons "a" Int (RL.Cons "b" String RL.Nil)) RL.Nil
+-- type T = RL.Cons "Tuple2" (RL.Cons "a" Int (RL.Cons "b" String RL.Nil)) RL.Nil
 
 z :: { a :: Int, b :: String }
 z =
   let
-    a :: Tuple2 (Tagged "a" Int) (Tagged "b" String)
-    a = Tuple2 (tagged 1 :: Tagged "a" Int) (tagged "hell" :: Tagged "b" String)
+    a :: Tuple2 (Tagged "a" (Identity Int)) (Tagged "b" (Identity String))
+    a = Tuple2 (tagged (Identity 1) :: Tagged "a" (Identity Int)) (tagged (Identity "hell") :: Tagged "b" (Identity String))
   --b = from a :: Int
 
   in
-    Builder.buildFromScratch $ gToRecordFields (Proxy @T) $ from a
+    Builder.buildFromScratch $ gToRecordFields $ from a

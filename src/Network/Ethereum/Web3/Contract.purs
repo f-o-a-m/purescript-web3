@@ -159,10 +159,10 @@ deployContract txOptions deployByteCode args =
     eth_sendTransaction txdata
 
 mkDataField
-  :: forall selector xs a rep fields
+  :: forall selector a rep fields
    . IsSymbol selector
   => Generic a rep
-  => GRecordFieldsIso xs rep () fields
+  => GRecordFieldsIso rep () fields
   => GenericABIEncode rep
   => Proxy (Tagged selector a)
   -> Record fields
