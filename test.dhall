@@ -15,5 +15,6 @@ in    conf
             , "quickcheck-laws"
             , "quotient"
             , "spec"
+            , "unsafe-coerce"
             ]
       }
