@@ -23,7 +23,7 @@ spec =
       quickCheckGen do
         args <- { _spender: _, _value: _ } <$> Address.generator <*> UIntN.generator (Proxy @256)
         let
-          approvalD = mkDataField (Proxy :: Proxy ApproveFn) args
+          approvalD = mkDataField (Proxy @ApproveFn) args
 
           sel = toSelector "approve(address,uint256)"
 

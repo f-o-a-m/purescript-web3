@@ -25,14 +25,13 @@ toRecordFieldsSpec =
         let
           as = Tuple2 (tagged x.a) (tagged x.b) :: Tuple2 (Tagged "a" Int) (Tagged "b" Int)
           bs = Tuple2 (tagged x.c) (tagged x.d) :: Tuple2 (Tagged "c" String) (Tagged "d" String)
-
+          cs = Tuple2 (tagged as) (tagged bs) :: Tuple2 (Tagged "as" (Tuple2 (Tagged "a" Int) (Tagged "b" Int))) (Tagged "bs" (Tuple2 (Tagged "c" String) (Tagged "d" String)))
         in
-          disjointUnion (toRecord as) (toRecord bs)
+          -- disjointUnion (toRecord as) (toRecord bs)
+          toRecord cs
             ===
-              { a: x.a
-              , b: x.b
-              , c: x.c
-              , d: x.d
+              { as: { a: x.a, b: x.b }
+              , bs: { c: x.c, d: x.d }
               }
 
     it "pass toRecordFields basic test" $ liftEffect do
