@@ -36,6 +36,7 @@
   , "tuples"
   , "typelevel-prelude"
   , "unfoldable"
+  , "unsafe-coerce"
   , "variant"
   ]
 , packages = ./packages.dhall
