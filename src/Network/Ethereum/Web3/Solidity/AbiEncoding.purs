@@ -396,7 +396,7 @@ else instance ABIDecodableValue a => GenericABIDecode (Argument a) where
           dataOffset <- unsafeToInt <$> uInt256HexParser
           lookAhead
             $ do
-                (ParseState _ (Position {index}) _) <- getParserT
+                (ParseState _ (Position { index }) _) <- getParserT
                 _ <- parseBytes (dataOffset - index)
                 stateParserT \(ParseState s (Position p) c) ->
                   Tuple unit (ParseState s (Position p { index = 0 }) c)
