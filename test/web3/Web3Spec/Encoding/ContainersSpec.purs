@@ -19,7 +19,7 @@ import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Signatures as Address
-import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple4(..), Tuple5(..), abiValueParser)
+import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiValueParser)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, encodeABIValue, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
 import Network.Ethereum.Web3.Solidity.Int as IntN
@@ -336,8 +336,12 @@ tupleTests = do
                           strings <- arrayOf (Vector.generator _pk (arbitrary @BMPString))
                           bool <- arbitrary :: Gen Boolean
                           pure $ Tuple5 ints bytes addrs strings bool
+                        mkTuple2 = do
+                          strings <- arrayOf (arbitrary @BMPString)
+                          addrs <- Vector.generator pk2 (arrayOf Address.generator)
+                          pure $ Tuple2 strings addrs
 
-                      t <- Tuple2 <$> mkTuple5 <*> mkTuple4
+                      t <- Tuple3 <$> mkTuple5 <*> mkTuple4 <*> mkTuple2
                       pure $ genericEncodeDecode t === Right t
 
 --------------------------------------------------------------------------------
