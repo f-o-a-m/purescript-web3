@@ -15,8 +15,9 @@ import Prelude
 import Control.Monad.Error.Class (throwError)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
-import Data.Functor.Tagged (Tagged, untagged)
+import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Generic.Rep (class Generic)
+import Data.Identity (Identity)
 import Data.Lens ((.~), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
@@ -25,7 +26,7 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class GRecordFieldsIso, fromRecord)
+import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GRecordFieldsIso, class GenericABIDecode, class GenericABIEncode, ByteString, BytesN, Tuple1, Tuple2, Tuple4(..), Tuple5, UIntN, fromRecord, toRecord, unTuple1)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (abiDecode, abiEncode)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert)
 import Type.Proxy (Proxy(..))
@@ -176,3 +177,56 @@ mkDataField _ r =
     args = fromRecord r :: a
   in
     sel <> abiEncode args
+
+type Verify04b18430Fn = Tagged
+  "verify04b18430((bytes,(bytes32,bytes32,(uint8,uint8),bytes32,bytes32)))"
+  ( Tuple1
+      ( Tagged "receipt"
+          ( Tuple2 (Tagged "seal" (Identity ByteString))
+              ( Tagged "meta"
+                  ( Tuple5 (Tagged "preStateDigest" (Identity (BytesN 32)))
+                      (Tagged "postStateDigest" (Identity (BytesN 32)))
+                      ( Tagged "exitCode"
+                          ( Tuple2 (Tagged "system" (Identity (UIntN 8)))
+                              (Tagged "user" (Identity (UIntN 8)))
+                          )
+                      )
+                      (Tagged "input" (Identity (BytesN 32)))
+                      (Tagged "output" (Identity (BytesN 32)))
+                  )
+              )
+          )
+      )
+  )
+
+verify04b18430
+  :: TransactionOptions NoPay
+  -> ChainCursor
+  -> { receipt ::
+         { seal :: ByteString
+         , meta ::
+             { preStateDigest :: BytesN 32
+             , postStateDigest :: BytesN 32
+             , exitCode :: { system :: UIntN 8, user :: UIntN 8 }
+             , input :: BytesN 32
+             , output :: BytesN 32
+             }
+         }
+     }
+  -> Web3
+       ( Either CallError
+           { receipt ::
+               { seal :: ByteString
+               , meta ::
+                   { preStateDigest :: BytesN 32
+                   , postStateDigest :: BytesN 32
+                   , exitCode :: { system :: UIntN 8, user :: UIntN 8 }
+                   , input :: BytesN 32
+                   , output :: BytesN 32
+                   }
+               }
+           }
+       )
+verify04b18430 x1 x2 x3 = do
+  eRes :: Either CallError Verify04b18430Fn <- map unTuple1 <$> call x1 x2 (tagged (fromRecord x3) :: Verify04b18430Fn)
+  pure $ map (toRecord <<< untagged) eRes

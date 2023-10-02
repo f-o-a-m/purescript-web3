@@ -16,7 +16,6 @@ import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArgumen
 import Data.Identity (Identity(..))
 import Data.Newtype (un)
 import Data.Symbol (class IsSymbol)
-import Network.Ethereum.Web3.Solidity.Tuple (Tuple2(..))
 import Prim.Row as Row
 import Record as Record
 import Record.Builder (Builder)
@@ -92,6 +91,7 @@ toRecord a = Builder.buildFromScratch $ gToRecordFields $ from a
 fromRecord :: forall a rep row fields. Generic a rep => GRecordFieldsIso rep row fields => Record fields -> a
 fromRecord a = to $ gFromRecordFields a
 
+{-
 y :: { a :: Int }
 y = Builder.buildFromScratch $
   toRecordFields (tagged (Identity 1) :: Tagged "a" (Identity Int))
@@ -107,3 +107,4 @@ z =
 
   in
     Builder.buildFromScratch $ gToRecordFields $ from a
+-}
