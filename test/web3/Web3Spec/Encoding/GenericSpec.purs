@@ -17,16 +17,6 @@ spec =
   describe "encoding-spec for generics" do
     toRecordFieldsSpec
 
-{-
-
-    Constructor "Tuple2" 
-      (Product 
-        (Argument (Tagged "as" T)) (Argument (Tagged "bs" R)))
-
-    Constructor "Tuple2" (Product (Argument (Tagged "a" Int)) (Argument (Tagged "b" Int)))
-
--}
-
 toRecordFieldsSpec :: Spec Unit
 toRecordFieldsSpec =
   describe "test ToRecordFields class" do

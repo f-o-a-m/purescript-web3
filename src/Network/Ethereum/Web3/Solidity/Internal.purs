@@ -81,9 +81,9 @@ else instance bar ::
     $ Builder.buildFromScratch (gToRecordFields $ from $ untagged a)
   fromRecordFields r = tagged $ to $ gFromRecordFields $ Record.get (Proxy @s) r
 
-else instance ToRecordFields (Record r) r r where
-  toRecordFields _ = identity
-  fromRecordFields = identity
+--else instance ToRecordFields (Record r) r r where
+--  toRecordFields _ = identity
+--  fromRecordFields = identity
 
 toRecord :: forall a rep fields. Generic a rep => GRecordFieldsIso rep () fields => a -> Record fields
 toRecord a = Builder.buildFromScratch $ gToRecordFields $ from a
