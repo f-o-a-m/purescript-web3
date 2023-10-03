@@ -38,6 +38,7 @@
   , "unfoldable"
   , "unsafe-coerce"
   , "variant"
+  , "identity"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
