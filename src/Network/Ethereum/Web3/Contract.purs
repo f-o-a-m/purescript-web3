@@ -25,7 +25,7 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
-import Network.Ethereum.Web3.Solidity (class ABIDecodableValue, class ABIEncodableValue, class DecodeEvent, class GRecordFieldsIso, class GenericABIDecode, class GenericABIEncode, class ToRecordFields, fromRecord)
+import Network.Ethereum.Web3.Solidity (class ABIDecodableValue, class ABIEncodableValue, class DecodeEvent, class GRecordFieldsIso, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, fromRecord)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (abiDecode, abiEncode)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert)
 import Parsing (ParseError)
@@ -158,7 +158,7 @@ deployContract txOptions deployByteCode args =
 mkDataField
   :: forall selector a rep fields
    . IsSymbol selector
-  => ToRecordFields a () fields
+  => RecordFieldsIso a () fields
   => ABIEncodableValue a
   => Show a
   => Show (Record fields)

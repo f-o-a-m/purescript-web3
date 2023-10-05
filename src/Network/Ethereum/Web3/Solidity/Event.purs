@@ -22,7 +22,7 @@ import Data.Tuple (Tuple(..))
 import Debug (trace, traceM)
 import Network.Ethereum.Types (HexString)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, class GenericABIDecode, abiDecode, parseABIValue)
-import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, class ToRecordFields, toRecord)
+import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, class RecordFieldsIso, toRecord)
 import Network.Ethereum.Web3.Types (Change(..), Web3Error(..))
 import Parsing (ParseError, fail)
 import Partial.Unsafe (unsafeCrashWith)
@@ -100,8 +100,8 @@ parseChange (Change change) anonymous = do
 
 combineChange
   :: forall afields a bfields b c cfields
-   . ToRecordFields a () afields
-  => ToRecordFields b () bfields
+   . RecordFieldsIso a () afields
+  => RecordFieldsIso b () bfields
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
   => Newtype c (Record cfields)
@@ -119,10 +119,10 @@ class IndexedEvent a b c | c -> a b where
 decodeEventDef
   :: forall afields a arep bfields b brep c cfields
    . Generic a arep
-  => ToRecordFields a () afields
+  => RecordFieldsIso a () afields
   => ABIEncodableValue a
   => ArrayParser arep
-  => ToRecordFields b () bfields
+  => RecordFieldsIso b () bfields
   => ABIDecodableValue b
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
@@ -149,10 +149,10 @@ class
 
 instance
   ( ArrayParser arep
-  , ToRecordFields a () afields
+  , RecordFieldsIso a () afields
   , ABIEncodableValue a
   , Generic a arep
-  , ToRecordFields b () bfields
+  , RecordFieldsIso b () bfields
   , ABIDecodableValue b
   , Row.Union afields bfields cfields
   , Row.Nub cfields cfields

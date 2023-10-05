@@ -26,7 +26,7 @@ spec =
 
 toRecordFieldsSpec :: Spec Unit
 toRecordFieldsSpec =
-  describe "test ToRecordFields class" do
+  describe "test RecordFieldsIso class" do
 
     it "Can parse nested tuples: " $
       let
@@ -35,7 +35,7 @@ toRecordFieldsSpec =
       in
         (toRecord <$> eRes) `shouldSatisfy` isRight
 
-    it "pass toRecordFields basic test" $ liftEffect do
+    it "pass _toRecord basic test" $ liftEffect do
       quickCheck $ \(x :: { a :: Int, b :: Int, c :: String, d :: String }) ->
         let
           as = Tuple2 (tagged $ Identity x.a) (tagged $ Identity x.b) :: Tuple2 (Tagged "a" (Identity Int)) (Tagged "b" (Identity Int))
@@ -49,7 +49,7 @@ toRecordFieldsSpec =
               , bs: { c: x.c, d: x.d }
               }
 
-    it "pass toRecordFields basic test" $ liftEffect do
+    it "pass _toRecord basic test" $ liftEffect do
       quickCheck $ \(x :: { a :: Int, b :: Int, c :: String, d :: String, e :: Char }) ->
         let
           as = Tuple3 (tagged $ Identity x.a) (tagged $ Identity x.d) (tagged $ Identity x.e) :: Tuple3 (Tagged "a" (Identity Int)) (Tagged "d" (Identity String)) (Tagged "e" (Identity Char))
