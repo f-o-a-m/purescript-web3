@@ -60,7 +60,20 @@ class ToRecordFields a from to | from a -> to, a to -> from where
   toRecordFields :: a -> Builder { | from } { | to }
   fromRecordFields :: Record to -> a
 
-instance foo ::
+instance
+  ( IsSymbol s
+  , Row.Cons s (Array (Record to)) from to'
+  , Row.Lacks s from
+  , Generic a rep
+  , GRecordFieldsIso rep () to
+  ) =>
+  ToRecordFields (Tagged s (Array a)) from to' where
+  toRecordFields a = Builder.insert (Proxy @s) $ map
+    (Builder.buildFromScratch <<< (gToRecordFields <<< from))
+    (untagged a)
+  fromRecordFields r = tagged $ map (to <<< gFromRecordFields) $ Record.get (Proxy @s) r
+
+else instance foo ::
   ( IsSymbol s
   , Row.Cons s a from to
   , Row.Lacks s from
