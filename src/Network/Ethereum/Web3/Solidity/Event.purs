@@ -11,15 +11,21 @@ module Network.Ethereum.Web3.Solidity.Event
 
 import Prelude
 
-import Control.Error.Util (hush)
+import Control.Error.Util (hush, note)
 import Data.Array (uncons)
+import Data.Bifunctor (lmap)
+import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (class Newtype, wrap)
+import Data.Tuple (Tuple(..))
+import Debug (trace, traceM)
 import Network.Ethereum.Types (HexString)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class GenericABIDecode, abiDecode, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, toRecord)
-import Network.Ethereum.Web3.Types (Change(..))
+import Network.Ethereum.Web3.Types (Change(..), Web3Error(..))
+import Parsing (ParseError, fail)
+import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
 import Record (disjointUnion)
 import Type.Proxy (Proxy(..))
@@ -28,31 +34,40 @@ import Type.Proxy (Proxy(..))
 -- Array Parsers
 --------------------------------------------------------------------------------
 class ArrayParser a where
-  arrayParser :: Array HexString -> Maybe a
+  arrayParser :: Array HexString -> Either Web3Error (Tuple a (Array HexString))
 
 instance ArrayParser NoArguments where
-  arrayParser _ = Just NoArguments
+  arrayParser as = pure (Tuple NoArguments as)
 
 instance ABIDecodableValue a => ArrayParser (Argument a) where
   arrayParser hxs = case uncons hxs of
-    Nothing -> Nothing
-    Just { head } -> map Argument <<< hush <<< parseABIValue $ head
+    Nothing -> Left $ ParserError "no arguments found for arrayParser"
+    Just { head, tail } -> do
+      res <- lmap (ParserError <<< show) <<< parseABIValue $ head
+      pure $ Tuple (Argument res) tail
 
-instance arrayParserInductive :: (ArrayParser as, ABIDecodableValue a) => ArrayParser (Product (Argument a) as) where
-  arrayParser hxs = case uncons hxs of
-    Nothing -> Nothing
-    Just { head, tail } -> Product <$> (map Argument <<< hush <<< parseABIValue $ head) <*> arrayParser tail
+instance (ArrayParser as, ArrayParser bs) => ArrayParser (Product as bs) where
+  arrayParser hxs = do
+    Tuple a rest <- arrayParser hxs
+    Tuple b rest' <- arrayParser rest
+    pure $ Tuple (Product a b) rest'
 
-instance arrayParserConstructor :: ArrayParser as => ArrayParser (Constructor name as) where
-  arrayParser = map Constructor <<< arrayParser
+instance ArrayParser as => ArrayParser (Constructor name as) where
+  arrayParser hxs = do
+    Tuple a rest <- arrayParser hxs
+    pure $ Tuple (Constructor a) rest
 
 genericArrayParser
   :: forall a rep
    . Generic a rep
   => ArrayParser rep
   => Array HexString
-  -> Maybe a
-genericArrayParser = map to <<< arrayParser
+  -> Either Web3Error a
+genericArrayParser hxs = do
+  Tuple a rest <- arrayParser hxs
+  case rest of
+    [] -> pure $ to a
+    _ -> Left $ ParserError "too many arguments to arrayParser"
 
 --------------------------------------------------------------------------------
 -- | Event Parsers
@@ -65,13 +80,23 @@ parseChange
   => ArrayParser arep
   => Generic b brep
   => GenericABIDecode brep
+  => Show a
+  => Show b
   => Change
   -> Boolean
-  -> Maybe (Event a b)
+  -> Either Web3Error (Event a b)
 parseChange (Change change) anonymous = do
-  topics <- if anonymous then pure change.topics else _.tail <$> uncons change.topics
+  traceM "parseChange"
+  topics <-
+    if anonymous then pure change.topics
+    else note (ParserError "no topics found") (_.tail <$> uncons change.topics)
   a <- genericArrayParser topics
-  b <- hush <<< abiDecode $ change.data
+  traceM ("a:\n" <> show a)
+  let
+    b = case abiDecode change.data :: Either _ b of
+      Left err -> unsafeCrashWith ("err:\n" <> show err)
+      Right res -> trace ("res:\n" <> show res) \_ -> res
+  traceM ("b:\n" <> show b)
   pure $ Event a b
 
 combineChange
@@ -83,6 +108,8 @@ combineChange
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
   => Newtype c (Record cfields)
+  => Show a
+  => Show b
   => Event a b
   -> c
 combineChange (Event a b) =
@@ -103,13 +130,17 @@ decodeEventDef
   => GenericABIDecode brep
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
+  => Show a
+  => Show b
+  => Show c
   => Newtype c (Record cfields)
   => IndexedEvent a b c
   => Change
-  -> Maybe c
+  -> Either Web3Error c
 decodeEventDef change = do
   let
     anonymous = isAnonymous (Proxy :: Proxy c)
+  traceM (show change)
   (e :: Event a b) <- parseChange change anonymous
   pure $ combineChange e
 
@@ -118,7 +149,7 @@ class
   IndexedEvent a b c <=
   DecodeEvent a b c
   | c -> a b where
-  decodeEvent :: Change -> Maybe c
+  decodeEvent :: Change -> Either Web3Error c
 
 instance
   ( ArrayParser arep
@@ -132,6 +163,9 @@ instance
   , Row.Nub cfields cfields
   , Newtype c (Record cfields)
   , IndexedEvent a b c
+  , Show a
+  , Show b
+  , Show c
   ) =>
   DecodeEvent a b c where
   decodeEvent = decodeEventDef

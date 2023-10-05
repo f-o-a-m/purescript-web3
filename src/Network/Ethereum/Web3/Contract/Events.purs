@@ -20,6 +20,7 @@ module Network.Ethereum.Web3.Contract.Events
   ) where
 
 import Prelude
+
 import Control.Coroutine (Process, Consumer, producer, consumer, pullFrom, runProcess)
 import Control.Coroutine.Transducer (Transducer, awaitForever, fromProducer, toProducer, yieldT, (=>=))
 import Control.Monad.Fork.Class (bracket)
@@ -34,7 +35,7 @@ import Data.Lens ((.~), (^.))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
 import Data.Symbol (class IsSymbol)
-import Data.Traversable (for_)
+import Data.Traversable (for_, traverse)
 import Data.Tuple (Tuple(..), fst)
 import Data.Variant (Variant, class VariantMatchCases, expand, inj, match)
 import Effect.Aff (delay, Milliseconds(..))
@@ -45,7 +46,7 @@ import Network.Ethereum.Core.BigNumber (BigNumber, fromInt)
 import Network.Ethereum.Core.HexString (HexString)
 import Network.Ethereum.Web3.Api (eth_blockNumber, eth_getFilterChanges, eth_getLogs, eth_newFilter, eth_uninstallFilter)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent)
-import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, _fromBlock, _toBlock)
+import Network.Ethereum.Web3.Types (BlockNumber(..), ChainCursor(..), Change(..), EventAction(..), Filter, FilterId, Web3, Web3Error, _fromBlock, _toBlock, throwWeb3)
 import Prim.RowList as RowList
 import Record as Record
 import Type.Proxy (Proxy(..))
@@ -365,8 +366,8 @@ mkFilterChanges
   => Proxy sym
   -> Proxy e
   -> Array Change
-  -> Array (FilterChange (Variant r))
-mkFilterChanges sp _ cs = catMaybes $ map pairChange cs
+  -> Either Web3Error (Array (FilterChange (Variant r)))
+mkFilterChanges sp _ cs = traverse pairChange cs
   where
   pairChange rawChange = do
     a :: e <- decodeEvent rawChange
@@ -387,8 +388,10 @@ instance queryAllLogs ::
   ) =>
   FoldingWithIndex QueryAllLogs (Proxy sym) (Web3 (Array (FilterChange (Variant r')))) (Filter e) (Web3 (Array (FilterChange (Variant r)))) where
   foldingWithIndex QueryAllLogs (prop :: Proxy sym) acc filter = do
-    changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
-    (<>) changes <$> (map (map expand) <$> acc)
+    eRes <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getLogs (filter :: Filter e)
+    case eRes of
+      Left err -> throwWeb3 err
+      Right changes -> (<>) changes <$> (map (map expand) <$> acc)
 
 data MultiFilterStreamState fs = MultiFilterStreamState
   { currentBlock :: BlockNumber
@@ -428,8 +431,10 @@ instance checkMultiFilterLogs ::
   ) =>
   FoldingWithIndex CheckMultiFilter (Proxy sym) (Web3 (Array (FilterChange (Variant r')))) (Tagged e FilterId) (Web3 (Array (FilterChange (Variant r)))) where
   foldingWithIndex CheckMultiFilter (prop :: Proxy sym) acc filterId = do
-    changes :: Array (FilterChange (Variant r)) <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
-    (<>) changes <$> (map (map expand) <$> acc)
+    eRes <- mkFilterChanges prop (Proxy :: Proxy e) <$> eth_getFilterChanges (untagged filterId)
+    case eRes of
+      Left err -> throwWeb3 err
+      Right changes -> (<>) changes <$> (map (map expand) <$> acc)
 
 data CloseMultiFilter = CloseMultiFilter
 

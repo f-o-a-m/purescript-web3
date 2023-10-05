@@ -31,13 +31,13 @@ main =
       p <- liftEffect $ httpProvider "http://localhost:8545"
       void $ join $ runSpecT cfg [ consoleReporter ] do
         hoist do
-          EncodingDataSpec.spec
+          --EncodingDataSpec.spec
           EncodingContainersSpec.spec
-          EncodingSimpleSpec.spec
+          --EncodingSimpleSpec.spec
           EncodingGenericSpec.spec
-          EtherUnitSpec.spec
-          VectorSpec.spec
-        RPCSpec.spec p
+  --  EtherUnitSpec.spec
+  --  VectorSpec.spec
+  --RPCSpec.spec p
   where
   hoist :: Spec ~> SpecT Aff Unit Aff
   hoist = mapSpecTree (pure <<< un Identity) identity

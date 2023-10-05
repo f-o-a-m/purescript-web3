@@ -164,6 +164,8 @@ mkDataField
   => Generic a rep
   => GRecordFieldsIso rep () fields
   => GenericABIEncode rep
+  => Show a
+  => Show (Record fields)
   => Proxy (Tagged selector a)
   -> Record fields
   -> HexString

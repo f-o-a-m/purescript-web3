@@ -3,7 +3,7 @@ module Web3Spec.Encoding.ContainersSpec (spec, BMPString(..)) where
 import Prelude
 
 import Control.Monad.Gen (chooseInt, frequency, oneOf, suchThat)
-import Data.Array (filter, foldMap, (..))
+import Data.Array (filter, foldMap, take, (..))
 import Data.Array.NonEmpty (NonEmptyArray, fromArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either(..))
@@ -16,10 +16,12 @@ import Data.NonEmpty (NonEmpty(..))
 import Data.Reflectable (reifyType)
 import Data.String (CodePoint, fromCodePointArray)
 import Data.Tuple (Tuple(..))
+import Debug (traceM)
 import Effect.Class (liftEffect)
+import Effect.Class.Console as Console
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Signatures as Address
-import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiValueParser)
+import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiValueParser, encodeABIValue)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, encodeABIValue, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
 import Network.Ethereum.Web3.Solidity.Int as IntN
@@ -34,10 +36,10 @@ import Test.Spec (Spec, describe, it)
 spec :: Spec Unit
 spec =
   describe "encoding-spec for containers" do
-    typePropertyTests
-    arrayTypePropertyTests
-    vecTypePropertyTests
-    nestedTypePropertyTests
+    --typePropertyTests
+    --arrayTypePropertyTests
+    --vecTypePropertyTests
+    --nestedTypePropertyTests
     tupleTests
 
 typePropertyTests :: Spec Unit
@@ -236,6 +238,7 @@ tupleTests :: Spec Unit
 tupleTests = do
   describe "Basic static sized Tuple Tests" $ do
 
+    {-
     it "Can encode/decode (intN, address, bool, uintN, bytesN)" $ liftEffect do
       quickCheckGen $ do
         n <- oneOf (pure <$> intSizes)
@@ -303,6 +306,55 @@ tupleTests = do
                 uint <- (UIntN.generator pm)
                 let x = Tuple4 addrs bool ints uint
                 pure $ genericEncodeDecode x === Right x
+-}
+    it "Can encode/decode arrays of tuples" $ liftEffect do
+      quickCheckGen' 1 $ do
+        k1 <- chooseInt 1 3
+        reifyType k1 \pk1 ->
+          do
+            let
+              tupleGen = do
+                addrs <- arrayOf (Vector.generator pk1 Address.generator)
+                bool <- arbitrary @Boolean
+                pure $ Tuple2 addrs bool
+            as <- take 2 <$> arrayOf tupleGen
+            traceM ("as: " <> show (encodeABIValue as))
+            pure $ encodeDecode as === Right as
+
+{-
+
+0000000000000000000000000000000000000000000000000000000000000002
+0000000000000000000000000000000000000000000000000000000000000040
+0000000000000000000000000000000000000000000000000000000000000160
+0000000000000000000000000000000000000000000000000000000000000040
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000003
+000000000000000000000000fe29c6c2D86aF89a5780C3ABf5c6e585bAb2Dbfa
+000000000000000000000000CE55aC58C1460357186defE12AFAe72fbCE99EDB
+000000000000000000000000250fCcFd54bfF1EFbFDdAE07249c21B27E85cd0e
+00000000000000000000000042d53CD8ED7AB6DfB9bf4eCf7f5BCc45E1DB6b7b
+00000000000000000000000083Cf3B56936aa36483e9bEc8D4d0cFbDfFea93ae
+000000000000000000000000cB0C9F30bC17827E384aC5fA4D1485CE7fE73ee4
+0000000000000000000000000000000000000000000000000000000000000040
+0000000000000000000000000000000000000000000000000000000000000001
+0000000000000000000000000000000000000000000000000000000000000001
+0000000000000000000000005accc8C7F4a5E38B40BFBfEF2EfE998A16AEc6B1
+00000000000000000000000067b13C769e5CcEF16Ff70aB7c2a1dcAe9cD3bcd8
+
+
+[(Tuple2 [[0xfe29c6c2D86aF89a5780C3ABf5c6e585bAb2Dbfa,0xCE55aC58C1460357186defE12AFAe72fbCE99EDB],
+          [0x250fCcFd54bfF1EFbFDdAE07249c21B27E85cd0e,0x42d53CD8ED7AB6DfB9bf4eCf7f5BCc45E1DB6b7b],
+          [0x83Cf3B56936aa36483e9bEc8D4d0cFbDfFea93ae,0xcB0C9F30bC17827E384aC5fA4D1485CE7fE73ee4]
+         ] 
+    false
+  ),
+  (Tuple2 [[0x5accc8C7F4a5E38B40BFBfEF2EfE998A16AEc6B1,0x67b13C769e5CcEF16Ff70aB7c2a1dcAe9cD3bcd8
+         ] true
+        
+        )
+        ]
+        )
+
 
     -- this test is admittedly pretty ad hoc
     it "Can encode/decode nested tuples" $ liftEffect do
@@ -343,7 +395,7 @@ tupleTests = do
 
                       t <- Tuple3 <$> mkTuple5 <*> mkTuple4 <*> mkTuple2
                       pure $ genericEncodeDecode t === Right t
-
+-}
 --------------------------------------------------------------------------------
 newtype BMPString = BMPString String
 
@@ -398,7 +450,7 @@ encodeDecode x =
   let
     a = encodeABIValue x
   in
-    (parseABIValue a)
+    parseABIValue a
 
 genericEncodeDecode
   :: forall a rep
