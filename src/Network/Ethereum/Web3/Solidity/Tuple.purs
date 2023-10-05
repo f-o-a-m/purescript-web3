@@ -53,9 +53,8 @@ module Network.Ethereum.Web3.Solidity.Tuple
 
 import Prelude
 
-import Data.Generic.Rep (class Generic, to)
+import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiEncode, gABIDecode)
 
 -- * Tuple0
 data Tuple0 = Tuple0

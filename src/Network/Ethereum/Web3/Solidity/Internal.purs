@@ -3,6 +3,9 @@ module Network.Ethereum.Web3.Solidity.Internal
   , _toRecord
   , fromRecord
   , toRecord
+  , class GRecordFieldsIso
+  , gToRecord
+  , gFromRecord
   ) where
 
 import Prelude

@@ -16,7 +16,7 @@ import Network.Ethereum.Web3.Solidity
   , UIntN
   , Vector
   , fromByteString
-  , parseABIValue
+  , abiDecode
   , intNFromBigNumber
   , nilVector
   , toVector

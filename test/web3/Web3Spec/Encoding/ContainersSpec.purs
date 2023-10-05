@@ -9,7 +9,6 @@ import Data.Array.NonEmpty as NEA
 import Data.Either (Either(..))
 import Data.Enum (toEnumWithDefaults)
 import Data.Foldable (for_)
-import Data.Generic.Rep (class Generic)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, un)
@@ -17,13 +16,11 @@ import Data.NonEmpty (NonEmpty(..))
 import Data.Reflectable (reifyType)
 import Data.String (CodePoint, fromCodePointArray)
 import Data.Tuple (Tuple(..))
-import Debug (trace, traceM)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as Console
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Signatures as Address
-import Network.Ethereum.Web3.Solidity (class ABIDecodableValue, class ABIEncodableValue, class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiEncode, abiValueParser)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, parseABIValue)
+import Network.Ethereum.Web3.Solidity (class ABIDecode, class ABIEncode, class EncodingType, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiDecode, abiEncode)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
 import Network.Ethereum.Web3.Solidity.Int as IntN
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
@@ -37,10 +34,10 @@ import Test.Spec (Spec, describe, it)
 spec :: Spec Unit
 spec =
   describe "encoding-spec for containers" do
-    --typePropertyTests
-    --arrayTypePropertyTests
-    --vecTypePropertyTests
-    --nestedTypePropertyTests
+    typePropertyTests
+    arrayTypePropertyTests
+    vecTypePropertyTests
+    nestedTypePropertyTests
     tupleTests
 
 typePropertyTests :: Spec Unit
@@ -338,7 +335,6 @@ tupleTests = do
                 bool <- arbitrary @Boolean
                 pure $ Tuple2 addrs bool
             as <- take 2 <$> arrayOf tupleGen
-            traceM ("as: " <> show (abiEncode as))
             pure $ encodeDecode as === Right as
 
     -- this test is admittedly pretty ad hoc
@@ -424,16 +420,16 @@ encodeDecode
   :: forall a
    . Show a
   => Eq a
-  => ABIEncodableValue a
-  => ABIDecodableValue a
+  => EncodingType a
+  => ABIEncode a
+  => ABIDecode a
   => a
   -> Either ParseError a
 encodeDecode x =
   let
     a = abiEncode x
   in
-    --trace ("encoded: " <> show a) $ \_ ->
-    parseABIValue a
+    abiDecode a
 
 intSizes :: NonEmptyArray Int
 intSizes = case fromArray $ filter (\x -> x `mod` 8 == 0) (8 .. 256) of

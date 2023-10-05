@@ -39,7 +39,6 @@
   , "unsafe-coerce"
   , "variant"
   , "identity"
-  , "debug"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
