@@ -12,6 +12,7 @@ import Prelude
 
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Data.Identity (Identity(..))
 import Data.Newtype (un)
 import Data.Symbol (class IsSymbol)
@@ -82,7 +83,22 @@ instance
   fromRecord r =
     tagged $ map (to <<< gFromRecord) $ Record.get (Proxy @s) r
 
-else instance foo ::
+else instance
+  ( IsSymbol s
+  , Row.Cons s (Vector n (Record to)) from to'
+  , Row.Lacks s from
+  , Generic a rep
+  , GRecordFieldsIso rep () to
+  ) =>
+  RecordFieldsIso (Tagged s (Vector n a)) from to' where
+  _toRecord a =
+    Builder.insert (Proxy @s) $ map
+      (Builder.buildFromScratch <<< (gToRecord <<< from))
+      (untagged a)
+  fromRecord r =
+    tagged $ map (to <<< gFromRecord) $ Record.get (Proxy @s) r
+
+else instance
   ( IsSymbol s
   , Row.Cons s a from to
   , Row.Lacks s from
@@ -91,7 +107,7 @@ else instance foo ::
   _toRecord a = Builder.insert (Proxy @s) (un Identity $ untagged a)
   fromRecord r = tagged $ Identity $ Record.get (Proxy @s) r
 
-else instance bar ::
+else instance
   ( IsSymbol s
   , Row.Cons s (Record to) from to'
   , Row.Lacks s from
