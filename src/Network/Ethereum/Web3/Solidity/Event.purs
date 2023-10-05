@@ -21,8 +21,8 @@ import Data.Newtype (class Newtype, wrap)
 import Data.Tuple (Tuple(..))
 import Debug (trace, traceM)
 import Network.Ethereum.Types (HexString)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class GenericABIDecode, abiDecode, parseABIValue)
-import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, toRecord)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, class GenericABIDecode, abiDecode, parseABIValue)
+import Network.Ethereum.Web3.Solidity.Internal (class GRecordFieldsIso, class ToRecordFields, toRecord)
 import Network.Ethereum.Web3.Types (Change(..), Web3Error(..))
 import Parsing (ParseError, fail)
 import Partial.Unsafe (unsafeCrashWith)
@@ -78,8 +78,7 @@ parseChange
   :: forall a b arep brep
    . Generic a arep
   => ArrayParser arep
-  => Generic b brep
-  => GenericABIDecode brep
+  => ABIDecodableValue b
   => Show a
   => Show b
   => Change
@@ -100,11 +99,9 @@ parseChange (Change change) anonymous = do
   pure $ Event a b
 
 combineChange
-  :: forall afields a arep bfields b brep c cfields
-   . Generic a arep
-  => Generic b brep
-  => GRecordFieldsIso arep () afields
-  => GRecordFieldsIso brep () bfields
+  :: forall afields a bfields b c cfields
+   . ToRecordFields a () afields
+  => ToRecordFields b () bfields
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
   => Newtype c (Record cfields)
@@ -122,12 +119,11 @@ class IndexedEvent a b c | c -> a b where
 decodeEventDef
   :: forall afields a arep bfields b brep c cfields
    . Generic a arep
-  => GRecordFieldsIso arep () afields
-  => GenericABIDecode arep
+  => ToRecordFields a () afields
+  => ABIEncodableValue a
   => ArrayParser arep
-  => GRecordFieldsIso brep () bfields
-  => Generic b brep
-  => GenericABIDecode brep
+  => ToRecordFields b () bfields
+  => ABIDecodableValue b
   => Row.Union afields bfields cfields
   => Row.Nub cfields cfields
   => Show a
@@ -153,12 +149,11 @@ class
 
 instance
   ( ArrayParser arep
-  , GRecordFieldsIso arep () afields
+  , ToRecordFields a () afields
+  , ABIEncodableValue a
   , Generic a arep
-  , GenericABIDecode arep
-  , GRecordFieldsIso brep () bfields
-  , Generic b brep
-  , GenericABIDecode brep
+  , ToRecordFields b () bfields
+  , ABIDecodableValue b
   , Row.Union afields bfields cfields
   , Row.Nub cfields cfields
   , Newtype c (Record cfields)

@@ -13,7 +13,7 @@ module Network.Ethereum.Web3.Solidity
 
 import Data.ByteString (ByteString)
 import Network.Ethereum.Types (BigNumber, Address)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, class EncodingType, class GEncodingType, class GenericABIDecode, class GenericABIEncode, abiValueParser, encodeABIValue, gIsDynamic, isDynamic, parseABIValue)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, class EncodingType, class GEncodingType, class GenericABIDecode, class GenericABIEncode, abiValueParser, abiEncode, gIsDynamic, isDynamic, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromByteString)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, class IndexedEvent, isAnonymous)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)

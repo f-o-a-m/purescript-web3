@@ -26,13 +26,13 @@ import Type.Proxy (Proxy(..))
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
 newtype Vector (n :: Int) a = Vector (Array a)
 
-derive newtype instance showVector :: Show a => Show (Vector n a)
-derive newtype instance eqVector :: Eq a => Eq (Vector n a)
-derive newtype instance functorVector :: Functor (Vector n)
-derive newtype instance unfoldable1Vector :: Unfoldable1 (Vector n)
-derive newtype instance unfoldableVector :: Unfoldable (Vector n)
-derive newtype instance foldableVector :: Foldable (Vector n)
-derive newtype instance traversableVector :: Traversable (Vector n)
+derive newtype instance Show a => Show (Vector n a)
+derive newtype instance Eq a => Eq (Vector n a)
+derive newtype instance Functor (Vector n)
+derive newtype instance Unfoldable1 (Vector n)
+derive newtype instance Unfoldable (Vector n)
+derive newtype instance Foldable (Vector n)
+derive newtype instance Traversable (Vector n)
 
 generator
   :: forall n m proxy a

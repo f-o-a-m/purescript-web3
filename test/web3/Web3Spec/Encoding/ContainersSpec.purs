@@ -12,17 +12,18 @@ import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype, un)
 import Data.NonEmpty (NonEmpty(..))
 import Data.Reflectable (reifyType)
 import Data.String (CodePoint, fromCodePointArray)
 import Data.Tuple (Tuple(..))
-import Debug (traceM)
+import Debug (trace, traceM)
 import Effect.Class (liftEffect)
 import Effect.Class.Console as Console
 import Network.Ethereum.Core.HexString as Hex
 import Network.Ethereum.Core.Signatures as Address
-import Network.Ethereum.Web3.Solidity (class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiValueParser, encodeABIValue)
-import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, encodeABIValue, parseABIValue)
+import Network.Ethereum.Web3.Solidity (class ABIDecodableValue, class ABIEncodableValue, class GenericABIDecode, class GenericABIEncode, Tuple2(..), Tuple3(..), Tuple4(..), Tuple5(..), abiEncode, abiValueParser)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecodableValue, class ABIEncodableValue, abiDecode, abiEncode, parseABIValue)
 import Network.Ethereum.Web3.Solidity.Bytes as BytesN
 import Network.Ethereum.Web3.Solidity.Int as IntN
 import Network.Ethereum.Web3.Solidity.UInt as UIntN
@@ -46,7 +47,12 @@ typePropertyTests :: Spec Unit
 typePropertyTests =
   describe "Type property tests" do
     it "can encode/decode a string" $ liftEffect $ do
-      quickCheck \(x :: BMPString) -> (encodeDecode x) === Right x
+      Console.log "wtf"
+      quickCheck \(x :: BMPString) ->
+        let
+          y = un BMPString x
+        in
+          (encodeDecode y) === Right y
 
     it "can encode/decode bytestring" $ liftEffect $ do
       quickCheckGen $ do
@@ -81,7 +87,11 @@ typePropertyTests =
           pure $ encodeDecode x === Right x
 
     it "can encode/decode string" $ liftEffect $ do
-      quickCheck \(x :: BMPString) -> encodeDecode x === Right x
+      quickCheck \(x :: BMPString) ->
+        let
+          y = un BMPString x
+        in
+          encodeDecode y === Right y
 
 arrayTypePropertyTests :: Spec Unit
 arrayTypePropertyTests = do
@@ -113,7 +123,10 @@ arrayTypePropertyTests = do
 
     it "Can encode/decode string[]" $ liftEffect do
       quickCheck $ \(x :: Array BMPString) ->
-        encodeDecode x === Right x
+        let
+          y = map (un BMPString) x
+        in
+          encodeDecode y === Right y
 
 vecTypePropertyTests :: Spec Unit
 vecTypePropertyTests = do
@@ -158,7 +171,8 @@ vecTypePropertyTests = do
       quickCheckGen $ do
         k <- chooseInt 1 10
         reifyType k \pk -> do
-          x <- Vector.generator pk (arbitrary :: Gen BMPString)
+          _x <- Vector.generator pk (arbitrary :: Gen BMPString)
+          let x = un BMPString <$> _x
           pure $ encodeDecode x === Right x
 
 nestedTypePropertyTests :: Spec Unit
@@ -182,7 +196,8 @@ nestedTypePropertyTests = do
         k2 <- chooseInt 1 10
         reifyType k1 \pk1 ->
           reifyType k2 \pk2 -> do
-            x <- Vector.generator pk2 (Vector.generator pk1 (arbitrary :: Gen BMPString))
+            _x <- Vector.generator pk2 (Vector.generator pk1 (arbitrary :: Gen BMPString))
+            let x = map (un BMPString) <$> _x
             pure $ encodeDecode x === Right x
 
   describe "Nested type property tests for array, vector" do
@@ -200,7 +215,8 @@ nestedTypePropertyTests = do
       quickCheckGen $ do
         k <- chooseInt 1 10
         reifyType k \pk -> do
-          x <- arrayOf (Vector.generator pk (arbitrary :: Gen BMPString))
+          _x <- arrayOf (Vector.generator pk (arbitrary :: Gen BMPString))
+          let x = map (un BMPString) <$> _x
           pure $ encodeDecode x === Right x
 
   describe "Nested type property tests for vector, array" do
@@ -218,7 +234,8 @@ nestedTypePropertyTests = do
       quickCheckGen $ do
         k <- chooseInt 1 10
         reifyType k \pk -> do
-          x <- (Vector.generator pk (arrayOf (arbitrary :: Gen BMPString)))
+          _x <- (Vector.generator pk (arrayOf (arbitrary :: Gen BMPString)))
+          let x = map (un BMPString) <$> _x
           pure $ encodeDecode x === Right x
 
   describe "Nested type property tests for array, array" do
@@ -232,13 +249,16 @@ nestedTypePropertyTests = do
 
     it "Can encode/decode string[][]" $ liftEffect do
       quickCheck \(x :: Array (Array BMPString)) ->
-        encodeDecode x === Right x
+        let
+          y = map (map (un BMPString)) x
+        in
+          encodeDecode y === Right y
 
 tupleTests :: Spec Unit
 tupleTests = do
+
   describe "Basic static sized Tuple Tests" $ do
 
-    {-
     it "Can encode/decode (intN, address, bool, uintN, bytesN)" $ liftEffect do
       quickCheckGen $ do
         n <- oneOf (pure <$> intSizes)
@@ -253,7 +273,7 @@ tupleTests = do
               uint <- UIntN.generator pm
               bytes <- BytesN.generator pk
               let x = Tuple5 int addr bool uint bytes
-              pure $ genericEncodeDecode x === Right x
+              pure $ encodeDecode x === Right x
 
     it "Can encode/decode (address[k], bool, intN[k], uint)" $ liftEffect do
       quickCheckGen' 1 $ do
@@ -270,7 +290,7 @@ tupleTests = do
                 ints <- Vector.generator pk2 (IntN.generator pn)
                 uint <- (UIntN.generator pm)
                 let x = Tuple4 addrs bool ints uint
-                pure $ genericEncodeDecode x === Right x
+                pure $ encodeDecode x === Right x
 
   describe "Basic dynamic sized Tuple Tests" $ do
 
@@ -287,11 +307,11 @@ tupleTests = do
               addrs <- Vector.generator pm (arrayOf Address.generator)
               strings <- arrayOf (Vector.generator pk (arbitrary @BMPString))
               bool <- arbitrary :: Gen Boolean
-              let x = Tuple5 ints bytes addrs strings bool
-              pure $ genericEncodeDecode x === Right x
+              let x = Tuple5 ints bytes addrs (map (un BMPString) <$> strings) bool
+              pure $ encodeDecode x === Right x
 
     it "Can encode/decode (address[k], bool, intN[k], uint)" $ liftEffect do
-      quickCheckGen $ do
+      quickCheckGen' 5 $ do
         k1 <- chooseInt 1 10
         k2 <- chooseInt 1 10
         n <- oneOf (pure <$> intSizes)
@@ -305,10 +325,10 @@ tupleTests = do
                 ints <- Vector.generator pk2 (IntN.generator pn)
                 uint <- (UIntN.generator pm)
                 let x = Tuple4 addrs bool ints uint
-                pure $ genericEncodeDecode x === Right x
--}
+                pure $ encodeDecode x === Right x
+
     it "Can encode/decode arrays of tuples" $ liftEffect do
-      quickCheckGen' 1 $ do
+      quickCheckGen' 5 $ do
         k1 <- chooseInt 1 3
         reifyType k1 \pk1 ->
           do
@@ -318,47 +338,12 @@ tupleTests = do
                 bool <- arbitrary @Boolean
                 pure $ Tuple2 addrs bool
             as <- take 2 <$> arrayOf tupleGen
-            traceM ("as: " <> show (encodeABIValue as))
+            traceM ("as: " <> show (abiEncode as))
             pure $ encodeDecode as === Right as
-
-{-
-
-0000000000000000000000000000000000000000000000000000000000000002
-0000000000000000000000000000000000000000000000000000000000000040
-0000000000000000000000000000000000000000000000000000000000000160
-0000000000000000000000000000000000000000000000000000000000000040
-0000000000000000000000000000000000000000000000000000000000000000
-0000000000000000000000000000000000000000000000000000000000000003
-000000000000000000000000fe29c6c2D86aF89a5780C3ABf5c6e585bAb2Dbfa
-000000000000000000000000CE55aC58C1460357186defE12AFAe72fbCE99EDB
-000000000000000000000000250fCcFd54bfF1EFbFDdAE07249c21B27E85cd0e
-00000000000000000000000042d53CD8ED7AB6DfB9bf4eCf7f5BCc45E1DB6b7b
-00000000000000000000000083Cf3B56936aa36483e9bEc8D4d0cFbDfFea93ae
-000000000000000000000000cB0C9F30bC17827E384aC5fA4D1485CE7fE73ee4
-0000000000000000000000000000000000000000000000000000000000000040
-0000000000000000000000000000000000000000000000000000000000000001
-0000000000000000000000000000000000000000000000000000000000000001
-0000000000000000000000005accc8C7F4a5E38B40BFBfEF2EfE998A16AEc6B1
-00000000000000000000000067b13C769e5CcEF16Ff70aB7c2a1dcAe9cD3bcd8
-
-
-[(Tuple2 [[0xfe29c6c2D86aF89a5780C3ABf5c6e585bAb2Dbfa,0xCE55aC58C1460357186defE12AFAe72fbCE99EDB],
-          [0x250fCcFd54bfF1EFbFDdAE07249c21B27E85cd0e,0x42d53CD8ED7AB6DfB9bf4eCf7f5BCc45E1DB6b7b],
-          [0x83Cf3B56936aa36483e9bEc8D4d0cFbDfFea93ae,0xcB0C9F30bC17827E384aC5fA4D1485CE7fE73ee4]
-         ] 
-    false
-  ),
-  (Tuple2 [[0x5accc8C7F4a5E38B40BFBfEF2EfE998A16AEc6B1,0x67b13C769e5CcEF16Ff70aB7c2a1dcAe9cD3bcd8
-         ] true
-        
-        )
-        ]
-        )
-
 
     -- this test is admittedly pretty ad hoc
     it "Can encode/decode nested tuples" $ liftEffect do
-      quickCheckGen do
+      quickCheckGen' 5 do
         k1 <- chooseInt 1 10
         k2 <- chooseInt 1 10
         n <- oneOf (pure <$> intSizes)
@@ -385,29 +370,26 @@ tupleTests = do
                           ints <- arrayOf (IntN.generator _pn)
                           bytes <- Hex.toByteString <$> (chooseInt 1 100 >>= Hex.generator)
                           addrs <- Vector.generator _pm (arrayOf Address.generator)
-                          strings <- arrayOf (Vector.generator _pk (arbitrary @BMPString))
+                          strings <- map (map (un BMPString)) <$>
+                            arrayOf (Vector.generator _pk (arbitrary @BMPString))
                           bool <- arbitrary :: Gen Boolean
                           pure $ Tuple5 ints bytes addrs strings bool
                         mkTuple2 = do
-                          strings <- arrayOf (arbitrary @BMPString)
+                          strings <- map (un BMPString) <$>
+                            arrayOf (arbitrary @BMPString)
                           addrs <- Vector.generator pk2 (arrayOf Address.generator)
                           pure $ Tuple2 strings addrs
 
                       t <- Tuple3 <$> mkTuple5 <*> mkTuple4 <*> mkTuple2
-                      pure $ genericEncodeDecode t === Right t
--}
+                      pure $ encodeDecode t === Right t
+
 --------------------------------------------------------------------------------
 newtype BMPString = BMPString String
 
 derive newtype instance Eq BMPString
 derive newtype instance Show BMPString
-instance ABIDecodableValue BMPString where
-  abiValueParser = map BMPString $ abiValueParser
 
-instance ABIEncodableValue BMPString where
-  encodeABIValue (BMPString s) = encodeABIValue s
-
-derive instance Generic BMPString _
+derive instance Newtype BMPString _
 
 data UnicodeChar = Normal CodePoint | Surrogates CodePoint CodePoint
 
@@ -448,22 +430,10 @@ encodeDecode
   -> Either ParseError a
 encodeDecode x =
   let
-    a = encodeABIValue x
+    a = abiEncode x
   in
+    --trace ("encoded: " <> show a) $ \_ ->
     parseABIValue a
-
-genericEncodeDecode
-  :: forall a rep
-   . Show a
-  => Eq a
-  => Generic a rep
-  => GenericABIEncode rep
-  => GenericABIDecode rep
-  => a
-  -> Either ParseError a
-genericEncodeDecode a = do
-  let x = abiEncode a
-  abiDecode x
 
 intSizes :: NonEmptyArray Int
 intSizes = case fromArray $ filter (\x -> x `mod` 8 == 0) (8 .. 256) of

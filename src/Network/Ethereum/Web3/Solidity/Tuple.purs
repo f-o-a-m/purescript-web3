@@ -77,12 +77,6 @@ instance Show a => Show (Tuple1 a) where
 
 derive instance Eq a => Eq (Tuple1 a)
 
-instance ABIEncodableValue a => ABIEncodableValue (Tuple1 a) where
-  encodeABIValue = abiEncode
-
-instance ABIDecodableValue a => ABIDecodableValue (Tuple1 a) where
-  abiValueParser = to <$> gABIDecode
-
 unTuple1 :: forall a. Tuple1 a -> a
 unTuple1 (Tuple1 a) = a
 
@@ -102,12 +96,6 @@ instance (Show a, Show b) => Show (Tuple2 a b) where
 
 derive instance (Eq a, Eq b) => Eq (Tuple2 a b)
 
-instance (ABIEncodableValue a, ABIEncodableValue b) => ABIEncodableValue (Tuple2 a b) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b) => ABIDecodableValue (Tuple2 a b) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry2 :: forall a b c. (a -> b -> c) -> Tuple2 a b -> c
 uncurry2 fun (Tuple2 a b) = fun a b
 
@@ -123,12 +111,6 @@ instance (Show a, Show b, Show c) => Show (Tuple3 a b c) where
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c) => Eq (Tuple3 a b c)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c) => ABIEncodableValue (Tuple3 a b c) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c) => ABIDecodableValue (Tuple3 a b c) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry3 :: forall a b c d. (a -> b -> c -> d) -> Tuple3 a b c -> d
 uncurry3 fun (Tuple3 a b c) = fun a b c
@@ -146,12 +128,6 @@ instance (Show a, Show b, Show c, Show d) => Show (Tuple4 a b c d) where
 
 derive instance (Eq a, Eq b, Eq c, Eq d) => Eq (Tuple4 a b c d)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d) => ABIEncodableValue (Tuple4 a b c d) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d) => ABIDecodableValue (Tuple4 a b c d) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry4 :: forall a b c d e. (a -> b -> c -> d -> e) -> Tuple4 a b c d -> e
 uncurry4 fun (Tuple4 a b c d) = fun a b c d
 
@@ -167,12 +143,6 @@ instance (Show a, Show b, Show c, Show d, Show e) => Show (Tuple5 a b c d e) whe
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (Tuple5 a b c d e)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e) => ABIEncodableValue (Tuple5 a b c d e) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e) => ABIDecodableValue (Tuple5 a b c d e) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry5 :: forall a b c d e f. (a -> b -> c -> d -> e -> f) -> Tuple5 a b c d e -> f
 uncurry5 fun (Tuple5 a b c d e) = fun a b c d e
@@ -190,12 +160,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f) => Show (Tuple6 a b c 
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (Tuple6 a b c d e f)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f) => ABIEncodableValue (Tuple6 a b c d e f) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f) => ABIDecodableValue (Tuple6 a b c d e f) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry6 :: forall a b c d e f g. (a -> b -> c -> d -> e -> f -> g) -> Tuple6 a b c d e f -> g
 uncurry6 fun (Tuple6 a b c d e f) = fun a b c d e f
 
@@ -211,12 +175,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g) => Show (Tuple
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (Tuple7 a b c d e f g)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g) => ABIEncodableValue (Tuple7 a b c d e f g) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g) => ABIDecodableValue (Tuple7 a b c d e f g) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry7 :: forall a b c d e f g h. (a -> b -> c -> d -> e -> f -> g -> h) -> Tuple7 a b c d e f g -> h
 uncurry7 fun (Tuple7 a b c d e f g) = fun a b c d e f g
@@ -234,12 +192,6 @@ derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => Eq (Tuple8 a
 instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h) => Show (Tuple8 a b c d e f g h) where
   show = genericShow
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h) => ABIEncodableValue (Tuple8 a b c d e f g h) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h) => ABIDecodableValue (Tuple8 a b c d e f g h) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry8 :: forall a b c d e f g h i. (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Tuple8 a b c d e f g h -> i
 uncurry8 fun (Tuple8 a b c d e f g h) = fun a b c d e f g h
 
@@ -255,12 +207,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => Eq (Tuple9 a b c d e f g h i)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i) => ABIEncodableValue (Tuple9 a b c d e f g h i) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i) => ABIDecodableValue (Tuple9 a b c d e f g h i) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry9 :: forall a b c d e f g h i j. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j) -> Tuple9 a b c d e f g h i -> j
 uncurry9 fun (Tuple9 a b c d e f g h i) = fun a b c d e f g h i
@@ -278,12 +224,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq (Tuple10 a b c d e f g h i j)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j) => ABIEncodableValue (Tuple10 a b c d e f g h i j) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j) => ABIDecodableValue (Tuple10 a b c d e f g h i j) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry10 :: forall a b c d e f g h i j k. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k) -> Tuple10 a b c d e f g h i j -> k
 uncurry10 fun (Tuple10 a b c d e f g h i j) = fun a b c d e f g h i j
 
@@ -299,12 +239,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) => Eq (Tuple11 a b c d e f g h i j k)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k) => ABIEncodableValue (Tuple11 a b c d e f g h i j k) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k) => ABIDecodableValue (Tuple11 a b c d e f g h i j k) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry11 :: forall a b c d e f g h i j k l. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l) -> Tuple11 a b c d e f g h i j k -> l
 uncurry11 fun (Tuple11 a b c d e f g h i j k) = fun a b c d e f g h i j k
@@ -322,12 +256,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l) => Eq (Tuple12 a b c d e f g h i j k l)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k, ABIEncodableValue l) => ABIEncodableValue (Tuple12 a b c d e f g h i j k l) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k, ABIDecodableValue l) => ABIDecodableValue (Tuple12 a b c d e f g h i j k l) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry12 :: forall a b c d e f g h i j k l m. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m) -> Tuple12 a b c d e f g h i j k l -> m
 uncurry12 fun (Tuple12 a b c d e f g h i j k l) = fun a b c d e f g h i j k l
 
@@ -343,12 +271,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m) => Eq (Tuple13 a b c d e f g h i j k l m)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k, ABIEncodableValue l, ABIEncodableValue m) => ABIEncodableValue (Tuple13 a b c d e f g h i j k l m) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k, ABIDecodableValue l, ABIDecodableValue m) => ABIDecodableValue (Tuple13 a b c d e f g h i j k l m) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry13 :: forall a b c d e f g h i j k l m n. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n) -> Tuple13 a b c d e f g h i j k l m -> n
 uncurry13 fun (Tuple13 a b c d e f g h i j k l m) = fun a b c d e f g h i j k l m
@@ -366,12 +288,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) => Eq (Tuple14 a b c d e f g h i j k l m n)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k, ABIEncodableValue l, ABIEncodableValue m, ABIEncodableValue n) => ABIEncodableValue (Tuple14 a b c d e f g h i j k l m n) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k, ABIDecodableValue l, ABIDecodableValue m, ABIDecodableValue n) => ABIDecodableValue (Tuple14 a b c d e f g h i j k l m n) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry14 :: forall a b c d e f g h i j k l m n o. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o) -> Tuple14 a b c d e f g h i j k l m n -> o
 uncurry14 fun (Tuple14 a b c d e f g h i j k l m n) = fun a b c d e f g h i j k l m n
 
@@ -388,12 +304,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o) => Eq (Tuple15 a b c d e f g h i j k l m n o)
 
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k, ABIEncodableValue l, ABIEncodableValue m, ABIEncodableValue n, ABIEncodableValue o) => ABIEncodableValue (Tuple15 a b c d e f g h i j k l m n o) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k, ABIDecodableValue l, ABIDecodableValue m, ABIDecodableValue n, ABIDecodableValue o) => ABIDecodableValue (Tuple15 a b c d e f g h i j k l m n o) where
-  abiValueParser = to <$> gABIDecode
-
 uncurry15 :: forall a b c d e f g h i j k l m n o p. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p) -> Tuple15 a b c d e f g h i j k l m n o -> p
 uncurry15 fun (Tuple15 a b c d e f g h i j k l m n o) = fun a b c d e f g h i j k l m n o
 
@@ -409,12 +319,6 @@ instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i
   show = genericShow
 
 derive instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k, Eq l, Eq m, Eq n, Eq o, Eq p) => Eq (Tuple16 a b c d e f g h i j k l m n o p)
-
-instance (ABIEncodableValue a, ABIEncodableValue b, ABIEncodableValue c, ABIEncodableValue d, ABIEncodableValue e, ABIEncodableValue f, ABIEncodableValue g, ABIEncodableValue h, ABIEncodableValue i, ABIEncodableValue j, ABIEncodableValue k, ABIEncodableValue l, ABIEncodableValue m, ABIEncodableValue n, ABIEncodableValue o, ABIEncodableValue p) => ABIEncodableValue (Tuple16 a b c d e f g h i j k l m n o p) where
-  encodeABIValue = abiEncode
-
-instance (ABIDecodableValue a, ABIDecodableValue b, ABIDecodableValue c, ABIDecodableValue d, ABIDecodableValue e, ABIDecodableValue f, ABIDecodableValue g, ABIDecodableValue h, ABIDecodableValue i, ABIDecodableValue j, ABIDecodableValue k, ABIDecodableValue l, ABIDecodableValue m, ABIDecodableValue n, ABIDecodableValue o, ABIDecodableValue p) => ABIDecodableValue (Tuple16 a b c d e f g h i j k l m n o p) where
-  abiValueParser = to <$> gABIDecode
 
 uncurry16 :: forall a b c d e f g h i j k l m n o p q. (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q) -> Tuple16 a b c d e f g h i j k l m n o p -> q
 uncurry16 fun (Tuple16 a b c d e f g h i j k l m n o p) = fun a b c d e f g h i j k l m n o p

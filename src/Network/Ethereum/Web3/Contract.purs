@@ -25,9 +25,10 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GRecordFieldsIso, class GenericABIDecode, class GenericABIEncode, fromRecord)
+import Network.Ethereum.Web3.Solidity (class ABIDecodableValue, class ABIEncodableValue, class DecodeEvent, class GRecordFieldsIso, class GenericABIDecode, class GenericABIEncode, class ToRecordFields, fromRecord)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (abiDecode, abiEncode)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert)
+import Parsing (ParseError)
 import Type.Proxy (Proxy(..))
 
 class EventFilter :: forall k. k -> Constraint
@@ -83,17 +84,16 @@ class CallMethod (selector :: Symbol) a b where
     -> Web3 (Either CallError b)
 
 -- ^ `Web3` wrapped result
-instance (Generic a rep, GenericABIEncode rep) => TxMethod s a where
+instance ABIEncodableValue a => TxMethod s a where
   sendTx = _sendTransaction
 
-instance (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
+instance (ABIEncodableValue a, ABIDecodableValue b) => CallMethod s a b where
   call = _call
 
 _sendTransaction
   :: forall a u rep selector
    . IsSymbol selector
-  => Generic a rep
-  => GenericABIEncode rep
+  => ABIEncodableValue a
   => TokenUnit (Value (u ETHER))
   => TransactionOptions u
   -> Tagged selector a
@@ -111,10 +111,8 @@ _sendTransaction txOptions dat = do
 _call
   :: forall a arep b brep selector
    . IsSymbol selector
-  => Generic a arep
-  => GenericABIEncode arep
-  => Generic b brep
-  => GenericABIDecode brep
+  => ABIEncodableValue a
+  => ABIDecodableValue b
   => TransactionOptions NoPay
   -> ChainCursor
   -> Tagged selector a
@@ -143,8 +141,7 @@ _call txOptions cursor dat = do
 
 deployContract
   :: forall a rep t
-   . Generic a rep
-  => GenericABIEncode rep
+   . ABIEncodableValue a
   => TransactionOptions NoPay
   -> HexString
   -> Tagged t a
@@ -161,9 +158,8 @@ deployContract txOptions deployByteCode args =
 mkDataField
   :: forall selector a rep fields
    . IsSymbol selector
-  => Generic a rep
-  => GRecordFieldsIso rep () fields
-  => GenericABIEncode rep
+  => ToRecordFields a () fields
+  => ABIEncodableValue a
   => Show a
   => Show (Record fields)
   => Proxy (Tagged selector a)
