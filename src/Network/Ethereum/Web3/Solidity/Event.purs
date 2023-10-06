@@ -54,11 +54,16 @@ else instance ABIDecode a => GArrayParser (Argument a) where
       res <- lmap (ParserError <<< show) <<< abiDecode $ head
       pure $ Tuple (Argument res) tail
 
-else instance (ArrayParser as, ArrayParser bs) => GArrayParser (Product as bs) where
+else instance (GArrayParser as, GArrayParser bs) => GArrayParser (Product as bs) where
   gArrayParser hxs = do
-    Tuple a rest <- arrayParser hxs
-    Tuple b rest' <- arrayParser rest
+    Tuple a rest <- gArrayParser hxs
+    Tuple b rest' <- gArrayParser rest
     pure $ Tuple (Product a b) rest'
+
+else instance GArrayParser as => GArrayParser (Constructor name as) where
+  gArrayParser hxs = do
+    Tuple a rest <- gArrayParser hxs
+    pure $ Tuple (Constructor a) rest
 
 else instance ArrayParser as => GArrayParser (Constructor name as) where
   gArrayParser hxs = do
