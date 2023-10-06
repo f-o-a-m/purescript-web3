@@ -16,7 +16,6 @@ import Control.Monad.Error.Class (throwError)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, untagged)
-import Data.Generic.Rep (class Generic, Constructor)
 import Data.Lens ((.~), (%~), (?~))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
@@ -25,7 +24,8 @@ import Network.Ethereum.Core.Keccak256 (toSelector)
 import Network.Ethereum.Types (Address, HexString)
 import Network.Ethereum.Web3.Api (eth_call, eth_sendTransaction)
 import Network.Ethereum.Web3.Contract.Events (MultiFilterStreamState(..), event', FilterStreamState, ChangeReceipt, EventHandler)
-import Network.Ethereum.Web3.Solidity (class DecodeEvent, class GenericABIDecode, class GenericABIEncode, class RecordFieldsIso, genericABIEncode, genericFromData, genericFromRecordFields)
+import Network.Ethereum.Web3.Solidity (class ABIDecode, class ABIEncode, class DecodeEvent, class RecordFieldsIso, fromRecord)
+import Network.Ethereum.Web3.Solidity.AbiEncoding (abiDecode, abiEncode)
 import Network.Ethereum.Web3.Types (class TokenUnit, CallError(..), ChainCursor, ETHER, Filter, NoPay, TransactionOptions, Value, Web3, _data, _value, convert)
 import Type.Proxy (Proxy(..))
 
@@ -82,17 +82,16 @@ class CallMethod (selector :: Symbol) a b where
     -> Web3 (Either CallError b)
 
 -- ^ `Web3` wrapped result
-instance (Generic a rep, GenericABIEncode rep) => TxMethod s a where
+instance ABIEncode a => TxMethod s a where
   sendTx = _sendTransaction
 
-instance (Generic a arep, GenericABIEncode arep, Generic b brep, GenericABIDecode brep) => CallMethod s a b where
+instance (ABIEncode a, ABIDecode b) => CallMethod s a b where
   call = _call
 
 _sendTransaction
-  :: forall a u rep selector
+  :: forall a u selector
    . IsSymbol selector
-  => Generic a rep
-  => GenericABIEncode rep
+  => ABIEncode a
   => TokenUnit (Value (u ETHER))
   => TransactionOptions u
   -> Tagged selector a
@@ -100,7 +99,7 @@ _sendTransaction
 _sendTransaction txOptions dat = do
   let
     sel = toSelector <<< reflectSymbol $ (Proxy :: Proxy selector)
-  eth_sendTransaction $ txdata $ sel <> (genericABIEncode <<< untagged $ dat)
+  eth_sendTransaction $ txdata $ sel <> (abiEncode <<< untagged $ dat)
   where
   txdata d =
     txOptions # _data .~ Just d
@@ -108,12 +107,10 @@ _sendTransaction txOptions dat = do
           %~ map convert
 
 _call
-  :: forall a arep b brep selector
+  :: forall a b selector
    . IsSymbol selector
-  => Generic a arep
-  => GenericABIEncode arep
-  => Generic b brep
-  => GenericABIDecode brep
+  => ABIEncode a
+  => ABIDecode b
   => TransactionOptions NoPay
   -> ChainCursor
   -> Tagged selector a
@@ -124,9 +121,9 @@ _call txOptions cursor dat = do
 
     sel = toSelector sig
 
-    fullData = sel <> (genericABIEncode <<< untagged $ dat)
-  res <- eth_call (txdata $ sel <> (genericABIEncode <<< untagged $ dat)) cursor
-  case genericFromData res of
+    fullData = sel <> (abiEncode <<< untagged $ dat)
+  res <- eth_call (txdata $ sel <> (abiEncode <<< untagged $ dat)) cursor
+  case abiDecode res of
     Left err ->
       if res == mempty then
         pure <<< Left
@@ -141,9 +138,8 @@ _call txOptions cursor dat = do
   txdata d = txOptions # _data .~ Just d
 
 deployContract
-  :: forall a rep t
-   . Generic a rep
-  => GenericABIEncode rep
+  :: forall a t
+   . ABIEncode a
   => TransactionOptions NoPay
   -> HexString
   -> Tagged t a
@@ -151,18 +147,17 @@ deployContract
 deployContract txOptions deployByteCode args =
   let
     txdata =
-      txOptions # _data ?~ deployByteCode <> genericABIEncode (untagged args)
+      txOptions # _data ?~ deployByteCode <> abiEncode (untagged args)
         # _value
             %~ map convert
   in
     eth_sendTransaction txdata
 
 mkDataField
-  :: forall selector a name args fields l
+  :: forall selector a fields
    . IsSymbol selector
-  => Generic a (Constructor name args)
-  => RecordFieldsIso args fields l
-  => GenericABIEncode (Constructor name args)
+  => RecordFieldsIso a () fields
+  => ABIEncode a
   => Proxy (Tagged selector a)
   -> Record fields
   -> HexString
@@ -172,6 +167,6 @@ mkDataField _ r =
 
     sel = toSelector sig
 
-    args = genericFromRecordFields r :: a
+    args = fromRecord r :: a
   in
-    sel <> (genericABIEncode args)
+    sel <> abiEncode args

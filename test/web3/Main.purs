@@ -8,6 +8,7 @@ import Data.Newtype (un)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console as Console
 import Network.Ethereum.Web3.Types.Provider (httpProvider)
 import Test.Spec (Spec, SpecT, mapSpecTree)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -26,6 +27,7 @@ main :: Effect Unit
 main =
   launchAff_
     do
+      Console.log "Running tests..."
       let
         cfg = defaultConfig { timeout = Just (Milliseconds $ 120.0 * 1000.0) }
       p <- liftEffect $ httpProvider "http://localhost:8545"
