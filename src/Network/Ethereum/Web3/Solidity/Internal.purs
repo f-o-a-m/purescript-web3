@@ -32,7 +32,7 @@ instance GRecordFieldsIso NoArguments from from where
   gToRecord _ = identity
   gFromRecord _ = NoArguments
 
-else instance (IsSymbol name, GRecordFieldsIso a from to, Show (Record to), Show a) => GRecordFieldsIso (Constructor name a) from to where
+else instance (IsSymbol name, GRecordFieldsIso a from to, Show (Record to)) => GRecordFieldsIso (Constructor name a) from to where
   gToRecord (Constructor a) = gToRecord a
   gFromRecord r = Constructor (gFromRecord r)
 

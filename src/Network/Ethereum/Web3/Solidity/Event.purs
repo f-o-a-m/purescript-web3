@@ -65,11 +65,6 @@ else instance GArrayParser as => GArrayParser (Constructor name as) where
     Tuple a rest <- gArrayParser hxs
     pure $ Tuple (Constructor a) rest
 
-else instance ArrayParser as => GArrayParser (Constructor name as) where
-  gArrayParser hxs = do
-    Tuple a rest <- arrayParser hxs
-    pure $ Tuple (Constructor a) rest
-
 --------------------------------------------------------------------------------
 -- | Event Parsers
 --------------------------------------------------------------------------------
