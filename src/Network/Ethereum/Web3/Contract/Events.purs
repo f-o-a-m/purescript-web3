@@ -191,7 +191,7 @@ filterProducer cs@(MultiFilterStreamState currentState@{ windowSize, currentBloc
           nextAvailableBlock = over BlockNumber (_ - fromInt currentState.trailBy) chainHead
         in
           { nextEndBlock: min targetEnd nextAvailableBlock, finalBlock: Just targetEnd }
-    isFinished = maybe false (\final -> currentBlock >= final) finalBlock
+    isFinished = maybe false (\final -> currentBlock > final) finalBlock
   if isFinished then pure cs
   else if chainHead < currentBlock then waitForMoreBlocks
   else continueTo nextEndBlock
@@ -210,8 +210,7 @@ filterProducer cs@(MultiFilterStreamState currentState@{ windowSize, currentBloc
       modify :: forall (k :: Type) (e :: k). Filter e -> Filter e
       modify fltr =
         fltr # _fromBlock .~ BN currentBlock
-          # _toBlock
-              .~ BN endBlock
+          # _toBlock .~ BN endBlock
 
       fs' = hmap (ModifyFilter modify) currentFilters
     yieldT fs'
