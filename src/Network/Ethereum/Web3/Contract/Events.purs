@@ -32,7 +32,7 @@ import Data.Array (sort)
 import Data.Either (Either(..))
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Lens ((.~), (^.))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (over)
 import Data.Symbol (class IsSymbol)
 import Data.Traversable (for_, traverse)
@@ -178,48 +178,46 @@ filterProducer
   => MapRecordWithIndex fsList (ConstMapping ModifyFilter) fs fs
   => MultiFilterStreamState fs
   -> Transducer Void (Record fs) Web3 (MultiFilterStreamState fs)
-filterProducer cs@(MultiFilterStreamState currentState) = do
-  let -- hang out until the chain makes progress
-    waitForMoreBlocks = do
-      lift $ liftAff $ delay (Milliseconds 3000.0)
-      filterProducer cs
-
-    -- resume the filter production
-    continueTo maxEndBlock = do
-      let
-        endBlock = newTo maxEndBlock currentState.currentBlock currentState.windowSize
-
-        modify :: forall (k :: Type) (e :: k). Filter e -> Filter e
-        modify fltr =
-          fltr # _fromBlock .~ BN currentState.currentBlock
-            # _toBlock
-                .~ BN endBlock
-
-        fs' = hmap (ModifyFilter modify) currentState.filters
-      yieldT fs'
-      filterProducer $ MultiFilterStreamState currentState { currentBlock = succ endBlock }
+filterProducer cs@(MultiFilterStreamState currentState@{ windowSize, currentBlock, filters: currentFilters }) = do
   chainHead <- lift eth_blockNumber
-  -- if the chain head is less than the current block we want to process
-  -- then wait until the chain progresses
-  if chainHead < currentState.currentBlock then
-    waitForMoreBlocks
-  -- otherwise try make progress
-  else case hfoldlWithIndex MultiFilterMinToBlock Latest currentState.filters of
-    -- consume as many as possible up to the chain head
-    Latest -> continueTo $ over BlockNumber (_ - fromInt currentState.trailBy) chainHead
-    -- if the original fitler ends at a specific block, consume as many as possible up to that block
-    -- or terminate if we're already past it
-    BN targetEnd ->
-      let
-        targetEnd' = min targetEnd $ over BlockNumber (_ - fromInt currentState.trailBy) chainHead
-      in
-        if currentState.currentBlock <= targetEnd' then
-          continueTo targetEnd'
-        else
-          pure cs
+  let
+    { nextEndBlock, finalBlock } = case hfoldlWithIndex MultiFilterMinToBlock Latest currentFilters of
+      Latest ->
+        { nextEndBlock: over BlockNumber (_ - fromInt currentState.trailBy) chainHead
+        , finalBlock: Nothing
+        }
+      BN targetEnd ->
+        let
+          nextAvailableBlock = over BlockNumber (_ - fromInt currentState.trailBy) chainHead
+        in
+          { nextEndBlock: min targetEnd nextAvailableBlock, finalBlock: Just targetEnd }
+    isFinished = maybe false (\final -> currentBlock >= final) finalBlock
+  if isFinished then pure cs
+  else if chainHead < currentBlock then waitForMoreBlocks
+  else continueTo nextEndBlock
+
   where
-  newTo :: BlockNumber -> BlockNumber -> Int -> BlockNumber
-  newTo upper current window = min upper $ over BlockNumber (_ + fromInt window) current
+
+  waitForMoreBlocks = do
+    lift $ liftAff $ delay (Milliseconds 3000.0)
+    filterProducer cs
+
+  -- resume the filter production
+  continueTo maxEndBlock = do
+    let
+      endBlock = min maxEndBlock $ over BlockNumber (_ + fromInt windowSize) currentBlock
+
+      modify :: forall (k :: Type) (e :: k). Filter e -> Filter e
+      modify fltr =
+        fltr # _fromBlock .~ BN currentBlock
+          # _toBlock
+              .~ BN endBlock
+
+      fs' = hmap (ModifyFilter modify) currentFilters
+    yieldT fs'
+    filterProducer $ MultiFilterStreamState currentState
+      { currentBlock = succ endBlock
+      }
 
   succ :: BlockNumber -> BlockNumber
   succ = over BlockNumber (_ + one)
@@ -456,6 +454,7 @@ stagger
   -> Transducer i o m a
 stagger osT =
   let
-    trickle = awaitForever \os -> for_ os yieldT
+    trickle = awaitForever \os ->
+      for_ os yieldT
   in
     fst <$> (osT =>= trickle)

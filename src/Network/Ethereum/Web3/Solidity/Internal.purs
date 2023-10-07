@@ -12,10 +12,10 @@ import Prelude
 
 import Data.Functor.Tagged (Tagged, untagged, tagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, to)
-import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Data.Identity (Identity(..))
 import Data.Newtype (un)
 import Data.Symbol (class IsSymbol)
+import Network.Ethereum.Web3.Solidity.Vector (Vector)
 import Prim.Row as Row
 import Record (disjointUnion)
 import Record as Record
@@ -24,7 +24,7 @@ import Record.Builder as Builder
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
-class GRecordFieldsIso rep from to | rep -> to, to rep -> from where
+class GRecordFieldsIso rep from to | from rep -> to, to rep -> from where
   gToRecord :: rep -> Builder { | from } { | to }
   gFromRecord :: Record to -> rep
 
@@ -56,8 +56,8 @@ else instance
 
   gFromRecord r =
     let
-      as = gFromRecord (unsafeCoerce r)
-      bs = gFromRecord (unsafeCoerce r)
+      as = gFromRecord (unsafeCoerce r :: Record ato)
+      bs = gFromRecord (unsafeCoerce r :: Record bto)
     in
       Product as bs
 
@@ -138,4 +138,5 @@ toRecord
    . RecordFieldsIso a () fields
   => a
   -> Record fields
-toRecord a = Builder.buildFromScratch $ _toRecord a
+toRecord a =
+  Builder.buildFromScratch $ _toRecord a
