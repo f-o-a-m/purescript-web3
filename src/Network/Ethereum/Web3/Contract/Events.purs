@@ -192,8 +192,7 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
         modify :: forall (k :: Type) (e :: k). Filter e -> Filter e
         modify fltr =
           fltr # _fromBlock .~ BN currentState.currentBlock
-            # _toBlock
-                .~ BN endBlock
+               # _toBlock .~ BN endBlock
 
         fs' = hmap (ModifyFilter modify) currentState.filters
       yieldT fs'
@@ -213,7 +212,7 @@ filterProducer cs@(MultiFilterStreamState currentState) = do
       let
         targetEnd' = min targetEnd $ over BlockNumber (_ - fromInt currentState.trailBy) chainHead
       in
-        if currentState.currentBlock <= targetEnd' then
+        if currentState.currentBlock < targetEnd' then
           continueTo targetEnd'
         else
           pure cs
