@@ -80,7 +80,7 @@ parseChange
 parseChange (Change change) anonymous = do
   topics <-
     if anonymous then pure change.topics
-    else note (ParserError "no topics found") (_.tail <$> uncons change.topics)
+    else note (ParserError "No topics found") (_.tail <$> uncons change.topics)
   Tuple a _ <- arrayParser topics
   b <- lmap (ParserError <<< show) $ abiDecode change.data
   pure $ Event a b
