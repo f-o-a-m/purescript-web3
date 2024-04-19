@@ -11,11 +11,10 @@ module Network.Ethereum.Web3.Solidity.Event
 
 import Prelude
 
-import Control.Error.Util (note)
 import Control.Monad.Error.Class (throwError)
 import Data.Array (uncons)
 import Data.Bifunctor (lmap)
-import Data.Either (Either(..))
+import Data.Either (Either(..), note)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), to)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap)

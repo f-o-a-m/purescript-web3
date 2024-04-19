@@ -10,7 +10,6 @@
   , "coroutines"
   , "effect"
   , "either"
-  , "errors"
   , "eth-core"
   , "exceptions"
   , "foldable-traversable"

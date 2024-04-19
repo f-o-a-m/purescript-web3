@@ -45,7 +45,6 @@ import Prelude
 
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative, class Plus, (<|>))
-import Control.Error.Util (hush)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Fork.Class (class MonadBracket, class MonadFork, class MonadKill, bracket, fork, join, kill, suspend, uninterruptible, never) as MFork
@@ -53,7 +52,7 @@ import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, li
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel.Class (class Parallel, parallel, sequential)
 import Data.Argonaut as A
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Lens (Lens', Lens, lens)
 import Data.Maybe (Maybe(..), maybe)

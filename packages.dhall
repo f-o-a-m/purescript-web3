@@ -1,12 +1,67 @@
 let upstream =
-      https://raw.githubusercontent.com/f-o-a-m/package-sets/09b71674a327f7601276846c1afb537342bb57ff/purs-0.15.7-web3.dhall
-        sha256:7e32f0c65a7b5d334ee98d7fda1d7d3a557b6b478421f545694bd8e1cd4d16ac
-    with eth-core.version = "v10.0.0" 
-    with js-bigints.version = "v2.2.1"
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.7-20230306/packages.dhall
+        sha256:0757626c7422b8b5b5b1d0df3d3628e5deac755d7f89c433a9bf89009787dcbd
+      with js-bigints.version = "v2.2.0"
 
+let eth-core-deps =
+      https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/master/packages.dhall
+        sha256:4f447424877e5d16a78740ab32b371c15ff33728259cbaf0b181ad2ed84478db
 
-let overrides = {=}
+let additions =
+      { bytestrings = eth-core-deps.bytestrings
+      , coroutine-transducers = 
+        { dependencies = [
+            "console",
+            "either",
+            "foldable-traversable",
+            "freet",
+            "functors",
+            "newtype",
+            "parallel",
+            "prelude",
+            "tailrec",
+            "transformers",
+            "tuples",
+            "aff",
+            "coroutines",
+            "effect",
+            "maybe",
+            "psci-support"
+            ]
+        , repo = "https://github.com/martyall/purescript-coroutine-transducers"
+        , version = "v1.0.0"
+        }
+      , eth-core =
+        { dependencies =
+          [ "argonaut"
+          , "arrays"
+          , "bytestrings"
+          , "effect"
+          , "either"
+          , "foldable-traversable"
+          , "foreign"
+          , "functions"
+          , "gen"
+          , "integers"
+          , "js-bigints"
+          , "lists"
+          , "maybe"
+          , "newtype"
+          , "node-buffer"
+          , "nonempty"
+          , "ordered-collections"
+          , "partial"
+          , "prelude"
+          , "quotient"
+          , "simple-json"
+          , "strings"
+          , "unfoldable"
+          , "unsafe-coerce"
+          ]
+        , repo = "https://github.com/f-o-a-m/purescript-eth-core"
+        , version = "v10.0.0"
+        }
+      , quotient = eth-core-deps.quotient
+      }
 
-let additions = {=}
-
-in  upstream // overrides // additions
+in  upstream // additions
