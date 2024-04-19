@@ -1,11 +1,10 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.7-20230306/packages.dhall
-        sha256:0757626c7422b8b5b5b1d0df3d3628e5deac755d7f89c433a9bf89009787dcbd
-      with js-bigints.version = "v2.2.0"
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.15-20240416/packages.dhall
+        sha256:ca727657c01cc31d0e79c2113b59126b9826f4b56d20a8193be3c725599fb754
 
 let eth-core-deps =
       https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/master/packages.dhall
-        sha256:4f447424877e5d16a78740ab32b371c15ff33728259cbaf0b181ad2ed84478db
+        sha256:af2751772a729d58edf7056805007934e3687b3079f8a02ac514e705aeab8c42
 
 let additions =
       { bytestrings = eth-core-deps.bytestrings
@@ -59,7 +58,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core"
-        , version = "v10.0.0"
+        , version = "v10.1.0"
         }
       , quotient = eth-core-deps.quotient
       }
