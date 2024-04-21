@@ -1,8 +1,9 @@
 module Web3Spec.Live.RPCSpec (spec) where
 
 import Prelude
-import Data.Array ((!!))
-import Data.ByteString as BS
+import Data.Array ((!!), last)
+import Node.Buffer.Immutable as B
+import Node.Encoding (Encoding(UTF8))
 import Data.Either (isRight)
 import Data.Lens ((?~), (%~))
 import Data.Maybe (Maybe(..), fromJust)
@@ -13,11 +14,9 @@ import Network.Ethereum.Core.Keccak256 (keccak256)
 import Network.Ethereum.Core.Signatures as Sig
 import Network.Ethereum.Web3 (Block(..), ChainCursor(..), Provider, TransactionReceipt(..), _from, _to, _value, convert, defaultTransactionOptions, fromMinorUnit, mkHexString, runWeb3)
 import Network.Ethereum.Web3.Api as Api
-import Node.Buffer.Class (slice)
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
-import Type.Quotient (runQuotient)
 import Web3Spec.Live.Utils (assertWeb3, pollTransactionReceipt)
 
 spec :: Provider -> SpecT Aff Unit Aff Unit
@@ -111,7 +110,7 @@ spec provider =
       signer `shouldEqual` signer'
       -- make sure that we can recover the signature in purescript natively
       let
-        rsvSignature = case signatureFromByteString <<< Hex.toByteString $ signatureHex of
+        rsvSignature = case signatureFromByteString <<< Hex.toBuffer $ signatureHex of
           Sig.Signature sig -> Sig.Signature sig { v = sig.v - 27 }
       Sig.publicToAddress (Sig.recoverSender fullHashedMessageBS rsvSignature) `shouldEqual` signer
     it "Can call eth_estimateGas" do
@@ -141,16 +140,15 @@ spec provider =
           pure $ Tuple tx tx'
       tx `shouldEqual` tx'
 
-signatureFromByteString :: BS.ByteString -> Sig.Signature
-signatureFromByteString bs =
+signatureFromByteString :: B.ImmutableBuffer -> Sig.Signature
+signatureFromByteString bfr =
   let
-    bfr = BS.unsafeThaw bs
 
-    r = Hex.fromByteString $ BS.unsafeFreeze $ slice 0 32 bfr
+    r = Hex.fromBuffer $ B.slice 0 32 bfr
 
-    s = Hex.fromByteString $ BS.unsafeFreeze $ slice 32 64 bfr
+    s = Hex.fromBuffer $ B.slice 32 64 bfr
 
-    v = runQuotient $ unsafePartial fromJust $ BS.last bs
+    v = unsafePartial fromJust $ last $ B.toArray bfr
   in
     Sig.Signature { r, s, v }
 
@@ -158,11 +156,13 @@ makeRidiculousEthereumMessage :: Hex.HexString -> Hex.HexString
 makeRidiculousEthereumMessage s =
   let
     prefix =
-      Hex.fromByteString
-        $ BS.toUTF8
-        $ "\x19" -- NOTE: 19 in hexadecimal is 25
+      Hex.fromBuffer
+        $ B.fromString
+            ( "\x19" -- NOTE: 19 in hexadecimal is 25
 
-            <> "Ethereum Signed Message:\n" -- NOTE: length of this string is 25
-            <> show (Hex.numberOfBytes s)
+                <> "Ethereum Signed Message:\n" -- NOTE: length of this string is 25
+                <> show (Hex.numberOfBytes s)
+            )
+            UTF8
   in
     prefix <> s

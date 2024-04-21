@@ -3,15 +3,16 @@ module Network.Ethereum.Web3.Solidity.Bytes
   , unBytesN
   , proxyBytesN
   , update
-  , fromByteString
+  , fromBuffer
   , generator
   ) where
 
 import Prelude
 
 import Control.Monad.Gen (class MonadGen)
-import Data.ByteString (empty, ByteString, Encoding(Hex))
-import Data.ByteString as BS
+import Node.Buffer.Immutable (ImmutableBuffer)
+import Node.Buffer.Immutable as B
+import Node.Encoding (Encoding(Hex))
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Reflectable (class Reflectable, reflectType)
 import Network.Ethereum.Core.HexString as Hex
@@ -24,32 +25,32 @@ import Type.Proxy (Proxy(..))
 --------------------------------------------------------------------------------
 -- Represents a statically sized bytestring of size `n` bytes.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-newtype BytesN (n :: Int) = BytesN ByteString
+newtype BytesN (n :: Int) = BytesN ImmutableBuffer
 
 derive newtype instance eqBytesN :: Eq (BytesN n)
 instance showBytesN :: Show (BytesN n) where
-  show (BytesN bs) = show <<< unsafePartial fromJust <<< mkHexString $ BS.toString bs Hex
+  show (BytesN bs) = show <<< unsafePartial fromJust <<< mkHexString $ B.toString Hex bs
 
 generator :: forall n m. Reflectable n Int => MonadGen m => Proxy n -> m (BytesN n)
 generator p = do
   bs <- Hex.generator (reflectType p)
-  pure $ BytesN $ Hex.toByteString bs
+  pure $ BytesN $ Hex.toBuffer bs
 
 -- | Access the underlying raw bytestring
-unBytesN :: forall n. BytesN n -> ByteString
+unBytesN :: forall n. BytesN n -> ImmutableBuffer
 unBytesN (BytesN bs) = bs
 
 proxyBytesN :: forall n. BytesN n
-proxyBytesN = BytesN empty
+proxyBytesN = BytesN $ B.fromArray []
 
-update :: forall n. BytesN n -> ByteString -> BytesN n
+update :: forall n. BytesN n -> ImmutableBuffer -> BytesN n
 update _ = BytesN
 
 -- | Attempt to coerce a bytestring into one of the appropriate size.
 -- | See module [Network.Ethereum.Web3.Solidity.Sizes](/Network.Ethereum.Web3.Solidity.Sizes) for some predefined sizes.
-fromByteString :: forall proxy n. Reflectable n Int => proxy n -> ByteString -> Maybe (BytesN n)
-fromByteString _ bs =
-  if not $ BS.length bs <= reflectType (Proxy :: Proxy n) then
+fromBuffer :: forall proxy n. Reflectable n Int => proxy n -> ImmutableBuffer -> Maybe (BytesN n)
+fromBuffer _ bs =
+  if not $ B.size bs <= reflectType (Proxy :: Proxy n) then
     Nothing
   else
     Just $ BytesN bs

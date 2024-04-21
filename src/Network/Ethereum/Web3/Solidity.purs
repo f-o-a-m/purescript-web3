@@ -8,13 +8,13 @@ module Network.Ethereum.Web3.Solidity
   , module Network.Ethereum.Web3.Solidity.AbiEncoding
   , module Network.Ethereum.Web3.Solidity.Event
   , module Network.Ethereum.Types
-  , module Data.ByteString
+  , module Node.Buffer.Immutable
   ) where
 
-import Data.ByteString (ByteString)
+import Node.Buffer.Immutable (ImmutableBuffer)
 import Network.Ethereum.Types (BigNumber, Address)
 import Network.Ethereum.Web3.Solidity.AbiEncoding (class ABIDecode, class ABIEncode, class EncodingType, abiDecode, isDynamic, abiEncode)
-import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromByteString)
+import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, proxyBytesN, update, fromBuffer)
 import Network.Ethereum.Web3.Solidity.Event (class DecodeEvent, decodeEvent, class IndexedEvent, isAnonymous)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
 import Network.Ethereum.Web3.Solidity.Internal (class RecordFieldsIso, fromRecord, toRecord)

@@ -4,7 +4,6 @@
   , "argonaut"
   , "arrays"
   , "bifunctors"
-  , "bytestrings"
   , "control"
   , "coroutine-transducers"
   , "coroutines"
@@ -18,8 +17,10 @@
   , "fork"
   , "gen"
   , "heterogeneous"
+  , "identity"
   , "maybe"
   , "newtype"
+  , "node-buffer"
   , "parallel"
   , "parsing"
   , "partial"
@@ -37,7 +38,6 @@
   , "unfoldable"
   , "unsafe-coerce"
   , "variant"
-  , "identity"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

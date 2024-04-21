@@ -11,11 +11,11 @@ import Network.Ethereum.Web3.Contract.Events (event', EventHandler, MultiFilterS
 import Network.Ethereum.Web3.Solidity
   ( Address
   , BigNumber
-  , ByteString
+  , ImmutableBuffer
   , BytesN
   , UIntN
   , Vector
-  , fromByteString
+  , fromBuffer
   , abiDecode
   , intNFromBigNumber
   , nilVector

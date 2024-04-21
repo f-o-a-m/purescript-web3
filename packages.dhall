@@ -7,8 +7,7 @@ let eth-core-deps =
         sha256:af2751772a729d58edf7056805007934e3687b3079f8a02ac514e705aeab8c42
 
 let additions =
-      { bytestrings = eth-core-deps.bytestrings
-      , coroutine-transducers = 
+      { coroutine-transducers = 
         { dependencies = [
             "console",
             "either",
@@ -34,7 +33,6 @@ let additions =
         { dependencies =
           [ "argonaut"
           , "arrays"
-          , "bytestrings"
           , "effect"
           , "either"
           , "foldable-traversable"
@@ -51,16 +49,14 @@ let additions =
           , "ordered-collections"
           , "partial"
           , "prelude"
-          , "quotient"
           , "simple-json"
           , "strings"
           , "unfoldable"
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core"
-        , version = "v10.1.0"
+        , version = "remove-bs-dep"
         }
-      , quotient = eth-core-deps.quotient
       }
 
 in  upstream // additions

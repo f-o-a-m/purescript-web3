@@ -16,9 +16,10 @@ module Network.Ethereum.Web3.Solidity.AbiEncoding
 
 import Prelude
 
+import Node.Encoding (Encoding(UTF8))
 import Data.Array (foldMap, foldl, length, sortBy, (:))
-import Data.ByteString (ByteString)
-import Data.ByteString (toUTF8, fromUTF8, length) as BS
+import Node.Buffer.Immutable (ImmutableBuffer)
+import Node.Buffer.Immutable as B
 import Data.Either (Either)
 import Data.Functor.Tagged (Tagged, tagged, untagged)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), from, repOf, to)
@@ -32,7 +33,7 @@ import Data.Traversable (foldMapDefaultR)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicateA)
 import Network.Ethereum.Core.BigNumber (fromString, fromTwosComplement, toString, toTwosComplement, unsafeToInt)
-import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromByteString, mkHexString, numberOfBytes, padLeft, padRight, splitAtByteOffset, toByteString, unHex)
+import Network.Ethereum.Core.HexString (HexString, PadByte(..), fromBuffer, mkHexString, numberOfBytes, padLeft, padRight, splitAtByteOffset, toBuffer, unHex)
 import Network.Ethereum.Types (Address, BigNumber, fromInt, mkAddress, unAddress)
 import Network.Ethereum.Web3.Solidity.Bytes (BytesN, unBytesN, update, proxyBytesN)
 import Network.Ethereum.Web3.Solidity.Int (IntN, unIntN, intNFromBigNumber)
@@ -67,7 +68,7 @@ else instance EncodingType (BytesN n) where
   isDynamic = const false
 else instance EncodingType a => EncodingType (Vector n a) where
   isDynamic _ = isDynamic (Proxy :: Proxy a)
-else instance EncodingType ByteString where
+else instance EncodingType ImmutableBuffer where
   isDynamic = const true
 else instance EncodingType a => EncodingType (Tagged s a) where
   isDynamic _ = isDynamic (Proxy :: Proxy a)
@@ -114,11 +115,11 @@ else instance Reflectable n Int => ABIEncode (BytesN n) where
 else instance Reflectable n Int => ABIEncode (IntN n) where
   abiEncode a = int256HexBuilder <<< unIntN $ a
 
-else instance ABIEncode ByteString where
-  abiEncode bytes = uInt256HexBuilder (fromInt $ BS.length bytes) <> bytesBuilder bytes
+else instance ABIEncode ImmutableBuffer where
+  abiEncode bytes = uInt256HexBuilder (fromInt $ B.size bytes) <> bytesBuilder bytes
 
 else instance ABIEncode String where
-  abiEncode = abiEncode <<< BS.toUTF8
+  abiEncode = abiEncode <<< \a -> B.fromString a UTF8
 
 else instance ABIEncode a => ABIEncode (Array a) where
   abiEncode l =
@@ -221,8 +222,8 @@ factorBuilder a = Endo \encoded ->
     } : map (\x -> x { order = x.order + 1 }) encoded
 
 -- | base16 encode, then utf8 encode, then pad
-bytesBuilder :: ByteString -> HexString
-bytesBuilder = padRight Zero <<< fromByteString
+bytesBuilder :: ImmutableBuffer -> HexString
+bytesBuilder = padRight Zero <<< fromBuffer
 
 -- | Encode something that is essentaially a signed integer.
 int256HexBuilder :: BigNumber -> HexString
@@ -267,13 +268,13 @@ else instance ABIDecode Address where
     maddr <- mkAddress <$> parseBytes 20
     maybe (fail "Address is 20 bytes, receieved more") pure maddr
 
-else instance ABIDecode ByteString where
+else instance ABIDecode ImmutableBuffer where
   _abiDecode = do
     len <- _abiDecode
-    toByteString <$> parseBytes len
+    toBuffer <$> parseBytes len
 
 else instance ABIDecode String where
-  _abiDecode = BS.fromUTF8 <$> _abiDecode
+  _abiDecode = B.toString UTF8 <$> _abiDecode
 
 else instance Reflectable n Int => ABIDecode (BytesN n) where
   _abiDecode = do
@@ -282,7 +283,7 @@ else instance Reflectable n Int => ABIDecode (BytesN n) where
       zeroBytes = 32 - len
     raw <- parseBytes len
     _ <- parseBytes zeroBytes
-    pure <<< update proxyBytesN <<< toByteString $ raw
+    pure <<< update proxyBytesN <<< toBuffer $ raw
 
 else instance (Reflectable n Int, ABIDecode a) => ABIDecode (Vector n a) where
   _abiDecode =
