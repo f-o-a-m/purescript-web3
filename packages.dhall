@@ -3,7 +3,7 @@ let upstream =
         sha256:ca727657c01cc31d0e79c2113b59126b9826f4b56d20a8193be3c725599fb754
 
 let eth-core-deps =
-      https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/master/packages.dhall
+      https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/aaa64b175717247f0ea6fe3c35780dea02ac8e3a/packages.dhall
         sha256:ca727657c01cc31d0e79c2113b59126b9826f4b56d20a8193be3c725599fb754
 
 let additions =
