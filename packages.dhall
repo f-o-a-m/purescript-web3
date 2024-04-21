@@ -3,30 +3,29 @@ let upstream =
         sha256:ca727657c01cc31d0e79c2113b59126b9826f4b56d20a8193be3c725599fb754
 
 let eth-core-deps =
-      https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/master/packages.dhall
-        sha256:af2751772a729d58edf7056805007934e3687b3079f8a02ac514e705aeab8c42
+      https://raw.githubusercontent.com/f-o-a-m/purescript-eth-core/aaa64b175717247f0ea6fe3c35780dea02ac8e3a/packages.dhall
+        sha256:ca727657c01cc31d0e79c2113b59126b9826f4b56d20a8193be3c725599fb754
 
 let additions =
-      { bytestrings = eth-core-deps.bytestrings
-      , coroutine-transducers = 
-        { dependencies = [
-            "console",
-            "either",
-            "foldable-traversable",
-            "freet",
-            "functors",
-            "newtype",
-            "parallel",
-            "prelude",
-            "tailrec",
-            "transformers",
-            "tuples",
-            "aff",
-            "coroutines",
-            "effect",
-            "maybe",
-            "psci-support"
-            ]
+      { coroutine-transducers =
+        { dependencies =
+          [ "console"
+          , "either"
+          , "foldable-traversable"
+          , "freet"
+          , "functors"
+          , "newtype"
+          , "parallel"
+          , "prelude"
+          , "tailrec"
+          , "transformers"
+          , "tuples"
+          , "aff"
+          , "coroutines"
+          , "effect"
+          , "maybe"
+          , "psci-support"
+          ]
         , repo = "https://github.com/martyall/purescript-coroutine-transducers"
         , version = "v1.0.0"
         }
@@ -34,7 +33,6 @@ let additions =
         { dependencies =
           [ "argonaut"
           , "arrays"
-          , "bytestrings"
           , "effect"
           , "either"
           , "foldable-traversable"
@@ -51,7 +49,6 @@ let additions =
           , "ordered-collections"
           , "partial"
           , "prelude"
-          , "quotient"
           , "simple-json"
           , "strings"
           , "unfoldable"
@@ -60,7 +57,6 @@ let additions =
         , repo = "https://github.com/f-o-a-m/purescript-eth-core"
         , version = "v10.1.0"
         }
-      , quotient = eth-core-deps.quotient
       }
 
 in  upstream // additions

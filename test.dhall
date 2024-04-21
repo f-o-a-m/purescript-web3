@@ -13,7 +13,6 @@ in    conf
             , "nonempty"
             , "quickcheck"
             , "quickcheck-laws"
-            , "quotient"
             , "spec"
             , "unsafe-coerce"
             ]

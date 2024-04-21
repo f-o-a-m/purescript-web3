@@ -54,7 +54,7 @@ typePropertyTests =
     it "can encode/decode bytestring" $ liftEffect $ do
       quickCheckGen $ do
         n <- chooseInt 1 100
-        x <- Hex.toByteString <$> Hex.generator n
+        x <- Hex.toBuffer <$> Hex.generator n
         pure $ encodeDecode x === Right x
 
     it "can encode/decode bool" $ liftEffect $ do
@@ -300,7 +300,7 @@ tupleTests = do
           reifyType m \pm ->
             reifyType k \pk -> do
               ints <- arrayOf (IntN.generator pn)
-              bytes <- Hex.toByteString <$> (chooseInt 1 100 >>= Hex.generator)
+              bytes <- Hex.toBuffer <$> (chooseInt 1 100 >>= Hex.generator)
               addrs <- Vector.generator pm (arrayOf Address.generator)
               strings <- arrayOf (Vector.generator pk (arbitrary @BMPString))
               bool <- arbitrary :: Gen Boolean
@@ -364,7 +364,7 @@ tupleTests = do
                       let
                         mkTuple5 = do
                           ints <- arrayOf (IntN.generator _pn)
-                          bytes <- Hex.toByteString <$> (chooseInt 1 100 >>= Hex.generator)
+                          bytes <- Hex.toBuffer <$> (chooseInt 1 100 >>= Hex.generator)
                           addrs <- Vector.generator _pm (arrayOf Address.generator)
                           strings <- map (map (un BMPString)) <$>
                             arrayOf (Vector.generator _pk (arbitrary @BMPString))
