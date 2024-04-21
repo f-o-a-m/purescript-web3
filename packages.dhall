@@ -55,7 +55,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/f-o-a-m/purescript-eth-core"
-        , version = "remove-bs-dep"
+        , version = "v10.1.0"
         }
       }
 
