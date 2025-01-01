@@ -4,7 +4,7 @@
     "build": "spago build",
     "tidy": "purs-tidy format-in-place \"src/**/*.purs\" \"test/**/*.purs\"",
     "tidy-check": "purs-tidy check \"src/**/*.purs\" \"test/**/*.purs\"",
-    "test": "spago -x test.dhall test"
+    "test": "spago test"
   },
   "dependencies": {
     "ethjs-provider-http": "^0.1.6",
@@ -16,6 +16,6 @@
     "purescript": "^0.15.8",
     "purescript-psa": "^0.8.2",
     "purs-tidy": "^0.10.0",
-    "spago": "^0.21.0"
+    "spago": "next"
   }
 }
