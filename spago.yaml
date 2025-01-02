@@ -69,28 +69,5 @@ workspace:
       git: https://github.com/martyall/purescript-coroutine-transducers
       ref: v1.0.0
     eth-core:
-      dependencies:
-        - argonaut
-        - arrays
-        - effect
-        - either
-        - foldable-traversable
-        - foreign
-        - functions
-        - gen
-        - integers
-        - js-bigints
-        - lists
-        - maybe
-        - newtype
-        - node-buffer
-        - nonempty
-        - ordered-collections
-        - partial
-        - prelude
-        - simple-json
-        - strings
-        - unfoldable
-        - unsafe-coerce
       git: https://github.com/f-o-a-m/purescript-eth-core
       ref: 3db27d22f738498a1e4263f537cd25279fc88088
